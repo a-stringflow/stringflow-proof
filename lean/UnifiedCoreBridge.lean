@@ -517,6 +517,36 @@ lemma fullOrbitStep_eq_of_candidateRj (r x t : Nat)
   rw [hr]
   rfl
 
+/-- The reset predecessor of an odd `t∈{1,2}` successor is odd. -/
+lemma candidateRj_predecessor_odd (r x t : Nat)
+    (ht : t = 1 ∨ t = 2)
+    (hr : r = candidateRj x t)
+    (_hodd : r % 2 = 1)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    x % 2 = 1 := by
+  have hmul : 2 ^ t * r = 5 * x + 1 := by
+    unfold candidateRj at hr
+    rw [hr]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have h2t_even : (2 ^ t) % 2 = 0 := by
+    rcases ht with rfl | rfl <;> norm_num
+  have heven : (5 * x + 1) % 2 = 0 := by
+    rw [← hmul]
+    rw [Nat.mul_mod, h2t_even]
+    simp
+  have h5xodd : (5 * x) % 2 = 1 := by
+    have hsplit : (5 * x + 1) % 2 = ((5 * x) % 2 + 1 % 2) % 2 := by
+      rw [Nat.add_mod]
+    rw [heven] at hsplit
+    norm_num at hsplit
+    have hlt : (5 * x) % 2 < 2 := Nat.mod_lt (5 * x) (by decide)
+    omega
+  have hxmod : (5 * x) % 2 = x % 2 := by
+    rw [Nat.mul_mod]
+    norm_num
+  rw [hxmod] at h5xodd
+  exact h5xodd
+
 /-- 36.30.23.4 branch table, `e=2`: `candidateX ≡ 2+δ (mod 4)`
 when the full-orbit state `g` is odd. -/
 lemma two_mul_odd_mod4 (g : Nat) (hgodd : g % 2 = 1) : (2 * g) % 4 = 2 := by

@@ -1514,6 +1514,7 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.candidateRj_of_mod_five` | proved | mod-5 class `3/4` supplies the integer reset predecessor `x` with `r = candidateRj x t` |
 | `UnifiedCoreBridge.reset_predecessor_of_block_head_premises` | proved | no-`H_ge` premises + `FullOrbitFrom7 r` give `t∈{1,2}` and `r = candidateRj x t` |
 | `UnifiedCoreBridge.fullOrbitStep_eq_of_candidateRj` | proved | an odd reset successor `r` makes `x` a full-orbit preimage: `fullOrbitStep x = r` |
+| `UnifiedCoreBridge.candidateRj_predecessor_odd` | proved | a `t∈{1,2}` reset predecessor of an odd state is odd |
 | `FinitePrefix.fullOrbitPrefix_wordValid/wordOrbit/imp_OrbitFrom7` | proved | depth `n≤15` full-orbit states are `OrbitFrom7`-reachable via `[2,1,2,1,1,2,1,1,1,2,2,2,2,1,1]` prefixes |
 | `UnifiedCoreBridge.fullOrbitFrom7_le15_imp_OrbitFrom7` | proved | `FullOrbitFrom7` with depth `≤15` reduces to `OrbitFrom7` |
 | `UnifiedCoreBridge.candidateX_mod4_of_e2/e_ge3` | proved | 36.30.23.4 branch table: `e=2⇒x≡2+δ (mod 4)`, `e≥3⇒x≡δ (mod 4)` |
