@@ -380,7 +380,7 @@ class is the `t`-reset successor of an integer `x`. -/
 lemma candidateRj_of_mod_five (r t : Nat)
     (ht : t = 1 ∨ t = 2)
     (hmod : (t = 1 → r % 5 = 3) ∧ (t = 2 → r % 5 = 4)) :
-    ∃ x : Nat, r = candidateRj x t := by
+    ∃ x : Nat, r = candidateRj x t ∧ (5 * x + 1) % 2 ^ t = 0 := by
   rcases ht with ht1 | ht2
   · subst t
     have hr5 : r % 5 = 3 := hmod.1 rfl
@@ -414,7 +414,7 @@ lemma candidateRj_of_mod_five (r t : Nat)
       rw [← hmul]
       rw [Nat.mul_mod, Nat.mod_self]
       simp
-    refine ⟨x, ?_⟩
+    refine ⟨x, ?_, hdiv2⟩
     unfold candidateRj
     have hdiv2' : 2 ∣ 5 * x + 1 := Nat.dvd_iff_mod_eq_zero.mpr hdiv2
     have hmul2 : 2 * ((5 * x + 1) / 2) = 5 * x + 1 :=
@@ -453,7 +453,7 @@ lemma candidateRj_of_mod_five (r t : Nat)
       rw [← hmul]
       rw [Nat.mul_mod, Nat.mod_self]
       simp
-    refine ⟨x, ?_⟩
+    refine ⟨x, ?_, hdiv2⟩
     unfold candidateRj
     have hdiv4 : 4 ∣ 5 * x + 1 := Nat.dvd_iff_mod_eq_zero.mpr hdiv2
     have hmul4 : 4 * ((5 * x + 1) / 4) = 5 * x + 1 :=
@@ -471,7 +471,8 @@ theorem reset_predecessor_of_block_head_premises
     (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
     (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
     (hReach : FullOrbitFrom7 r) :
-    ∃ t x : Nat, (t = 1 ∨ t = 2) ∧ r = candidateRj x t := by
+    ∃ t x : Nat, (t = 1 ∨ t = 2) ∧ r = candidateRj x t ∧
+      (5 * x + 1) % 2 ^ t = 0 := by
   have hcong := UnifiedCoreAudit.block_head_mod_five_congruence_of_premises
     j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach
   rcases hPrem.tj_mem with htj1 | htj2
@@ -484,8 +485,8 @@ theorem reset_predecessor_of_block_head_premises
     rw [Nat.ModEq] at hc
     norm_num at hc
     rcases candidateRj_of_mod_five r 1 (Or.inl rfl)
-      ⟨fun _ => hc, fun h => by norm_num at h⟩ with ⟨x, hx⟩
-    exact ⟨1, x, Or.inl rfl, hx⟩
+      ⟨fun _ => hc, fun h => by norm_num at h⟩ with ⟨x, hx, hdiv⟩
+    exact ⟨1, x, Or.inl rfl, hx, hdiv⟩
   · have ht : Wj - Wp = 2 := by omega
     have hinv : StringFlow.Lte.invMod5 4 % 5 = 4 := by
       norm_num [StringFlow.Lte.invMod5]
@@ -495,8 +496,38 @@ theorem reset_predecessor_of_block_head_premises
     rw [Nat.ModEq] at hc
     norm_num at hc
     rcases candidateRj_of_mod_five r 2 (Or.inr rfl)
-      ⟨fun h => by norm_num at h, fun _ => hc⟩ with ⟨x, hx⟩
-    exact ⟨2, x, Or.inr rfl, hx⟩
+      ⟨fun h => by norm_num at h, fun _ => hc⟩ with ⟨x, hx, hdiv⟩
+    exact ⟨2, x, Or.inr rfl, hx, hdiv⟩
+
+/-- The reset predecessor of a block head is bounded by `2^t*5^(j-1)`. -/
+theorem reset_predecessor_bound_of_block_head_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : FullOrbitFrom7 r) :
+    ∃ t x : Nat, (t = 1 ∨ t = 2) ∧ r = candidateRj x t ∧
+      x < 2 ^ t * 5 ^ (j - 1) := by
+  rcases reset_predecessor_of_block_head_premises j Wp Wj q Aj A_s s W_s r_s L H_s
+    weight r hPrem hrj hReach with ⟨t, x, ht, hr, hdiv⟩
+  refine ⟨t, x, ht, hr, ?_⟩
+  have hrlt : r < 5 ^ j := by simpa [hrj] using hPrem.r_j_lt
+  have hmul : 2 ^ t * r = 5 * x + 1 := by
+    unfold candidateRj at hr
+    rw [hr]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have hlt : 5 * x + 1 < 2 ^ t * 5 ^ j := by
+    rw [← hmul]
+    exact Nat.mul_lt_mul_of_pos_left hrlt (by positivity : 0 < 2 ^ t)
+  have hle : 5 * x < 2 ^ t * 5 ^ j := by omega
+  have hj1 : 1 ≤ j := hPrem.j_pos
+  have hsum' : (j - 1) + 1 = j := by omega
+  have hpow : 2 ^ t * 5 ^ j = 5 * (2 ^ t * 5 ^ (j - 1)) := by
+    conv_lhs =>
+      rw [← hsum']
+      rw [Nat.pow_add, Nat.pow_one]
+    ring
+  rw [hpow] at hle
+  exact Nat.lt_of_mul_lt_mul_left hle
 
 /-- If an odd state `r` is the `t`-reset successor of `x`, then `x` is a
 full-orbit preimage of `r`: `fullOrbitStep x = r`. -/

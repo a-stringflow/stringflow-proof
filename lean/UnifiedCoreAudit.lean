@@ -1511,8 +1511,9 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.reset_q0_form` | proved | 36.30.8.2: exact identity `A_j+5^j·q=2^L·(B+δ·5^j)` gives `q=m+δ·2^L` with `m<2^L` |
 | `UnifiedCoreBridge.block_head_identity_of_reset` | proved | block-head representation + `ResetHeadEq` give `A_j+5^j·q=2^Wp·(5^(k+1)·s0-4+δ·5^j)` |
 | `UnifiedCoreBridge.reset_head_eq_of_block_head_identity` | proved | converse: the 36.30.8.2 exact identity plus the block-head representation recover `ResetHeadEq` |
-| `UnifiedCoreBridge.candidateRj_of_mod_five` | proved | mod-5 class `3/4` supplies the integer reset predecessor `x` with `r = candidateRj x t` |
+| `UnifiedCoreBridge.candidateRj_of_mod_five` | proved | mod-5 class `3/4` supplies `x` with `r = candidateRj x t` and the exact divisibility `2^t | 5x+1` |
 | `UnifiedCoreBridge.reset_predecessor_of_block_head_premises` | proved | no-`H_ge` premises + `FullOrbitFrom7 r` give `t∈{1,2}` and `r = candidateRj x t` |
+| `UnifiedCoreBridge.reset_predecessor_bound_of_block_head_premises` | proved | the same reset predecessor satisfies `x < 2^t·5^(j-1)` |
 | `UnifiedCoreBridge.fullOrbitStep_eq_of_candidateRj` | proved | an odd reset successor `r` makes `x` a full-orbit preimage: `fullOrbitStep x = r` |
 | `UnifiedCoreBridge.candidateRj_predecessor_odd` | proved | a `t∈{1,2}` reset predecessor of an odd state is odd |
 | `FinitePrefix.fullOrbitPrefix_wordValid/wordOrbit/imp_OrbitFrom7` | proved | depth `n≤15` full-orbit states are `OrbitFrom7`-reachable via `[2,1,2,1,1,2,1,1,1,2,2,2,2,1,1]` prefixes |
