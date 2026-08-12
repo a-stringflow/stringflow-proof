@@ -498,6 +498,25 @@ theorem reset_predecessor_of_block_head_premises
       ⟨fun h => by norm_num at h, fun _ => hc⟩ with ⟨x, hx⟩
     exact ⟨2, x, Or.inr rfl, hx⟩
 
+/-- If an odd state `r` is the `t`-reset successor of `x`, then `x` is a
+full-orbit preimage of `r`: `fullOrbitStep x = r`. -/
+lemma fullOrbitStep_eq_of_candidateRj (r x t : Nat)
+    (hr : r = candidateRj x t)
+    (hodd : r % 2 = 1)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    fullOrbitStep x = r := by
+  have hmul : 2 ^ t * r = 5 * x + 1 := by
+    unfold candidateRj at hr
+    rw [hr]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have hv : twoValuation (5 * x + 1) = t := by
+    rw [← hmul]
+    exact StringFlow.Lte.twoValuation_mul_two_pow_eq t r (by simpa [IsOdd] using hodd)
+  unfold fullOrbitStep
+  rw [hv]
+  rw [hr]
+  rfl
+
 /-- 36.30.23.4 branch table, `e=2`: `candidateX ≡ 2+δ (mod 4)`
 when the full-orbit state `g` is odd. -/
 lemma two_mul_odd_mod4 (g : Nat) (hgodd : g % 2 = 1) : (2 * g) % 4 = 2 := by
