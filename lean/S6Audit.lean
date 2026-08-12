@@ -760,7 +760,8 @@ lemma mem_allWordsUpTo_of_length_and_ok (w : List Nat) (n : Nat)
         have hm' : w ∈ allWords (n + 1) := by simpa [hlen] using hm
         exact List.mem_append.mpr (Or.inl hm')
 
-/-- Boolean `∀` over a finite list, kept reducible for `native_decide`. -/
+/-- Boolean `∀` over a finite list, kept reducible for kernel `decide`
+closure. -/
 def allBool {α : Type} (p : α → Bool) : List α → Bool
   | [] => true
   | a :: as => p a && allBool p as
@@ -788,6 +789,7 @@ def path229CondBool (w : List Nat) : Bool :=
   wordValidBool w 7 && decide (StringFlow.Word.wordOrbit w 7 = 229) &&
     allBool (fun t => decide (t = 1) || decide (t = 2)) w
 
+set_option maxRecDepth 100000 in
 /-- Finite uniqueness of the word from `7` to `229` among words of length
 at most `8`: the only candidate is `[2,1,2,1,1,2]`. -/
 theorem path229_search_all :
@@ -796,7 +798,7 @@ theorem path229_search_all :
         then decide (w = [2, 1, 2, 1, 1, 2])
         else true)
       (allWordsUpTo 8) = true := by
-  native_decide
+  decide
 
 /-- Any valid word of length at most `8` from `7` to `229` is
 `[2,1,2,1,1,2]`. -/
@@ -2800,6 +2802,7 @@ lemma concat_word_eq_path_of_rs229
     hok_all hvalid_all horbit_all
   exact ⟨w, hokw, hunique⟩
 
+set_option maxRecDepth 100000 in
 /-- Finite closure: among words of length at most `6`, the suffix of the
 unique `7→229` path is one of the seven listed suffixes. -/
 theorem suffix_of_path229_search :
@@ -2809,11 +2812,11 @@ theorem suffix_of_path229_search :
                    (∀ t ∈ w, t = 1 ∨ t = 2) ∧
                    (∀ t ∈ b, t = 1 ∨ t = 2))
           then decide (b ∈ [[], [2], [1,2], [1,1,2], [2,1,1,2],
-                             [1,2,1,1,2], [2,1,2,1,1,2]])
+                              [1,2,1,1,2], [2,1,2,1,1,2]])
           else true)
         (allWordsUpTo 6))
       (allWordsUpTo 6) = true := by
-  native_decide
+  decide
 
 /-- Any suffix of the unique `7→229` path is one of seven candidates. -/
 lemma suffix_of_path229 (w b : List Nat)
@@ -2968,7 +2971,8 @@ theorem b3_short_suffix_search :
           (List.range 10)
         else true)
       [[], [2], [1,2], [1,1,2], [2,1,1,2], [1,2,1,1,2]] = true := by
-  native_decide
+  simp [allBool, sumSuffix]
+  decide
 
 /-- Extracted B3 bound for a non-full suffix. -/
 lemma b3_of_short_suffix (sfx : List Nat) (s e : Nat)
@@ -3026,6 +3030,7 @@ lemma b3_of_short_suffix (sfx : List Nat) (s e : Nat)
   rw [hcond_e] at hall3
   exact decide_eq_true_eq.mp hall3
 
+set_option maxRecDepth 100000 in
 /-- Combined finite closure: for every suffix candidate satisfying the
 reachable block-head bounds, the q-interval bound, and `W_s ≡ 2 (mod 4)`,
 at least one of B2/B3 holds. -/
@@ -3060,7 +3065,7 @@ theorem b2b3_suffix_qbound_search :
         else true)
       [[], [2], [1,2], [1,1,2], [2,1,1,2],
        [1,2,1,1,2], [2,1,2,1,1,2]] = true := by
-  native_decide
+  decide
 
 /-- Extracted B2/B3 closure for a suffix candidate satisfying the block-head
 reachability, q-interval, and `W_s ≡ 2 (mod 4)` conditions. -/
@@ -3223,6 +3228,7 @@ lemma suffix_seven_cases (sfx : List Nat)
     sfx = [2,1,1,2] ∨ sfx = [1,2,1,1,2] ∨ sfx = [2,1,2,1,1,2] := by
   simpa using h
 
+set_option maxRecDepth 100000 in
 theorem b2_suffix_qbound_nonbad_search :
     allBool (fun sfx =>
       if decide (sfx ∈ [[], [2], [1,2], [1,1,2], [2,1,1,2],
@@ -3257,7 +3263,7 @@ theorem b2_suffix_qbound_nonbad_search :
         else true)
       [[], [2], [1,2], [1,1,2], [2,1,1,2],
        [1,2,1,1,2], [2,1,2,1,1,2]] = true := by
-  native_decide
+  decide
 
 /-- After excluding the four pseudo-candidates, the true `q`-interval
 tuples satisfy B2. -/
@@ -4422,7 +4428,7 @@ theorem local_lemma_final
 | `wordValid_mem_orbit25` | proved | every `wordValid` path ends in the table |
 | `OrbitFrom7_mem_orbit25` | proved | `OrbitFrom7` reduces to table membership |
 | `allWords` / `allWordsUpTo` | defined | finite-length `{1,2}` word enumeration layer for finite uniqueness proofs |
-| `path229_search_all` | proved | the legal 7→229 word of length ≤8 is unique: `[2,1,2,1,1,2]` (`native_decide` finite closure) |
+| `path229_search_all` | proved | the legal 7→229 word of length ≤8 is unique: `[2,1,2,1,1,2]` (kernel `decide` finite closure) |
 | `path229_unique_of_length_le_8` | proved | uniqueness lemma: under the length bound, every legal 7→229 word equals `[2,1,2,1,1,2]` |
 | `step_gt` | proved | a legal `{1,2}` step strictly increases at `x≥7` |
 | `wordOrbit_gt` | proved | a nonempty legal word strictly increases at `x≥7` |
@@ -4432,7 +4438,7 @@ theorem local_lemma_final
 | `word_to_229_forced` | proved | paths from the six relevant orbit states to `229` are forced |
 | `path229_unique` | proved | every legal 7→229 word equals `[2,1,2,1,1,2]` without a length assumption |
 | `concat_word_eq_path_of_rs229` | proved | when `r_s=229`, the whole word `w++blockWord` equals the unique path |
-| `suffix_of_path229_search` | proved | the unique path has only 7 suffix candidates (`native_decide` closure) |
+| `suffix_of_path229_search` | proved | the unique path has only 7 suffix candidates (kernel `decide` closure) |
 | `suffix_of_path229` | proved | every suffix of the unique path lies in the 7-candidate table |
 | `sumSuffix` | defined | total step weight of a suffix |
 | `b3_short_suffix_search` / `b3_of_short_suffix` | proved | non-full suffixes satisfy the B3 size bound for `s≤9` |
