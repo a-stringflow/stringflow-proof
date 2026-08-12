@@ -4,6 +4,7 @@ import Mathlib.Tactic.IntervalCases
 import Mathlib.Tactic.Ring
 import S6Audit
 import S6AuditStage1
+import FinitePrefix
 import LteMacro
 
 /-!
@@ -2020,6 +2021,24 @@ theorem local_lemma_final_no_hge
     simpa [Nat.add_assoc] using hB3
   exact rj0_ge_of_size_conditions_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight hPrem (by omega) hBase2 hPow3
 
+/-- The finite-prefix branch of the final core: depth `≤15` is closed by
+the orbit25 base. -/
+theorem unified_core_final_no_hge_le15
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : S6Audit.FullOrbitFrom7 r)
+    (hH : 2 ≤ H_s)
+    (hshort : ∃ n : Nat, S6Audit.fullOrbitIter n = r ∧ n ≤ 15) :
+    twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) ≤ H_s - 2 := by
+  rcases hshort with ⟨n, hn, hnle⟩
+  have hOrbit : S6Audit.OrbitFrom7 r := by
+    rw [← hn]
+    exact S6Audit.fullOrbitPrefix_imp_OrbitFrom7 n hnle
+  have hge0 : 5 ^ j ≤ rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight :=
+    local_lemma_final_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hH hOrbit
+  exact terminal_bound_of_rj0_lower j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach hH hPrem.L_val hge0
+
 /--
 The final open core: document 36.20 terminal inequality
 
@@ -2080,6 +2099,7 @@ theorem unified_core_final_no_hge
 | `s_le_9_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` force `s<=9` |
 | `concat_word_eq_path_of_rs229_no_hge` / `bad_*_no_hge` | proved | no-`H_ge` path uniqueness and pseudo-candidate exclusions, used by the finite base |
 | `local_lemma_final_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` imply `rj0 >= 5^j`; axioms are only `propext / Classical.choice / Quot.sound` |
+| `unified_core_final_no_hge_le15` | proved | the depth-`≤15` full-orbit branch of the final core closes via `fullOrbitPrefix_imp_OrbitFrom7` + `local_lemma_final_no_hge` |
 | `pow5Inv_correct` | proved | `5^s * pow5Inv s m ≡ 1 (mod 2^m)` |
 | `crtRep_lt` / `crtRep_unique` / `rj0_crt_candidate_unique` | proved | CRT representative is `< n*m` and unique below the product |
 | `rj0_ge_iff_terminal_bound` | missing | the full iff through B2/B3 and the CRT lift; not yet formalized |
