@@ -2107,6 +2107,7 @@ theorem unified_core_final_no_hge
 | `crtRep_lt` / `crtRep_unique` / `rj0_crt_candidate_unique` | proved | CRT representative is `< n*m` and unique below the product |
 | `rj0_ge_iff_terminal_bound` | missing | the full iff through B2/B3 and the CRT lift; not yet formalized |
 | `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch (1a/1b candidate parameterization + d-exclusions) |
+| `failure_implies_rj_mod_64` | **open** | 36.29/36.30.5 core: from `All36_20PremisesNoHge + FullOrbitFrom7 r + failure` derive `r % 64 = 33` (equivalently the t=1/t=2 candidate residue); the n≥16 branch reduces to this + the existing d-exclusions |
 | `FinitePrefix.fullOrbit_first_t_ge3_is_exactly_3` | proved | `lean/FinitePrefix.lean`: explicit 17-state expansion by `simp [StringFlow.twoValuation_succ]`, zero `native_decide`; closes 36.30.23 at math level |
 | `UnifiedCoreBridge` | encoded | `lean/UnifiedCoreBridge.lean`: `candidateX`, `candidateRj`, `orbitState`, `orbitStepWeight`; step 1 of the assembly plan |
 | `UnifiedCoreBridge.fullOrbitStep_mul_eq` | proved | exact `2^t * fullOrbitStep x = 5*x+1`; used by the full-orbit rigidity lemmas |
