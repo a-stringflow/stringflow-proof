@@ -181,6 +181,103 @@ theorem r_s_eq_229_of_premises_no_hge
       hPrem hrj hReach)
     hPrem.r_s_mod8 hPrem.L_val
 
+/-- The no-`H_ge` premises bound the block length: `s ≤ 9`. -/
+theorem s_le_9_of_premises_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : S6Audit.OrbitFrom7 r)
+    (hH : 2 ≤ H_s) :
+    s ≤ 9 := by
+  have hrs : r_s = 229 :=
+    r_s_eq_229_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach
+  have h229 : 229 * 2 ^ W_s = A_s + 5 ^ s * q := by
+    have h := hPrem.r_s_eq
+    rw [hrs] at h
+    have hdiv : (A_s + 5 ^ s * q) % 2 ^ W_s = 0 := hPrem.r_s_int
+    have hdec : A_s + 5 ^ s * q = 2 ^ W_s * ((A_s + 5 ^ s * q) / 2 ^ W_s) :=
+      (Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)).symm
+    rw [← h] at hdec
+    have hdec' : A_s + 5 ^ s * q = 229 * 2 ^ W_s := by
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hdec
+    exact hdec'.symm
+  have hqge : 2 ^ Wp ≤ q := hPrem.q_ge
+  have hq : 5 ^ s * 2 ^ Wp ≤ 229 * 2 ^ W_s := by
+    have hle : 5 ^ s * 2 ^ Wp ≤ A_s + 5 ^ s * q := by
+      have h1 : 5 ^ s * 2 ^ Wp ≤ 5 ^ s * q := Nat.mul_le_mul_left (5 ^ s) hqge
+      omega
+    rw [← h229] at hle
+    exact hle
+  have hWp_le_Wj : Wp ≤ Wj := by
+    rcases hPrem.tj_mem with h1 | h2 <;> omega
+  have hWj_le_Ws : Wj ≤ W_s := hPrem.Wj_le_Ws
+  have hWp_le_Ws : Wp ≤ W_s := le_trans hWp_le_Wj hWj_le_Ws
+  have hWs : W_s = Wp + (W_s - Wp) := by omega
+  have hpowWs : 2 ^ W_s = 2 ^ Wp * 2 ^ (W_s - Wp) := by
+    conv_lhs => rw [hWs]
+    rw [Nat.pow_add]
+  have hq' : 5 ^ s * 2 ^ Wp ≤ 229 * (2 ^ Wp * 2 ^ (W_s - Wp)) := by
+    rwa [hpowWs] at hq
+  have hcancel : 5 ^ s ≤ 229 * 2 ^ (W_s - Wp) := by
+    have hle : 5 ^ s * 2 ^ Wp ≤ (229 * 2 ^ (W_s - Wp)) * 2 ^ Wp := by
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hq'
+    exact Nat.le_of_mul_le_mul_right hle (Nat.pow_pos (by decide : 0 < 2))
+  have hD : W_s - Wp = (W_s - Wj) + (Wj - Wp) := by omega
+  have h5le : 5 ^ s ≤ 229 * 2 ^ ((W_s - Wj) + (Wj - Wp)) := by
+    rw [← hD]
+    exact hcancel
+  let X := (W_s - Wj) + (Wj - Wp)
+  have h229le : 229 * 2 ^ X ≤ 2 ^ (X + 8) := by
+    have h229 : 229 ≤ 2 ^ 8 := by norm_num
+    have hmul : 229 * 2 ^ X ≤ 2 ^ 8 * 2 ^ X := Nat.mul_le_mul_right (2 ^ X) h229
+    have hpow : 2 ^ 8 * 2 ^ X = 2 ^ (X + 8) := by
+      rw [Nat.add_comm, ← Nat.pow_add]
+    rwa [hpow] at hmul
+  have h5le2 : 5 ^ s ≤ 2 ^ (X + 8) := le_trans h5le h229le
+  have hHs : H_s = 2 * s + 13 - 2 * (W_s - Wp) := hPrem.H_def
+  have h2le : 2 * (W_s - Wp) ≤ 2 * s + 10 := by
+    have hBle : 2 * (W_s - Wp) ≤ 2 * s + 13 := by
+      by_contra h
+      have hgt : 2 * s + 13 < 2 * (W_s - Wp) := by omega
+      have hsub0 : 2 * s + 13 - 2 * (W_s - Wp) = 0 :=
+        Nat.sub_eq_zero_of_le (by omega)
+      have hge : 2 ≤ H_s := hH
+      rw [hHs, hsub0] at hge
+      norm_num at hge
+    have hsum : H_s + 2 * (W_s - Wp) = 2 * s + 13 := by
+      rw [hHs]
+      exact Nat.sub_add_cancel hBle
+    have hge3 : 3 ≤ H_s := by
+      by_contra hnot
+      have hle2 : H_s ≤ 2 := by omega
+      have hHseq : H_s = 2 := by omega
+      have hmod : (2 * s + 13) % 2 = (H_s + 2 * (W_s - Wp)) % 2 := by
+        rw [hsum]
+      have hleft : (2 * s + 13) % 2 = 1 := by
+        rw [Nat.add_mod, Nat.mul_mod, Nat.mod_self]
+        norm_num
+      have hright : (H_s + 2 * (W_s - Wp)) % 2 = H_s % 2 := by
+        rw [Nat.add_mod, Nat.mul_mod, Nat.mod_self]
+        simp
+      rw [hright, hHseq] at hmod
+      norm_num at hmod
+    omega
+  have h2le' : W_s - Wp ≤ s + 5 := by
+    have hle' : 2 * (W_s - Wp) ≤ 2 * (s + 5) := by nlinarith [h2le]
+    exact Nat.le_of_mul_le_mul_left hle' (by norm_num : 0 < 2)
+  have hXle : X ≤ s + 5 := by
+    dsimp [X]
+    rw [← hD]
+    exact h2le'
+  have hpowle : 2 ^ (X + 8) ≤ 2 ^ (s + 13) := by
+    have hle : X + 8 ≤ s + 13 := by omega
+    exact Nat.pow_le_pow_right (by decide : 0 < 2) hle
+  have h5le3 : 5 ^ s ≤ 2 ^ (s + 13) := le_trans h5le2 hpowle
+  by_contra h
+  have hs : 10 ≤ s := by omega
+  have hgt := S6Audit.five_pow_gt_two_pow_add s hs
+  omega
+
 /-- Correctness of the Hensel inverse `5^s * pow5Inv s m ≡ 1 (mod 2^m)`. -/
 theorem pow5Inv_correct (s m : Nat) (hm : 1 ≤ m) :
     5 ^ s * pow5Inv s m ≡ 1 [MOD 2 ^ m] := by
