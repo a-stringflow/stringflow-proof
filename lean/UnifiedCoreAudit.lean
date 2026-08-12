@@ -1294,6 +1294,28 @@ lemma t2_run_wTerminal (r : Nat → Nat) (m L u : Nat)
     exact Nat.mul_div_right (wTerminal L (r m)) (by positivity : 0 < 2 ^ (L + 3))
   exact hcancel.symm
 
+/-- 36.29.3 clearing: if `w = z/2^(L+3)`, the failure
+`2^(H_s-1) | 5^(L+3)w+1` lifts to
+`2^(L+H_s+2) | 5^(L+3)z+2^(L+3)`. -/
+lemma failure_congruence_lift_w
+    (L H_s z w : Nat) (_hH : 2 ≤ H_s)
+    (hz : 2 ^ (L + 3) * w = z)
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * w + 1) :
+    2 ^ (L + H_s + 2) ∣ 5 ^ (L + 3) * z + 2 ^ (L + 3) := by
+  rcases hfail with ⟨k, hk⟩
+  refine ⟨k, ?_⟩
+  have hpow : 2 ^ (L + 3) * 2 ^ (H_s - 1) = 2 ^ (L + H_s + 2) := by
+    rw [← Nat.pow_add]
+    congr 1
+    omega
+  calc
+    5 ^ (L + 3) * z + 2 ^ (L + 3)
+        = 5 ^ (L + 3) * (2 ^ (L + 3) * w) + 2 ^ (L + 3) := by rw [hz]
+      _ = 2 ^ (L + 3) * (5 ^ (L + 3) * w + 1) := by ring
+      _ = 2 ^ (L + 3) * (2 ^ (H_s - 1) * k) := by rw [hk]
+      _ = 2 ^ (L + H_s + 2) * k := by
+            rw [← Nat.mul_assoc, hpow]
+
 /-- The terminal failure congruence, cleared of the odd-part denominator:
 `2^(H_s-1) | 5^(L+3)*w+1` iff
 `2^(L+H_s+3) | 5^(L+3)*(3*r_s+1)+2^(L+4)`. -/
@@ -2316,6 +2338,7 @@ theorem unified_core_final_no_hge
 | `t1_strip_twoValuation` / `t1_strip_wTerminal_mul` / `t1_strip_iter_wTerminal` | proved | 36.29.1: one `t=1` strip raises `v2(3r+1)` by one and multiplies `wTerminal` by `5`; `m` strips give `wTerminal L r_m = 5^m · wTerminal (L+m) r_0` |
 | `t2_step_plus_one_mul` / `t2_run_mul` / `t2_run_closed_form` | proved | 36.29.2: `4(r'+1)=5(r+1)`, `4^m(r_m+1)=5^m(r_0+1)`, and `r_0+1=2^(2m+1)u ⇒ r_m+1=2·5^m·u` |
 | `t2_run_wTerminal` | proved | 36.29.2 conclusion: under the `t=2` run decomposition, `wTerminal L (r_m) = (3·5^m·u−1)/2^(L+3)` |
+| `failure_congruence_lift_w` | proved | 36.29.3 clearing: `2^(H_s-1) | 5^(L+3)w+1` with `w=z/2^(L+3)` lifts to `2^(L+H_s+2) | 5^(L+3)z+2^(L+3)` |
 | `r_s_mem_orbit25_of_premises_no_hge` / `r_s_eq_229_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` force `r_s∈orbit25` and `r_s=229` |
 | `s_le_9_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` force `s<=9` |
 | `concat_word_eq_path_of_rs229_no_hge` / `bad_*_no_hge` | proved | no-`H_ge` path uniqueness and pseudo-candidate exclusions, used by the finite base |
