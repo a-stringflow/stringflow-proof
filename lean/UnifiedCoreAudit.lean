@@ -148,6 +148,39 @@ theorem no_hge_of_premises
     weight_step := h.weight_step
     valid_prefix := h.valid_prefix }
 
+/-- The block tail `r_s` is in the 25-state orbit, with `H_ge` dropped. -/
+theorem r_s_mem_orbit25_of_premises_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : S6Audit.OrbitFrom7 r) :
+    S6Audit.InOrbit25 r_s := by
+  have hmem_j : S6Audit.InOrbit25 (S6Audit.blockState weight q j) := by
+    have hbsj : S6Audit.blockState weight q j = (Aj + 5 ^ j * q) / 2 ^ Wj := by
+      dsimp [S6Audit.blockState]
+      rw [← hPrem.Aj_mol, ← hPrem.Wj_def]
+    rw [hbsj, ← hrj]
+    exact S6Audit.OrbitFrom7_mem_orbit25 r hReach
+  have hmem_s := S6Audit.blockState_mem_orbit25 j s weight q hPrem.j_le_s
+    hPrem.weight_step hPrem.valid_prefix hmem_j
+  have hbss : S6Audit.blockState weight q s = r_s := by
+    dsimp [S6Audit.blockState]
+    rw [← hPrem.A_s_mol, ← hPrem.Ws_def]
+    exact hPrem.r_s_eq.symm
+  simpa [hbss] using hmem_s
+
+/-- The no-`H_ge` premises force the block tail `r_s = 229`. -/
+theorem r_s_eq_229_of_premises_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : S6Audit.OrbitFrom7 r) :
+    r_s = 229 := by
+  exact S6Audit.r_s_eq_229_of_orbit25 r_s L
+    (r_s_mem_orbit25_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hReach)
+    hPrem.r_s_mod8 hPrem.L_val
+
 /-- Correctness of the Hensel inverse `5^s * pow5Inv s m ≡ 1 (mod 2^m)`. -/
 theorem pow5Inv_correct (s m : Nat) (hm : 1 ≤ m) :
     5 ^ s * pow5Inv s m ≡ 1 [MOD 2 ^ m] := by
