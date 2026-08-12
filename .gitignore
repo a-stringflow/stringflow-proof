@@ -1,0 +1,21 @@
+# build artifacts and caches
+__pycache__/
+*.pyc
+*.exe
+*.obj
+*.olean
+.lake/
+
+# large generated input files
+q5k3_5adic_input.txt
+
+# lean git history backup (kept locally, not pushed)
+.git-lean-backup/
+
+# publish only curated proof material; all other root material stays local
+/*
+!/.gitignore
+!/.github/
+!/README.md
+!/docs/
+!/lean/
