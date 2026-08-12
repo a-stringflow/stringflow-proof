@@ -1560,6 +1560,466 @@ theorem rj0_ge_of_size_conditions_no_hge
     (blockB_bound_of_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight hPrem)
     hBase2 hPow3
 
+lemma concat_word_eq_path_of_rs229_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : OrbitFrom7 r)
+    (hrs : r_s = 229) :
+    ∃ w : List Nat,
+      (∀ t ∈ w, t = 1 ∨ t = 2) ∧
+      w ++ blockWord weight j (s - j) = [2, 1, 2, 1, 1, 2] := by
+  rcases hReach with ⟨w, hokw, hvalidw, horbitw⟩
+  have hsum : j + (s - j) = s := Nat.add_sub_of_le hPrem.j_le_s
+  have hstep : ∀ k, k < j + (s - j) → weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2 := by
+    intro k hk
+    have hks : k < s := by omega
+    exact hPrem.weight_step k hks
+  have hvalid : ∀ k, k ≤ j + (s - j) →
+      (wordMolecule weight k + 5 ^ k * q) % 2 ^ weight k = 0 := by
+    intro k hk
+    have hks : k ≤ s := by omega
+    exact hPrem.valid_prefix k hks
+  have hbw := blockWord_valid weight q j (s - j) hstep hvalid
+  have hbsj : blockState weight q j = r := by
+    dsimp [blockState]
+    rw [← hPrem.Aj_mol, ← hPrem.Wj_def, ← hrj]
+  have hbss : blockState weight q s = r_s := by
+    dsimp [blockState]
+    rw [← hPrem.A_s_mol, ← hPrem.Ws_def, hPrem.r_s_eq]
+  have hwv : StringFlow.Word.wordValid (blockWord weight j (s - j)) r := by
+    rw [← hbsj]
+    exact hbw.1
+  have hwo : StringFlow.Word.wordOrbit (blockWord weight j (s - j)) r = r_s := by
+    rw [← hbsj, ← hbss]
+    have hbw2 : StringFlow.Word.wordOrbit (blockWord weight j (s - j))
+        (blockState weight q j) = blockState weight q (j + (s - j)) := hbw.2
+    simpa [hsum] using hbw2
+  have hok_block : ∀ t ∈ blockWord weight j (s - j), t = 1 ∨ t = 2 :=
+    blockWord_mem weight j (s - j) hstep
+  have hok_all : ∀ t ∈ w ++ blockWord weight j (s - j), t = 1 ∨ t = 2 := by
+    intro t ht
+    rw [List.mem_append] at ht
+    rcases ht with ht | ht
+    · exact hokw t ht
+    · exact hok_block t ht
+  have hvalid_all : StringFlow.Word.wordValid
+      (w ++ blockWord weight j (s - j)) 7 := by
+    rw [wordValid_append]
+    rw [horbitw]
+    exact ⟨hvalidw, hwv⟩
+  have horbit_all : StringFlow.Word.wordOrbit
+      (w ++ blockWord weight j (s - j)) 7 = 229 := by
+    rw [wordOrbit_append, horbitw, hwo, hrs]
+  have hunique := path229_unique (w ++ blockWord weight j (s - j))
+    hok_all hvalid_all horbit_all
+  exact ⟨w, hokw, hunique⟩
+
+lemma bad_2112_false_of_premises_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (_hReach : OrbitFrom7 r)
+    (hrs : r_s = 229)
+    (hblock : blockWord weight j (s - j) = [2, 1, 1, 2])
+    (hs : s = 6) (hWp : Wp = 1 ∨ Wp = 2) (he : Wj - Wp = 2) :
+    False := by
+  have hlen : (blockWord weight j (s - j)).length = 4 := by
+    rw [hblock]; simp
+  have hsj : s - j = 4 := by
+    rw [blockWord_length weight j (s - j)] at hlen
+    exact hlen
+  subst s
+  have hj : j = 2 := by omega
+  subst j
+  have hW1 : weight 1 = Wp := by
+    have h := hPrem.Wp_def
+    simpa using h.symm
+  have hW2 : weight 2 = Wp + 2 := by
+    have hWj := hPrem.Wj_def
+    omega
+  have hw := blockWord_2112_weights weight hblock
+  rcases hw with ⟨h3, h4, h5, h6⟩
+  have hmono : ∀ k, k < 6 → weight k ≤ weight (k + 1) := by
+    intro k hk
+    rcases hPrem.weight_step k (by omega) with h1 | h2 <;> omega
+  have hW3 : weight 3 = Wp + 4 := by omega
+  have hW4 : weight 4 = Wp + 5 := by omega
+  have hW5 : weight 5 = Wp + 6 := by omega
+  have hW6 : weight 6 = Wp + 8 := by omega
+  have hnot := bad_suffix_2112_no_div weight Wp hPrem.W0_def hW1 hW2 hW3 hW4 hW5 hWp
+  have h229 : 229 * 2 ^ W_s = A_s + 5 ^ 6 * q := by
+    have h := hPrem.r_s_eq
+    rw [hrs] at h
+    have hdiv : (A_s + 5 ^ 6 * q) % 2 ^ W_s = 0 := hPrem.r_s_int
+    have hdec : A_s + 5 ^ 6 * q = 2 ^ W_s * ((A_s + 5 ^ 6 * q) / 2 ^ W_s) :=
+      (Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)).symm
+    rw [← h] at hdec
+    have hdec' : A_s + 5 ^ 6 * q = 229 * 2 ^ W_s := by
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hdec
+    exact hdec'.symm
+  have hdvd : 5 ^ 6 ∣ 229 * 2 ^ W_s - A_s := by
+    have hle : A_s ≤ 229 * 2 ^ W_s := by
+      have h := h229
+      omega
+    have heq : 229 * 2 ^ W_s - A_s = 5 ^ 6 * q := by omega
+    rw [heq]
+    exact ⟨q, rfl⟩
+  have hWs : W_s = Wp + 8 := by
+    rw [hPrem.Ws_def]
+    exact hW6
+  have hA : A_s = wordMolecule weight 6 := hPrem.A_s_mol
+  rw [hWs, hA] at hdvd
+  exact hnot hdvd
+
+lemma bad_12112_false_of_premises_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (_hReach : OrbitFrom7 r)
+    (hrs : r_s = 229)
+    (hblock : blockWord weight j (s - j) = [1, 2, 1, 1, 2])
+    (hs : s = 7) (hWp : Wp = 1 ∨ Wp = 2) (he : Wj - Wp = 2) :
+    False := by
+  have hlen : (blockWord weight j (s - j)).length = 5 := by
+    rw [hblock]; simp
+  have hsj : s - j = 5 := by
+    rw [blockWord_length weight j (s - j)] at hlen
+    exact hlen
+  subst s
+  have hj : j = 2 := by omega
+  subst j
+  have hW1 : weight 1 = Wp := by
+    have h := hPrem.Wp_def
+    simpa using h.symm
+  have hW2 : weight 2 = Wp + 2 := by
+    have hWj := hPrem.Wj_def
+    omega
+  have hw := blockWord_12112_weights weight hblock
+  rcases hw with ⟨h3, h4, h5, h6, h7⟩
+  have hmono : ∀ k, k < 7 → weight k ≤ weight (k + 1) := by
+    intro k hk
+    rcases hPrem.weight_step k (by omega) with h1 | h2 <;> omega
+  have hW3 : weight 3 = Wp + 3 := by omega
+  have hW4 : weight 4 = Wp + 5 := by omega
+  have hW5 : weight 5 = Wp + 6 := by omega
+  have hW6 : weight 6 = Wp + 7 := by omega
+  have hW7 : weight 7 = Wp + 9 := by omega
+  have hnot := bad_suffix_12112_no_div weight Wp hPrem.W0_def hW1 hW2 hW3 hW4 hW5 hW6 hWp
+  have h229 : 229 * 2 ^ W_s = A_s + 5 ^ 7 * q := by
+    have h := hPrem.r_s_eq
+    rw [hrs] at h
+    have hdiv : (A_s + 5 ^ 7 * q) % 2 ^ W_s = 0 := hPrem.r_s_int
+    have hdec : A_s + 5 ^ 7 * q = 2 ^ W_s * ((A_s + 5 ^ 7 * q) / 2 ^ W_s) :=
+      (Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)).symm
+    rw [← h] at hdec
+    have hdec' : A_s + 5 ^ 7 * q = 229 * 2 ^ W_s := by
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hdec
+    exact hdec'.symm
+  have hdvd : 5 ^ 7 ∣ 229 * 2 ^ W_s - A_s := by
+    have hle : A_s ≤ 229 * 2 ^ W_s := by
+      have h := h229
+      omega
+    have heq : 229 * 2 ^ W_s - A_s = 5 ^ 7 * q := by omega
+    rw [heq]
+    exact ⟨q, rfl⟩
+  have hWs : W_s = Wp + 9 := by
+    rw [hPrem.Ws_def]
+    exact hW7
+  have hA : A_s = wordMolecule weight 7 := hPrem.A_s_mol
+  rw [hWs, hA] at hdvd
+  exact hnot hdvd
+
+/-- The pseudo-candidate `[2,1,2,1,1,2]` (`s=8`, `Wj-Wp=2`) cannot
+satisfy the integrality equation for `r_s=229`. -/
+lemma bad_suffix_full_no_div (weight : Nat → Nat) (Wp : Nat)
+    (hW0 : weight 0 = 0) (hW1 : weight 1 = Wp)
+    (hW2 : weight 2 = Wp + 2) (hW3 : weight 3 = Wp + 4)
+    (hW4 : weight 4 = Wp + 5) (hW5 : weight 5 = Wp + 7)
+    (hW6 : weight 6 = Wp + 8) (hW7 : weight 7 = Wp + 9)
+    (hWp : Wp = 1 ∨ Wp = 2) :
+    ¬ 5 ^ 8 ∣ 229 * 2 ^ (Wp + 11) - wordMolecule weight 8 := by
+  rcases hWp with rfl | rfl
+  · norm_num [wordMolecule, hW0, hW1, hW2, hW3, hW4, hW5, hW6, hW7]
+  · norm_num [wordMolecule, hW0, hW1, hW2, hW3, hW4, hW5, hW6, hW7]
+
+lemma bad_full_false_of_premises_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (_hReach : OrbitFrom7 r)
+    (hrs : r_s = 229)
+    (hblock : blockWord weight j (s - j) = [2, 1, 2, 1, 1, 2])
+    (hs : s = 8) (hWp : Wp = 1 ∨ Wp = 2) (he : Wj - Wp = 2) :
+    False := by
+  have hlen : (blockWord weight j (s - j)).length = 6 := by
+    rw [hblock]; simp
+  have hsj : s - j = 6 := by
+    rw [blockWord_length weight j (s - j)] at hlen
+    exact hlen
+  subst s
+  have hj : j = 2 := by omega
+  subst j
+  have hW1 : weight 1 = Wp := by
+    have h := hPrem.Wp_def
+    simpa using h.symm
+  have hW2 : weight 2 = Wp + 2 := by
+    have hWj := hPrem.Wj_def
+    omega
+  have hw := blockWord_212112_weights weight hblock
+  rcases hw with ⟨h3, h4, h5, h6, h7, h8⟩
+  have hmono : ∀ k, k < 8 → weight k ≤ weight (k + 1) := by
+    intro k hk
+    rcases hPrem.weight_step k (by omega) with h1 | h2 <;> omega
+  have hW3 : weight 3 = Wp + 4 := by omega
+  have hW4 : weight 4 = Wp + 5 := by omega
+  have hW5 : weight 5 = Wp + 7 := by omega
+  have hW6 : weight 6 = Wp + 8 := by omega
+  have hW7 : weight 7 = Wp + 9 := by omega
+  have hW8 : weight 8 = Wp + 11 := by omega
+  have hnot := bad_suffix_full_no_div weight Wp hPrem.W0_def hW1 hW2 hW3 hW4 hW5 hW6 hW7 hWp
+  have h229 : 229 * 2 ^ W_s = A_s + 5 ^ 8 * q := by
+    have h := hPrem.r_s_eq
+    rw [hrs] at h
+    have hdiv : (A_s + 5 ^ 8 * q) % 2 ^ W_s = 0 := hPrem.r_s_int
+    have hdec : A_s + 5 ^ 8 * q = 2 ^ W_s * ((A_s + 5 ^ 8 * q) / 2 ^ W_s) :=
+      (Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)).symm
+    rw [← h] at hdec
+    have hdec' : A_s + 5 ^ 8 * q = 229 * 2 ^ W_s := by
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hdec
+    exact hdec'.symm
+  have hdvd : 5 ^ 8 ∣ 229 * 2 ^ W_s - A_s := by
+    have hle : A_s ≤ 229 * 2 ^ W_s := by
+      have h := h229
+      omega
+    have heq : 229 * 2 ^ W_s - A_s = 5 ^ 8 * q := by omega
+    rw [heq]
+    exact ⟨q, rfl⟩
+  have hWs : W_s = Wp + 11 := by
+    rw [hPrem.Ws_def]
+    exact hW8
+  have hA : A_s = wordMolecule weight 8 := hPrem.A_s_mol
+  rw [hWs, hA] at hdvd
+  exact hnot hdvd
+
+theorem local_lemma_final_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hH : 2 ≤ H_s)
+    (hReach : OrbitFrom7 r) :
+    rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight ≥ 5 ^ j := by
+  let sfx := blockWord weight j (s - j)
+  let e := Wj - Wp
+  have hj_le_s : j ≤ s := hPrem.j_le_s
+  have hrs : r_s = 229 :=
+    r_s_eq_229_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach
+  have hs9 : s ≤ 9 :=
+    s_le_9_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach hH
+  have hL0 : L = 0 := by
+    have h := hPrem.L_val
+    rw [hrs] at h
+    simp [StringFlow.twoValuation_succ] at h
+    omega
+  rcases concat_word_eq_path_of_rs229_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hReach hrs with ⟨w, hokw, hconcat⟩
+  have hsfx : sfx ∈ [[], [2], [1,2], [1,1,2], [2,1,1,2],
+                     [1,2,1,1,2], [2,1,2,1,1,2]] := by
+    dsimp [sfx]
+    exact suffix_of_path229 w (blockWord weight j (s - j)) hconcat hokw
+      (blockWord_mem weight j (s - j) (by
+        intro k hk
+        have hsum : j + (s - j) = s := Nat.add_sub_of_le hj_le_s
+        have hks : k < s := by omega
+        exact hPrem.weight_step k hks))
+  have hs_len : sfx.length + 1 ≤ s := by
+    dsimp [sfx]
+    rw [blockWord_length]
+    have hpos : 1 ≤ j := hPrem.j_pos
+    omega
+  have he : e = 1 ∨ e = 2 := by
+    have hWp_le_Wj : Wp ≤ Wj := by rcases hPrem.tj_mem with h1 | h2 <;> omega
+    dsimp [e]
+    rcases hPrem.tj_mem with h1 | h2 <;> omega
+  have hD : W_s - Wj = sumSuffix sfx := by
+    dsimp [sfx]
+    have h := blockWord_sum weight j (s - j) (by
+      intro k hk
+      have hsum : j + (s - j) = s := Nat.add_sub_of_le hj_le_s
+      have hks : k < s := by omega
+      rcases hPrem.weight_step k hks with h1 | h2 <;> omega)
+    have hsum : j + (s - j) = s := Nat.add_sub_of_le hPrem.j_le_s
+    rw [hsum, ← hPrem.Ws_def, ← hPrem.Wj_def] at h
+    exact h.symm
+  have hn : s - j = sfx.length := by
+    dsimp [sfx]
+    exact (blockWord_length weight j (s - j)).symm
+  have hWp_le_Wj : Wp ≤ Wj := by rcases hPrem.tj_mem with h1 | h2 <;> omega
+  have hWsWp : W_s - Wp = e + sumSuffix sfx := by
+    dsimp [e]
+    have hWj_le_Ws : Wj ≤ W_s := hPrem.Wj_le_Ws
+    omega
+  have hHdef : H_s = 2 * s + 13 - 2 * (sumSuffix sfx + e) := by
+    rw [hPrem.H_def]
+    rw [hWsWp]
+    simp [Nat.add_comm]
+  have hj_eq : s - sfx.length = j := by
+    dsimp [sfx]
+    rw [blockWord_length]
+    omega
+  have hWpB : let jj := s - sfx.length; jj - 1 ≤ Wp ∧ Wp ≤ 2 * (jj - 1) := by
+    dsimp
+    rw [hj_eq]
+    constructor
+    · rw [hPrem.Wp_def]
+      have hge := weight_ge weight (j - 1) hPrem.W0_def (by
+        intro k hk
+        have hsum : j + (s - j) = s := Nat.add_sub_of_le hj_le_s
+        have hks : k < s := by omega
+        exact hPrem.weight_step k hks)
+      exact hge
+    · rw [hPrem.Wp_def]
+      have hle := weight_diff_le_two_mul weight 0 (j - 1) (by
+        intro k hk
+        have hsum : j + (s - j) = s := Nat.add_sub_of_le hj_le_s
+        have hks : k < s := by omega
+        exact hPrem.weight_step k hks)
+      simpa [hPrem.W0_def] using hle
+  have h229 : 229 * 2 ^ W_s = A_s + 5 ^ s * q := by
+    have h := hPrem.r_s_eq
+    rw [hrs] at h
+    have hdiv : (A_s + 5 ^ s * q) % 2 ^ W_s = 0 := hPrem.r_s_int
+    have hdec : A_s + 5 ^ s * q = 2 ^ W_s * ((A_s + 5 ^ s * q) / 2 ^ W_s) :=
+      (Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)).symm
+    rw [← h] at hdec
+    have hdec' : A_s + 5 ^ s * q = 229 * 2 ^ W_s := by
+      simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hdec
+    exact hdec'.symm
+  have hq1 : 5 ^ s ≤ 229 * 2 ^ (e + sumSuffix sfx) := by
+    have hqge : 2 ^ Wp ≤ q := hPrem.q_ge
+    have hle : 5 ^ s * 2 ^ Wp ≤ 229 * 2 ^ W_s := by
+      have h2 : 5 ^ s * 2 ^ Wp ≤ A_s + 5 ^ s * q := by
+        have h1 : 5 ^ s * 2 ^ Wp ≤ 5 ^ s * q := Nat.mul_le_mul_left (5 ^ s) hqge
+        omega
+      rw [← h229] at h2
+      exact h2
+    have hWp_le_Ws : Wp ≤ W_s := by
+      have hWp_le_Wj : Wp ≤ Wj := by rcases hPrem.tj_mem with h1 | h2 <;> omega
+      exact le_trans hWp_le_Wj hPrem.Wj_le_Ws
+    have hWs : W_s = Wp + (W_s - Wp) := by omega
+    have hpowWs : 2 ^ W_s = 2 ^ Wp * 2 ^ (W_s - Wp) := by
+      conv_lhs => rw [hWs]
+      rw [Nat.pow_add]
+    have hle' : 5 ^ s * 2 ^ Wp ≤ 229 * (2 ^ Wp * 2 ^ (W_s - Wp)) := by
+      rwa [hpowWs] at hle
+    have hcancel : 5 ^ s ≤ 229 * 2 ^ (W_s - Wp) := by
+      have hle2 : 5 ^ s * 2 ^ Wp ≤ (229 * 2 ^ (W_s - Wp)) * 2 ^ Wp := by
+        simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hle'
+      exact Nat.le_of_mul_le_mul_right hle2 (Nat.pow_pos (by decide : 0 < 2))
+    rwa [hWsWp] at hcancel
+  have hq2 : 229 * 2 ^ (e + sumSuffix sfx) < 5 ^ s * (2 ^ e + 1) := by
+    have hqlt : q < 2 ^ Wj := hPrem.q_lt
+    have hlt : 229 * 2 ^ W_s < A_s + 5 ^ s * 2 ^ Wj := by
+      have h1 : 5 ^ s * q < 5 ^ s * 2 ^ Wj :=
+        (Nat.mul_lt_mul_left (Nat.pow_pos (by decide : 0 < 5))).2 hqlt
+      rw [h229]
+      exact Nat.add_lt_add_left h1 A_s
+    have hlt2 : A_s + 5 ^ s * 2 ^ Wj < 5 ^ s * (1 + 2 ^ Wj) := by
+      have hA : A_s < 5 ^ s := hPrem.A_s_lt
+      have hlt' : A_s + 5 ^ s * 2 ^ Wj < 5 ^ s + 5 ^ s * 2 ^ Wj :=
+        Nat.add_lt_add_right hA (5 ^ s * 2 ^ Wj)
+      simpa [Nat.mul_add, Nat.mul_one] using hlt'
+    have hlt3 : 229 * 2 ^ W_s < 5 ^ s * (1 + 2 ^ Wj) := lt_trans hlt hlt2
+    have hWj_eq : Wj = Wp + e := by
+      dsimp [e]
+      rcases hPrem.tj_mem with h1 | h2 <;> omega
+    have hle : 1 + 2 ^ Wj ≤ (2 ^ e + 1) * 2 ^ Wp := by
+      have hpowWj : 2 ^ Wj = 2 ^ e * 2 ^ Wp := by
+        rw [hWj_eq, Nat.pow_add, Nat.mul_comm]
+      rw [hpowWj]
+      have hWp_ge1 : 1 ≤ 2 ^ Wp := Nat.one_le_pow Wp 2 (by omega)
+      nlinarith
+    have hlt4 : 229 * 2 ^ W_s < 5 ^ s * ((2 ^ e + 1) * 2 ^ Wp) :=
+      lt_of_lt_of_le hlt3 (Nat.mul_le_mul_left (5 ^ s) hle)
+    have hpowWs : 2 ^ W_s = 2 ^ Wp * 2 ^ (W_s - Wp) := by
+      have hWs : W_s = Wp + (W_s - Wp) := by
+        have hWp_le_Ws : Wp ≤ W_s := by
+          have hWp_le_Wj : Wp ≤ Wj := by rcases hPrem.tj_mem with h1 | h2 <;> omega
+          exact le_trans hWp_le_Wj hPrem.Wj_le_Ws
+        omega
+      conv_lhs => rw [hWs]
+      rw [Nat.pow_add]
+    have hlt5 : 229 * (2 ^ Wp * 2 ^ (W_s - Wp)) <
+        5 ^ s * ((2 ^ e + 1) * 2 ^ Wp) := by
+      simpa [hpowWs] using hlt4
+    have hleft : 229 * (2 ^ Wp * 2 ^ (W_s - Wp)) =
+        (229 * 2 ^ (W_s - Wp)) * 2 ^ Wp := by ring
+    have hright : 5 ^ s * ((2 ^ e + 1) * 2 ^ Wp) =
+        (5 ^ s * (2 ^ e + 1)) * 2 ^ Wp := by ring
+    rw [hleft, hright] at hlt5
+    have hlt6 : 229 * 2 ^ (W_s - Wp) < 5 ^ s * (2 ^ e + 1) := by
+      exact Nat.lt_of_mul_lt_mul_right hlt5
+    rwa [hWsWp] at hlt6
+  have hbad1 : ¬ (sfx = [2,1,1,2] ∧ s = 6 ∧ e = 2 ∧ Wp = 1) := by
+    intro hb
+    rcases hb with ⟨hsfx, hs6, he2, hWp1⟩
+    exact bad_2112_false_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hReach hrs (by simpa [sfx] using hsfx) hs6 (Or.inl hWp1)
+      (by simpa [e] using he2)
+  have hbad2 : ¬ (sfx = [2,1,1,2] ∧ s = 6 ∧ e = 2 ∧ Wp = 2) := by
+    intro hb
+    rcases hb with ⟨hsfx, hs6, he2, hWp2⟩
+    exact bad_2112_false_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hReach hrs (by simpa [sfx] using hsfx) hs6 (Or.inr hWp2)
+      (by simpa [e] using he2)
+  have hbad3 : ¬ (sfx = [1,2,1,1,2] ∧ s = 7 ∧ e = 2 ∧ Wp = 1) := by
+    intro hb
+    rcases hb with ⟨hsfx, hs7, he2, hWp1⟩
+    exact bad_12112_false_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hReach hrs (by simpa [sfx] using hsfx) hs7 (Or.inl hWp1)
+      (by simpa [e] using he2)
+  have hbad4 : ¬ (sfx = [1,2,1,1,2] ∧ s = 7 ∧ e = 2 ∧ Wp = 2) := by
+    intro hb
+    rcases hb with ⟨hsfx, hs7, he2, hWp2⟩
+    exact bad_12112_false_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hReach hrs (by simpa [sfx] using hsfx) hs7 (Or.inr hWp2)
+      (by simpa [e] using he2)
+  have hbad5 : ¬ (sfx = [2,1,2,1,1,2] ∧ s = 8 ∧ e = 2 ∧ Wp = 1) := by
+    intro hb
+    rcases hb with ⟨hsfx, hs8, he2, hWp1⟩
+    exact bad_full_false_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hReach hrs (by simpa [sfx] using hsfx) hs8 (Or.inl hWp1)
+      (by simpa [e] using he2)
+  have hbad6 : ¬ (sfx = [2,1,2,1,1,2] ∧ s = 8 ∧ e = 2 ∧ Wp = 2) := by
+    intro hb
+    rcases hb with ⟨hsfx, hs8, he2, hWp2⟩
+    exact bad_full_false_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hReach hrs (by simpa [sfx] using hsfx) hs8 (Or.inr hWp2)
+      (by simpa [e] using he2)
+  have hB2 : 3 * 5 ^ s + (3 * 5 ^ sfx.length - 2 * 4 ^ sfx.length) ≤
+      2 ^ (sumSuffix sfx + 4) *
+        uResidue 0 (2 * s + 13 - 2 * (sumSuffix sfx + e) - 1) := by
+    exact b2_of_suffix_qbound_nonbad sfx s e Wp hsfx hs_len hs9 he hWpB hq1 hq2
+      hbad1 hbad2 hbad3 hbad4 hbad5 hbad6
+  have hH1 : 1 ≤ H_s := by
+    have h := hH
+    omega
+  have hB3 : 3 * 5 ^ s + (3 * 5 ^ sfx.length - 2 * 4 ^ sfx.length) ≤
+      2 ^ (sumSuffix sfx + H_s + 3) :=
+    b2_imp_b3 s sfx.length (sumSuffix sfx) H_s hH1 (by
+      rw [hHdef]
+      exact hB2)
+  have hBase2 : 3 * 5 ^ s + (3 * 5 ^ (s - j) - 2 * 4 ^ (s - j)) ≤
+      2 ^ (W_s - Wj + L + 4) * uResidue L (H_s - 1) := by
+    rw [hL0, hn, hD, hHdef]
+    simpa [Nat.add_assoc] using hB2
+  have hPow3 : 3 * 5 ^ s + (3 * 5 ^ (s - j) - 2 * 4 ^ (s - j)) ≤
+      2 ^ (W_s - Wj + L + H_s + 3) := by
+    rw [hL0, hn, hD]
+    simpa [Nat.add_assoc] using hB3
+  exact rj0_ge_of_size_conditions_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight hPrem (by omega) hBase2 hPow3
+
 /--
 The final open core: document 36.20 terminal inequality
 
@@ -1616,6 +2076,10 @@ theorem unified_core_final_no_hge
 | `blockB_bound_of_no_hge` | proved | (B1) does not need `H_ge`; B2 itself is the finite suffix closure already proved in `S6Audit` and is not restated here |
 | `rj0_ge_of_size_conditions_no_hge` | proved | (B1)+(B2)+(B3) imply `rj0 >= 5^j`; this is the sufficient half of item 7 |
 | `rj0_le_of_exact_equation` | proved | the least nonnegative 36.26 solution is no larger than any other solution with the same mod-5 block-head residue; wires `failure_rj_satisfies_exact_equation` into `rj0_le_of_failure_no_hge` |
+| `r_s_mem_orbit25_of_premises_no_hge` / `r_s_eq_229_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` force `r_s∈orbit25` and `r_s=229` |
+| `s_le_9_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` force `s<=9` |
+| `concat_word_eq_path_of_rs229_no_hge` / `bad_*_no_hge` | proved | no-`H_ge` path uniqueness and pseudo-candidate exclusions, used by the finite base |
+| `local_lemma_final_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` imply `rj0 >= 5^j`; axioms are only `propext / Classical.choice / Quot.sound` |
 | `pow5Inv_correct` | proved | `5^s * pow5Inv s m ≡ 1 (mod 2^m)` |
 | `crtRep_lt` / `crtRep_unique` / `rj0_crt_candidate_unique` | proved | CRT representative is `< n*m` and unique below the product |
 | `rj0_ge_iff_terminal_bound` | missing | the full iff through B2/B3 and the CRT lift; not yet formalized |
