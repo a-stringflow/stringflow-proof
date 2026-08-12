@@ -1079,6 +1079,32 @@ lemma wTerminal_mul_eq (L r_s : Nat)
   rw [hq]
   exact hdec'
 
+/-- 36.29.1 valuation shift: one `t=1` strip raises `v2(3r+1)` by one. -/
+lemma t1_strip_twoValuation (r r' L : Nat)
+    (hstep : r' = (5 * r + 1) / 2)
+    (hdiv : (5 * r + 1) % 2 = 0)
+    (hL : L + 4 = twoValuation (3 * r' + 1)) :
+    (L + 1) + 4 = twoValuation (3 * r + 1) := by
+  have hmul : 2 * r' = 5 * r + 1 := by
+    rw [hstep]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have h2z : 2 * (3 * r' + 1) = 5 * (3 * r + 1) := by
+    calc
+      2 * (3 * r' + 1) = 6 * r' + 2 := by ring
+      _ = 3 * (2 * r') + 2 := by ring
+      _ = 3 * (5 * r + 1) + 2 := by rw [hmul]
+      _ = 5 * (3 * r + 1) := by ring
+  have hpos : 0 < 3 * r + 1 := by positivity
+  have hleftv : twoValuation (2 * (3 * r' + 1)) = twoValuation (3 * r' + 1) + 1 := by
+    exact StringFlow.twoValuation_mul_two (3 * r' + 1) (by positivity)
+  have hrightv : twoValuation (5 * (3 * r + 1)) = twoValuation (3 * r + 1) := by
+    exact StringFlow.Lte.twoValuation_mul_odd 5 (3 * r + 1) (by norm_num) hpos
+  have heqv : twoValuation (2 * (3 * r' + 1)) = twoValuation (5 * (3 * r + 1)) := by
+    rw [h2z]
+  rw [hleftv, hrightv] at heqv
+  rw [← hL] at heqv
+  omega
+
 /-- 36.29.1: stripping one trailing `t=1` step multiplies the odd part
 `wTerminal` by `5` and increments `L`. -/
 lemma t1_strip_wTerminal_mul (r r' L : Nat)
@@ -1128,6 +1154,29 @@ lemma t1_strip_wTerminal_mul (r r' L : Nat)
     rw [hmain']
     ring
   exact hcancel
+
+/-- 36.29.1 iterated: `m` consecutive trailing `t=1` strips multiply
+`wTerminal` by `5^m` and increment `L` by `m`. -/
+lemma t1_strip_iter_wTerminal (r : Nat → Nat) (m L : Nat)
+    (hsteps : ∀ i, i < m → r (i + 1) = (5 * r i + 1) / 2 ∧ (5 * r i + 1) % 2 = 0)
+    (hL : L + 4 = twoValuation (3 * r m + 1)) :
+    wTerminal L (r m) = 5 ^ m * wTerminal (L + m) (r 0) := by
+  induction m generalizing L with
+  | zero =>
+      simp
+  | succ m ih =>
+      have hstep_m : r (m + 1) = (5 * r m + 1) / 2 := (hsteps m (by omega)).1
+      have hdiv_m : (5 * r m + 1) % 2 = 0 := (hsteps m (by omega)).2
+      have hval_m : (L + 1) + 4 = twoValuation (3 * r m + 1) :=
+        t1_strip_twoValuation (r m) (r (m + 1)) L hstep_m hdiv_m hL
+      have hstrip : wTerminal L (r (m + 1)) = 5 * wTerminal (L + 1) (r m) :=
+        t1_strip_wTerminal_mul (r m) (r (m + 1)) L hstep_m hdiv_m hL
+      have hih := ih (L + 1) (fun i hi => hsteps i (by omega)) hval_m
+      rw [hstrip, hih]
+      have hsum1 : (L + 1) + m = L + (m + 1) := by omega
+      have hsum2 : m + 1 = Nat.succ m := by omega
+      rw [hsum1, hsum2, Nat.pow_succ]
+      ring
 
 /-- The terminal failure congruence, cleared of the odd-part denominator:
 `2^(H_s-1) | 5^(L+3)*w+1` iff
@@ -2148,6 +2197,7 @@ theorem unified_core_final_no_hge
 | `blockB_bound_of_no_hge` | proved | (B1) does not need `H_ge`; B2 itself is the finite suffix closure already proved in `S6Audit` and is not restated here |
 | `rj0_ge_of_size_conditions_no_hge` | proved | (B1)+(B2)+(B3) imply `rj0 >= 5^j`; this is the sufficient half of item 7 |
 | `rj0_le_of_exact_equation` | proved | the least nonnegative 36.26 solution is no larger than any other solution with the same mod-5 block-head residue; wires `failure_rj_satisfies_exact_equation` into `rj0_le_of_failure_no_hge` |
+| `t1_strip_twoValuation` / `t1_strip_wTerminal_mul` / `t1_strip_iter_wTerminal` | proved | 36.29.1: one `t=1` strip raises `v2(3r+1)` by one and multiplies `wTerminal` by `5`; `m` strips give `wTerminal L r_m = 5^m · wTerminal (L+m) r_0` |
 | `r_s_mem_orbit25_of_premises_no_hge` / `r_s_eq_229_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` force `r_s∈orbit25` and `r_s=229` |
 | `s_le_9_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` force `s<=9` |
 | `concat_word_eq_path_of_rs229_no_hge` / `bad_*_no_hge` | proved | no-`H_ge` path uniqueness and pseudo-candidate exclusions, used by the finite base |
