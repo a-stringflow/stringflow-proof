@@ -381,6 +381,424 @@ theorem rj0_crt_candidate_unique (K res2 res5 r : Nat)
     (Nat.Coprime.pow_left K (by decide : Nat.Coprime 2 5))
     (crt_coprime_2_5 K res2 res5) hr1 hr2 hrlt
 
+/-- `wordA` appending a step multiplies the old word by `5` and adds
+the old total weight power. -/
+lemma wordA_append_singleton (w : List Nat) (t : Nat) :
+    StringFlow.Word.wordA (w ++ [t]) =
+      5 * StringFlow.Word.wordA w + 2 ^ StringFlow.wordWeight w := by
+  induction w with
+  | nil => simp [StringFlow.Word.wordA, StringFlow.wordWeight]
+  | cons a as ih =>
+      simp [StringFlow.Word.wordA, StringFlow.wordWeight, ih]
+      rw [Nat.pow_add]
+      ring
+
+/-- `wordWeight` is additive along appending a singleton step. -/
+lemma wordWeight_append_singleton (w : List Nat) (t : Nat) :
+    StringFlow.wordWeight (w ++ [t]) = StringFlow.wordWeight w + t := by
+  induction w with
+  | nil => simp [StringFlow.wordWeight]
+  | cons a as ih =>
+      simp [StringFlow.wordWeight, ih]
+      omega
+
+/-- The total weight of a block suffix telescopes to the weight
+difference from `j` to `j+n`. -/
+lemma blockWord_wordWeight (weight : Nat → Nat) (j n : Nat)
+    (hstep : ∀ k, k < j + n → weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2) :
+    StringFlow.wordWeight (blockWord weight j n) = weight (j + n) - weight j := by
+  induction n with
+  | zero => simp [blockWord, StringFlow.wordWeight]
+  | succ n ih =>
+      rw [blockWord]
+      rw [wordWeight_append_singleton]
+      have hstep_small : ∀ k, k < j + n → weight (k + 1) = weight k + 1 ∨
+          weight (k + 1) = weight k + 2 := by
+        intro k hk
+        exact hstep k (by omega)
+      have hmono : weight j ≤ weight (j + n) :=
+        weight_mono_le weight j n (fun k hk => by
+          rcases hstep_small k hk with h1 | h2 <;> omega)
+      rw [ih hstep_small]
+      have h : j + n + 1 = j + (n + 1) := by omega
+      rw [h]
+      rcases hstep (j + n) (by omega) with h1 | h2
+      · have h1' : weight (j + (n + 1)) = weight (j + n) + 1 := by
+          rw [← h]
+          exact h1
+        rw [h1']
+        omega
+      · have h2' : weight (j + (n + 1)) = weight (j + n) + 2 := by
+          rw [← h]
+          exact h2
+        rw [h2']
+        omega
+
+/-- The block suffix molecule equals the `blockB` tail. -/
+lemma blockWord_wordA (weight : Nat → Nat) (j n : Nat)
+    (hstep : ∀ k, k < j + n → weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2) :
+    StringFlow.Word.wordA (blockWord weight j n) = blockB weight j n := by
+  induction n with
+  | zero => simp [blockWord, StringFlow.Word.wordA, blockB]
+  | succ n ih =>
+      rw [blockWord]
+      rw [wordA_append_singleton]
+      have hstep_small : ∀ k, k < j + n → weight (k + 1) = weight k + 1 ∨
+          weight (k + 1) = weight k + 2 := by
+        intro k hk
+        exact hstep k (by omega)
+      rw [ih hstep_small, blockWord_wordWeight weight j n hstep_small]
+      rw [blockB]
+      ring
+
+/-- The exact block-tail relation:
+`2^(W_s-W_j)*r_s = 5^(s-j)*r_j + B`, where `B` is the block suffix
+molecule. -/
+lemma block_tail_equation
+    (weight : Nat → Nat) (q j n : Nat)
+    (hstep : ∀ k, k < j + n → weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2)
+    (hvalid : ∀ k, k ≤ j + n → (wordMolecule weight k + 5 ^ k * q) % 2 ^ weight k = 0) :
+    2 ^ (weight (j + n) - weight j) * blockState weight q (j + n) =
+      5 ^ n * blockState weight q j + blockB weight j n := by
+  have hbw := blockWord_valid weight q j n hstep hvalid
+  have hid := StringFlow.Word.word_orbit_identity (blockWord weight j n)
+    (blockState weight q j) hbw.1
+  rw [hbw.2] at hid
+  rw [blockWord_wordA weight j n hstep] at hid
+  rw [blockWord_wordWeight weight j n hstep] at hid
+  rw [blockWord_length] at hid
+  exact hid
+
+/-- Block-tail relation in the no-`H_ge` premises:
+`2^(W_s-W_j)*r_s = 5^(s-j)*r + B`. -/
+lemma block_tail_equation_of_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj) :
+    2 ^ (W_s - Wj) * r_s = 5 ^ (s - j) * r + blockB weight j (s - j) := by
+  have hstep : ∀ k, k < j + (s - j) → weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2 := by
+    intro k hk
+    have hks : k < s := by
+      have hsum : j + (s - j) = s := Nat.add_sub_of_le hPrem.j_le_s
+      omega
+    exact hPrem.weight_step k hks
+  have hvalid : ∀ k, k ≤ j + (s - j) →
+      (wordMolecule weight k + 5 ^ k * q) % 2 ^ weight k = 0 := by
+    intro k hk
+    have hks : k ≤ s := by
+      have hsum : j + (s - j) = s := Nat.add_sub_of_le hPrem.j_le_s
+      omega
+    exact hPrem.valid_prefix k hks
+  have hb := block_tail_equation weight q j (s - j) hstep hvalid
+  have hsum : j + (s - j) = s := Nat.add_sub_of_le hPrem.j_le_s
+  rw [hsum] at hb
+  have hbsj : blockState weight q j = r := by
+    dsimp [blockState]
+    rw [← hPrem.Aj_mol, ← hPrem.Wj_def, hrj]
+  have hbss : blockState weight q s = r_s := by
+    dsimp [blockState]
+    rw [← hPrem.A_s_mol, ← hPrem.Ws_def]
+    exact hPrem.r_s_eq.symm
+  rw [hbsj, hbss] at hb
+  rw [← hPrem.Wj_def, ← hPrem.Ws_def] at hb
+  exact hb
+
+/-- `liftToNonneg` returns the least `t` satisfying the predicate. -/
+lemma liftToNonneg_minimal (B0 R C t : Nat) (hC : 0 < C)
+    (h : R ≤ B0 + C * t) :
+    liftToNonneg B0 R C hC ≤ t := by
+  unfold liftToNonneg
+  have hex : ∃ t, R ≤ B0 + C * t :=
+    ⟨R, by have hCR : R ≤ C * R := Nat.le_mul_of_pos_left R hC; omega⟩
+  exact Nat.find_min' (p := fun t => R ≤ B0 + C * t) hex h
+
+/-- `wordMolecule weight (n+1) ≡ 2^(weight n) (mod 5)`: the only
+5-adic low digit of a weighted word molecule is the final weight. -/
+lemma wordMolecule_mod_five (weight : Nat → Nat) (n : Nat) :
+    wordMolecule weight (n + 1) ≡ 2 ^ weight n [MOD 5] := by
+  rw [Nat.ModEq]
+  simp [wordMolecule, Nat.add_mod]
+
+/-- Multiplication by an odd natural is cancellative modulo `2^k`. -/
+lemma mul_cancel_modEq (k c a b : Nat) (hcodd : c % 2 = 1)
+    (h : c * a ≡ c * b [MOD 2 ^ k]) :
+    a ≡ b [MOD 2 ^ k] := by
+  by_cases hk : 1 ≤ k
+  · let M := 2 ^ k
+    let inv := StringFlow.Word.invOdd c (k - 1) % M
+    have hspec := invOdd_mod_pow_spec c k hcodd hk
+    have hmod1 : 1 % 2 ^ k = 1 := by
+      exact Nat.mod_eq_of_lt (one_lt_pow' (by decide : 1 < 2) (by omega : k ≠ 0))
+    have hinv : c * inv ≡ 1 [MOD M] := by
+      dsimp [inv, M]
+      rw [Nat.ModEq]
+      simpa [hmod1] using hspec
+    have hmul := h.mul_right inv
+    have hleft : (c * a) * inv ≡ a [MOD M] := by
+      have h' := hinv.mul_left a
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using h'
+    have hright : (c * b) * inv ≡ b [MOD M] := by
+      have h' := hinv.mul_left b
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using h'
+    exact (hleft.symm.trans (hmul.trans hright))
+  · have hk0 : k = 0 := by omega
+    subst k
+    rw [Nat.ModEq]
+    simp [Nat.mod_one]
+
+/-- 36.30.23.1 on the real-orbit block head, congruence form: under the
+no-`H_ge` premises and `FullOrbitFrom7 r`, `r ≡ 2^(-t_j) (mod 5)`. -/
+theorem block_head_mod_five_congruence_of_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (_hReach : S6Audit.FullOrbitFrom7 r) :
+    r ≡ StringFlow.Lte.invMod5 (2 ^ (Wj - Wp)) % 5 [MOD 5] := by
+  have hdvd : 2 ^ Wj ∣ Aj + 5 ^ j * q := Nat.dvd_iff_mod_eq_zero.mpr hPrem.r_j_int
+  have hmul : 2 ^ Wj * r = Aj + 5 ^ j * q := by
+    rw [hrj]
+    exact Nat.mul_div_cancel' hdvd
+  have h5dvd : 5 ∣ 5 ^ j := by
+    refine ⟨5 ^ (j - 1), ?_⟩
+    calc
+      5 ^ j = 5 ^ ((j - 1) + 1) := by
+        congr 1
+        exact (Nat.sub_add_cancel hPrem.j_pos).symm
+      _ = 5 * 5 ^ (j - 1) := by
+        rw [Nat.pow_succ]
+        ring
+  have h5mod : 5 ^ j ≡ 0 [MOD 5] := by
+    rw [Nat.ModEq]
+    exact Nat.dvd_iff_mod_eq_zero.mp h5dvd
+  have hmodsum : Aj + 5 ^ j * q ≡ Aj [MOD 5] := by
+    have h0 : 5 ^ j * q ≡ 0 [MOD 5] := by simpa using h5mod.mul_right q
+    have hadd : Aj + 5 ^ j * q ≡ Aj + 0 [MOD 5] := h0.add_left Aj
+    simpa using hadd
+  have hmodA : 2 ^ Wj * r ≡ Aj [MOD 5] := by
+    rw [Nat.ModEq]
+    rw [hmul]
+    have h := hmodsum
+    rwa [Nat.ModEq] at h
+  have hword : wordMolecule weight j ≡ 2 ^ Wp [MOD 5] := by
+    have hjsub : j = (j - 1) + 1 := (Nat.sub_add_cancel hPrem.j_pos).symm
+    rw [hjsub]
+    simpa [hPrem.Wp_def] using wordMolecule_mod_five weight (j - 1)
+  have hAj : Aj ≡ 2 ^ Wp [MOD 5] := by
+    rw [hPrem.Aj_mol]
+    exact hword
+  have hmodW : 2 ^ Wj * r ≡ 2 ^ Wp [MOD 5] := hmodA.trans hAj
+  have hWp_le_Wj : Wp ≤ Wj := by rcases hPrem.tj_mem with h1 | h2 <;> omega
+  have hpow : 2 ^ Wj = 2 ^ Wp * 2 ^ (Wj - Wp) := by
+    rw [← Nat.pow_add]
+    congr 1
+    omega
+  have hmodW' : 2 ^ Wp * (2 ^ (Wj - Wp) * r) ≡ 2 ^ Wp * 1 [MOD 5] := by
+    have hcalc : 2 ^ Wp * (2 ^ (Wj - Wp) * r) = 2 ^ Wj * r := by
+      rw [hpow]
+      ring
+    rw [hcalc]
+    simpa using hmodW
+  let invWp := StringFlow.Lte.invMod5 (2 ^ Wp)
+  have hinvWp : 2 ^ Wp * invWp ≡ 1 [MOD 5] := by
+    rw [Nat.ModEq]
+    exact StringFlow.Lte.invMod5_spec (2 ^ Wp) (pow_two_mod_five_ne_zero Wp)
+  have hcancel := hmodW'.mul_right invWp
+  have hleft : (2 ^ Wp * (2 ^ (Wj - Wp) * r)) * invWp ≡
+      2 ^ (Wj - Wp) * r [MOD 5] := by
+    have h' := hinvWp.mul_left (2 ^ (Wj - Wp) * r)
+    simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using h'
+  have hright : (2 ^ Wp * 1) * invWp ≡ 1 [MOD 5] := by
+    have htmp : (2 ^ Wp * 1) * invWp = 2 ^ Wp * invWp := by ring
+    rw [htmp]
+    exact hinvWp
+  have hunit : 2 ^ (Wj - Wp) * r ≡ 1 [MOD 5] :=
+    hleft.symm.trans (hcancel.trans hright)
+  let invT := StringFlow.Lte.invMod5 (2 ^ (Wj - Wp))
+  have hinvT : 2 ^ (Wj - Wp) * invT ≡ 1 [MOD 5] := by
+    rw [Nat.ModEq]
+    exact StringFlow.Lte.invMod5_spec (2 ^ (Wj - Wp))
+      (pow_two_mod_five_ne_zero (Wj - Wp))
+  have hmulT := hunit.mul_right invT
+  have hleftT : (2 ^ (Wj - Wp) * r) * invT ≡ r [MOD 5] := by
+    have h' := hinvT.mul_left r
+    simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using h'
+  have hrightT : 1 * invT ≡ invT [MOD 5] := by
+    rw [Nat.ModEq]
+    simp
+  have hmain : r ≡ invT [MOD 5] := hleftT.symm.trans (hmulT.trans hrightT)
+  simpa [invT] using hmain.trans (Nat.mod_modEq invT 5).symm
+
+/-- 36.30.23.1 on the real-orbit block head, disjunction form: the block
+head is `3 mod 5` for a `t=1` reset and `4 mod 5` for a `t=2` reset. -/
+theorem block_head_mod_five_of_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (_hReach : S6Audit.FullOrbitFrom7 r) :
+    r % 5 = 3 ∨ r % 5 = 4 := by
+  have hcong := block_head_mod_five_congruence_of_premises j Wp Wj q Aj A_s s W_s r_s
+    L H_s weight r hPrem hrj _hReach
+  rcases hPrem.tj_mem with h1 | h2
+  · left
+    have ht : Wj - Wp = 1 := by omega
+    have hinv : StringFlow.Lte.invMod5 2 % 5 = 3 := by
+      norm_num [StringFlow.Lte.invMod5]
+    have hc : r ≡ 3 [MOD 5] := by
+      rw [ht] at hcong
+      simpa [hinv] using hcong
+    rw [Nat.ModEq] at hc
+    norm_num at hc
+    exact hc
+  · right
+    have ht : Wj - Wp = 2 := by omega
+    have hinv : StringFlow.Lte.invMod5 4 % 5 = 4 := by
+      norm_num [StringFlow.Lte.invMod5]
+    have hc : r ≡ 4 [MOD 5] := by
+      rw [ht] at hcong
+      simpa [hinv] using hcong
+    rw [Nat.ModEq] at hc
+    norm_num at hc
+    exact hc
+
+/-- The least nonnegative solution `rj0` of the document-36.26 exact
+equation is no larger than any other solution `r` satisfying the same
+mod-5 block-head residue. -/
+theorem rj0_le_of_exact_equation
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r m : Nat)
+    (hH : 1 ≤ H_s)
+    (hrmod : r ≡ StringFlow.Lte.invMod5 (2 ^ (Wj - Wp)) % 5 [MOD 5])
+    (heq : 3 * 5 ^ (s - j) * r + 3 * blockB weight j (s - j) + 2 ^ (W_s - Wj)
+        = 2 ^ (W_s - Wj + L + 4) *
+            (uResidue L (H_s - 1) + m * 2 ^ (H_s - 1))) :
+    rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight ≤ r := by
+  let n := s - j
+  let Δ := W_s - Wj
+  let K2 := Δ + L + H_s + 3
+  let B := blockB weight j n
+  let u := uResidue L (H_s - 1)
+  let inv35 := StringFlow.Word.invOdd (3 * 5 ^ n) (K2 - 1) % 2 ^ K2
+  let num := (2 ^ (Δ + L + 4) * u +
+      negResidue (3 * B + 2 ^ Δ) (2 ^ K2)) % 2 ^ K2
+  let res2 := (num * inv35) % 2 ^ K2
+  let res5 := StringFlow.Lte.invMod5 (2 ^ (Wj - Wp)) % 5
+  let r0 := crtRep res2 res5 (2 ^ K2) 5 (crt_coprime_2_5 K2 res2 res5)
+  let M := 2 ^ K2 * 5
+  let C := 3 * 5 ^ n * M
+  let B0 := 3 * 5 ^ n * r0 + 3 * B + 2 ^ Δ
+  let R := 2 ^ (Δ + L + 4) * u
+  let t := liftToNonneg B0 R C (three_five_pow_mul_pos n K2)
+  have hK2 : 1 ≤ K2 := by dsimp [K2]; omega
+  have hMpos : 0 < M := by dsimp [M]; positivity
+  have heq0 : 3 * 5 ^ n * r + 3 * B + 2 ^ Δ =
+      2 ^ (Δ + L + 4) * (u + m * 2 ^ (H_s - 1)) := by
+    simpa [n, Δ, B, u] using heq
+  have hpow : 2 ^ (Δ + L + 4) * (m * 2 ^ (H_s - 1)) = m * 2 ^ K2 := by
+    dsimp [K2]
+    have hsum : (Δ + L + 4) + (H_s - 1) = Δ + L + H_s + 3 := by omega
+    calc
+      2 ^ (Δ + L + 4) * (m * 2 ^ (H_s - 1))
+          = m * (2 ^ (Δ + L + 4) * 2 ^ (H_s - 1)) := by ring
+      _ = m * 2 ^ ((Δ + L + 4) + (H_s - 1)) := by rw [← Nat.pow_add]
+      _ = m * 2 ^ (Δ + L + H_s + 3) := by rw [hsum]
+  have hdist : 2 ^ (Δ + L + 4) * (u + m * 2 ^ (H_s - 1)) =
+      2 ^ (Δ + L + 4) * u + 2 ^ (Δ + L + 4) * (m * 2 ^ (H_s - 1)) := by
+    rw [Nat.mul_add]
+  have heq' : 3 * 5 ^ n * r + (3 * B + 2 ^ Δ) = R + m * 2 ^ K2 := by
+    calc
+      3 * 5 ^ n * r + (3 * B + 2 ^ Δ)
+          = 3 * 5 ^ n * r + 3 * B + 2 ^ Δ := by ring
+      _ = 2 ^ (Δ + L + 4) * (u + m * 2 ^ (H_s - 1)) := heq0
+      _ = 2 ^ (Δ + L + 4) * u + 2 ^ (Δ + L + 4) * (m * 2 ^ (H_s - 1)) := hdist
+      _ = R + m * 2 ^ K2 := by
+        dsimp [R]
+        rw [hpow]
+  have hRmod2r : 3 * 5 ^ n * r + (3 * B + 2 ^ Δ) ≡ R [MOD 2 ^ K2] := by
+    rw [Nat.ModEq]
+    rw [heq']
+    rw [Nat.mul_comm m (2 ^ K2)]
+    exact Nat.add_mul_mod_self_left R (2 ^ K2) m
+  have hRjmod2 : 3 * 5 ^ n * rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight +
+      (3 * B + 2 ^ Δ) ≡ R [MOD 2 ^ K2] := by
+    have h := rj0_spec_2 j Wp Wj q Aj A_s s W_s r_s L H_s weight
+    simpa [n, Δ, K2, B, u, R, Nat.add_assoc] using h
+  have hcongFull : 3 * 5 ^ n * r + (3 * B + 2 ^ Δ) ≡
+      3 * 5 ^ n * rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight +
+        (3 * B + 2 ^ Δ) [MOD 2 ^ K2] := hRmod2r.trans hRjmod2.symm
+  have hcong2 : 3 * 5 ^ n * r ≡
+      3 * 5 ^ n * rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight
+      [MOD 2 ^ K2] := Nat.ModEq.add_right_cancel' (3 * B + 2 ^ Δ) hcongFull
+  have h35odd : (3 * 5 ^ n) % 2 = 1 := by
+    rw [Nat.mul_mod]
+    have h5 : (5 ^ n) % 2 = 1 := StringFlow.Lte.five_pow_odd n
+    simp [h5]
+  have hcongR : r ≡ rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight [MOD 2 ^ K2] :=
+    mul_cancel_modEq K2 (3 * 5 ^ n) r
+      (rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight) h35odd hcong2
+  have hcong5 : r ≡ rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight [MOD 5] := by
+    have h1 := hrmod
+    have h2 := rj0_spec_5 j Wp Wj q Aj A_s s W_s r_s L H_s weight
+    exact h1.trans h2.symm
+  have hmodR0 : rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight ≡ r0 [MOD M] := by
+    unfold rj0
+    dsimp [n, Δ, K2, B, u, inv35, num, res2, res5, r0, M, C, B0, R, t]
+    change (r0 + liftToNonneg B0 R C (three_five_pow_mul_pos n K2) * M) % M = r0 % M
+    conv_lhs => rw [Nat.mul_comm (liftToNonneg B0 R C (three_five_pow_mul_pos n K2)) M]
+    rw [Nat.add_mul_mod_self_left r0 M (liftToNonneg B0 R C (three_five_pow_mul_pos n K2))]
+  have hcop : Nat.Coprime (2 ^ K2) 5 :=
+    Nat.Coprime.pow_left K2 (by decide : Nat.Coprime 2 5)
+  have hlcm : Nat.lcm (2 ^ K2) 5 = M := by
+    dsimp [M]
+    exact hcop.lcm_eq_mul
+  have hmodL : r ≡ rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight
+      [MOD Nat.lcm (2 ^ K2) 5] := Nat.mod_lcm hcongR hcong5
+  have hmodM : r ≡ rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight [MOD M] := by
+    simpa [hlcm] using hmodL
+  have hr0 : r ≡ r0 [MOD M] := hmodM.trans hmodR0
+  have hr0lt : r0 < M := by
+    dsimp [r0, M]
+    exact crtRep_lt res2 res5 (2 ^ K2) 5 (crt_coprime_2_5 K2 res2 res5)
+      (ne_of_gt (by positivity : 0 < 2 ^ K2)) (by decide : 5 ≠ 0)
+  have hr0mod : r % M = r0 := by
+    have h := hr0
+    rw [Nat.ModEq] at h
+    have hmod : r0 % M = r0 := Nat.mod_eq_of_lt hr0lt
+    rwa [hmod] at h
+  have hdiv := Nat.div_add_mod r M
+  have hdecomp : r = r0 + (r / M) * M := by
+    calc
+      r = M * (r / M) + r % M := hdiv.symm
+      _ = r0 + (r / M) * M := by
+        rw [hr0mod]
+        ring
+  have hleR : R ≤ 3 * 5 ^ n * r + 3 * B + 2 ^ Δ := by
+    have hle : R ≤ R + m * 2 ^ K2 := by omega
+    nlinarith [heq', hle]
+  have hleR' : R ≤ B0 + C * (r / M) := by
+    have hleR'' : R ≤ 3 * 5 ^ n * (r0 + (r / M) * M) + 3 * B + 2 ^ Δ := by
+      rwa [hdecomp] at hleR
+    dsimp [B0, C]
+    have hring : 3 * 5 ^ n * (r0 + (r / M) * M) + 3 * B + 2 ^ Δ =
+        (3 * 5 ^ n * r0 + 3 * B + 2 ^ Δ) +
+          (3 * 5 ^ n * M) * (r / M) := by ring
+    rw [hring] at hleR''
+    simpa [Nat.add_assoc] using hleR''
+  have ht : liftToNonneg B0 R C (three_five_pow_mul_pos n K2) ≤ r / M :=
+    liftToNonneg_minimal B0 R C (r / M) (three_five_pow_mul_pos n K2) hleR'
+  unfold rj0
+  dsimp [n, Δ, K2, B, u, inv35, num, res2, res5, M, C, B0, R, t]
+  have hsum : r0 + liftToNonneg B0 R C (three_five_pow_mul_pos n K2) * M ≤
+      r0 + (r / M) * M := by
+    exact Nat.add_le_add_left (Nat.mul_le_mul_right M ht) r0
+  change r0 + liftToNonneg B0 R C (three_five_pow_mul_pos n K2) * M ≤ r
+  calc
+    r0 + liftToNonneg B0 R C (three_five_pow_mul_pos n K2) * M ≤
+        r0 + (r / M) * M := hsum
+    _ = r := hdecomp.symm
+
 /--
 `H_ge` is equivalent to the capacity bound `H2 <= j+4`, provided the
 definitional link `W_s - Wp = (s - j + 1) + H2` holds.  The link is the
@@ -626,6 +1044,161 @@ lemma failure_w_congruence (L H_s r_s : Nat) (hH : 2 ≤ H_s)
     exact Nat.ModEq.add_right_cancel' inv h1
   simpa [w, w0] using hw
 
+/-- The terminal failure writes the odd part as
+`w = uResidue L (H_s-1) + k*2^(H_s-1)`. -/
+lemma failure_w_progression (L H_s r_s : Nat) (hH : 2 ≤ H_s)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1) :
+    ∃ k : Nat,
+      wTerminal L r_s = uResidue L (H_s - 1) + k * 2 ^ (H_s - 1) := by
+  let N := 2 ^ (H_s - 1)
+  let w := wTerminal L r_s
+  let w0 := uResidue L (H_s - 1)
+  have hw := failure_w_congruence L H_s r_s hH hL hfail
+  have hw0lt : w0 < N := by
+    dsimp [w0, N]
+    exact uResidue_lt_pow L (H_s - 1)
+  have hwmod : w % N = w0 := by
+    have hmod := hw
+    change w % N = w0 % N at hmod
+    have hw0mod : w0 % N = w0 := Nat.mod_eq_of_lt hw0lt
+    rw [hw0mod] at hmod
+    exact hmod
+  have hdiv := Nat.div_add_mod w N
+  have hk : w = w0 + (w / N) * N := by
+    calc
+      w = N * (w / N) + w % N := hdiv.symm
+      _ = w0 + (w / N) * N := by
+        rw [hwmod]
+        ring
+  refine ⟨w / N, ?_⟩
+  dsimp [w, w0, N]
+  exact hk
+
+/-- The terminal failure puts `r_s` in the document-36.23 arithmetic
+progression: `3*r_s+1 = 2^(L+4)*(uResidue + k*2^(H_s-1))`. -/
+lemma failure_rs_progression
+    (L H_s r_s : Nat) (hH : 2 ≤ H_s)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1) :
+    ∃ k : Nat,
+      3 * r_s + 1 =
+        2 ^ (L + 4) * (uResidue L (H_s - 1) + k * 2 ^ (H_s - 1)) := by
+  rcases failure_w_progression L H_s r_s hH hL hfail with ⟨k, hk⟩
+  have hmul := wTerminal_mul_eq L r_s hL
+  refine ⟨k, ?_⟩
+  rw [hmul, hk]
+
+/-- Under terminal failure, the actual block head `r` satisfies the
+document-36.26 exact equation (with the same `k` from the progression). -/
+lemma failure_rj_satisfies_exact_equation
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hH : 2 ≤ H_s) (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1) :
+    ∃ k : Nat,
+      3 * 5 ^ (s - j) * r + 3 * blockB weight j (s - j) + 2 ^ (W_s - Wj) =
+        2 ^ (W_s - Wj + L + 4) *
+          (uResidue L (H_s - 1) + k * 2 ^ (H_s - 1)) := by
+  rcases failure_rs_progression L H_s r_s hH hL hfail with ⟨k, hprog⟩
+  have htail := block_tail_equation_of_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj
+  let n := s - j
+  let Δ := W_s - Wj
+  let u := uResidue L (H_s - 1)
+  let N := 2 ^ (H_s - 1)
+  have hprog' : 3 * r_s + 1 = 2 ^ (L + 4) * (u + k * N) := by
+    dsimp [u, N]
+    exact hprog
+  have h3r : 3 * r_s = 2 ^ (L + 4) * (u + k * N) - 1 := by
+    have hXpos : 1 ≤ 2 ^ (L + 4) * (u + k * N) := by omega
+    omega
+  have htail3 : 2 ^ Δ * (3 * r_s) =
+      3 * 5 ^ n * r + 3 * blockB weight j n := by
+    dsimp [n, Δ]
+    have hdist3 : 2 ^ Δ * (3 * r_s) = 3 * (2 ^ Δ * r_s) := by ring
+    rw [hdist3]
+    nlinarith [htail]
+  have hsub : 2 ^ Δ * (2 ^ (L + 4) * (u + k * N) - 1) =
+      2 ^ Δ * (2 ^ (L + 4) * (u + k * N)) - 2 ^ Δ := by
+    rw [Nat.mul_sub_left_distrib]
+    simp
+  rw [h3r] at htail3
+  rw [hsub] at htail3
+  have hle : 2 ^ Δ ≤ 2 ^ Δ * (2 ^ (L + 4) * (u + k * N)) := by
+    have hpos : 0 < 2 ^ (L + 4) * (u + k * N) := by omega
+    have h := Nat.le_mul_of_pos_left (2 ^ Δ) hpos
+    simpa [Nat.mul_comm] using h
+  have htarget : 2 ^ Δ * (2 ^ (L + 4) * (u + k * N)) =
+      3 * 5 ^ n * r + 3 * blockB weight j n + 2 ^ Δ := by
+    omega
+  have hpow : 2 ^ Δ * 2 ^ (L + 4) = 2 ^ (Δ + L + 4) := by
+    rw [← Nat.pow_add]
+    rw [show Δ + (L + 4) = Δ + L + 4 by omega]
+  have hA : 2 ^ Δ * (2 ^ (L + 4) * (u + k * N)) =
+      2 ^ (Δ + L + 4) * (u + k * N) := by
+    rw [← Nat.mul_assoc, hpow]
+  rw [hA] at htarget
+  refine ⟨k, ?_⟩
+  simpa [n, Δ, u, N] using htarget.symm
+
+/-- Failure of the terminal inequality bounds the true block head by the
+least nonnegative solution: `rj0 ≤ r`. -/
+theorem rj0_le_of_failure_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : S6Audit.FullOrbitFrom7 r)
+    (hH : 2 ≤ H_s)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1) :
+    rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight ≤ r := by
+  have hrmod := block_head_mod_five_congruence_of_premises j Wp Wj q Aj A_s s W_s r_s
+    L H_s weight r hPrem hrj hReach
+  rcases failure_rj_satisfies_exact_equation j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+    hPrem hrj hH hL hfail with ⟨k, heq⟩
+  exact rj0_le_of_exact_equation j Wp Wj q Aj A_s s W_s r_s L H_s weight r k
+    (by omega) hrmod heq
+
+/-- Under failure, the least solution stays below the block-head bound. -/
+theorem rj0_lt_five_pow_of_failure_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : S6Audit.FullOrbitFrom7 r)
+    (hH : 2 ≤ H_s)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1) :
+    rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight < 5 ^ j := by
+  have hle := rj0_le_of_failure_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+    hPrem hrj hReach hH hL hfail
+  have hrlt : r < 5 ^ j := by
+    simpa [hrj] using hPrem.r_j_lt
+  exact lt_of_le_of_lt hle hrlt
+
+/-- The final valuation inequality follows once `5^j ≤ rj0` is available. -/
+theorem terminal_bound_of_rj0_lower
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : S6Audit.FullOrbitFrom7 r)
+    (hH : 2 ≤ H_s)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hrj0 : 5 ^ j ≤ rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight) :
+    twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) ≤ H_s - 2 := by
+  by_contra hnot
+  have hpos : 0 < 5 ^ (L + 3) * wTerminal L r_s + 1 := by positivity
+  have hlt : H_s - 2 < twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) :=
+    not_le.mp hnot
+  have hge : H_s - 1 ≤ twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) := by
+    omega
+  have hdvd : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1 :=
+    (StringFlow.Lte.twoValuation_ge_iff_dvd_pow
+      (5 ^ (L + 3) * wTerminal L r_s + 1) (H_s - 1) hpos).mp hge
+  have hlt0 := rj0_lt_five_pow_of_failure_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s
+    weight r hPrem hrj hReach hH hL hdvd
+  omega
+
 /-- The terminal failure pins the cleared numerator
 `3*r_s+1` modulo `2^(L+H_s+3)`. -/
 lemma failure_rs_cleared_congruence
@@ -790,6 +1363,36 @@ theorem terminal_bound_iff_yStar_ne_zero (L H_s s r_s : Nat) (hH : 2 ≤ H_s) :
   rw [terminal_bound_iff_not_dvd L H_s r_s hH]
   rw [← yStar_eq_zero_iff_congruence L H_s s r_s hH]
 
+/-- `y*=0` puts `3*r_s+1` in the candidate class modulo
+`2^(L+H_s+3)`. -/
+lemma yStar_zero_implies_rs_candidate_class
+    (L H_s s r_s : Nat) (hH : 2 ≤ H_s)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hy : yStar L H_s s r_s = 0) :
+    3 * r_s + 1 ≡ 2 ^ (L + 4) * uResidue L (H_s - 1)
+      [MOD 2 ^ (L + H_s + 3)] := by
+  have hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1 :=
+    (yStar_eq_zero_iff_congruence L H_s s r_s hH).mp hy
+  exact failure_rs_cleared_congruence L H_s r_s hH hL hfail
+
+/-- Failure of the terminal inequality puts `3*r_s+1` in the same
+candidate class. -/
+lemma terminal_failure_implies_candidate_class
+    (L H_s _s r_s : Nat) (hH : 2 ≤ H_s)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hfail : ¬ twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) ≤ H_s - 2) :
+    3 * r_s + 1 ≡ 2 ^ (L + 4) * uResidue L (H_s - 1)
+      [MOD 2 ^ (L + H_s + 3)] := by
+  have hpos : 0 < 5 ^ (L + 3) * wTerminal L r_s + 1 := by positivity
+  have hlt : H_s - 2 < twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) :=
+    not_le.mp hfail
+  have hge : H_s - 1 ≤ twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) := by
+    omega
+  have hdvd : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1 :=
+    (StringFlow.Lte.twoValuation_ge_iff_dvd_pow
+      (5 ^ (L + 3) * wTerminal L r_s + 1) (H_s - 1) hpos).mp hge
+  exact failure_rs_cleared_congruence L H_s r_s hH hL hdvd
+
 /-- (B1) without `H_ge`: the block tail bound
 `3B + 2^Delta <= 3*5^n - 2*4^n`. -/
 theorem blockB_bound_of_no_hge
@@ -877,9 +1480,12 @@ theorem unified_core_final_no_hge
 | `failure_w_congruence` / `failure_rs_cleared_congruence` | proved | failure fixes `w` to `uResidue L (H_s-1)` and pins `3*r_s+1` modulo `2^(L+H_s+3)` |
 | `three_cancel_modEq` / `failure_rs_unique` | proved | `3` is a unit modulo `2^k`; any two failures give the same `r_s` candidate class |
 | `r_s_dyadic_bounds_of_no_hge` | proved | integer dyadic bounds `5^s*2^Wp ≤ 2^W_s*r_s < 5^s*(2^Wj+1)` |
+| `failure_w_progression` / `failure_rs_progression` | proved | failure writes `w = uResidue + k*2^(H_s-1)` and `3*r_s+1 = 2^(L+4)*(uResidue + k*2^(H_s-1))` |
+| `yStar_zero_implies_rs_candidate_class` / `terminal_failure_implies_candidate_class` | proved | `y*=0` or terminal failure puts `3*r_s+1` in the candidate class modulo `2^(L+H_s+3)` |
 | `q0_unique_of_congruence` / `q0_interval_iff_rj_bound` | proved | congruence uniqueness of `q0` below `2^W_s`, and `[2^Wp,2^Wj)` iff `5^j <= 2^t*r_j` with `r_j < 5^j` |
 | `blockB_bound_of_no_hge` | proved | (B1) does not need `H_ge`; B2 itself is the finite suffix closure already proved in `S6Audit` and is not restated here |
 | `rj0_ge_of_size_conditions_no_hge` | proved | (B1)+(B2)+(B3) imply `rj0 >= 5^j`; this is the sufficient half of item 7 |
+| `rj0_le_of_exact_equation` | proved | the least nonnegative 36.26 solution is no larger than any other solution with the same mod-5 block-head residue; wires `failure_rj_satisfies_exact_equation` into `rj0_le_of_failure_no_hge` |
 | `pow5Inv_correct` | proved | `5^s * pow5Inv s m ≡ 1 (mod 2^m)` |
 | `crtRep_lt` / `crtRep_unique` / `rj0_crt_candidate_unique` | proved | CRT representative is `< n*m` and unique below the product |
 | `rj0_ge_iff_terminal_bound` | missing | the full iff through B2/B3 and the CRT lift; not yet formalized |
