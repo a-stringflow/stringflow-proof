@@ -71,6 +71,21 @@ cd lean
 lake build S6Audit
 ```
 
+## Verification boundary
+
+`lake build` verifies that every formal statement is proved by the
+Lean 4 kernel, but type-checking success does not by itself certify
+that a statement matches an intended mathematical formulation. The
+correspondence between the formal statements and the mathematical
+target is controlled by the simple top-level definition
+(`IsUnboundedOrbit 7`), the exact translation of the accelerated
+5x+1 step, and the audit records in this repository.
+
+Finite base cases are proved by explicit rewriting (`simp`,
+`norm_num`) and do not rely on `native_decide`. The verification
+boundary described here does not affect the definition of the final
+theorem.
+
 ## AI assistance
 
 AI-assisted tools were used during development for drafting Lean code,

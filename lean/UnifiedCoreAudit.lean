@@ -311,6 +311,32 @@ theorem q0_interval_iff_rj_bound
         nlinarith [heq, hqge, hAj]
       nlinarith [hlt, hge]
 
+/-- Integer dyadic bounds for the block tail forced by the `q0`
+interval: `5^s*2^Wp ≤ 2^W_s*r_s < 5^s*(2^Wj+1)`. -/
+theorem r_s_dyadic_bounds_of_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight) :
+    5 ^ s * 2 ^ Wp ≤ 2 ^ W_s * r_s ∧
+      2 ^ W_s * r_s < 5 ^ s * (2 ^ Wj + 1) := by
+  have hdvd : 2 ^ W_s ∣ A_s + 5 ^ s * q :=
+    Nat.dvd_iff_mod_eq_zero.mpr hPrem.r_s_int
+  have heq : 2 ^ W_s * r_s = A_s + 5 ^ s * q := by
+    have hmul : 2 ^ W_s * ((A_s + 5 ^ s * q) / 2 ^ W_s) = A_s + 5 ^ s * q :=
+      Nat.mul_div_cancel' hdvd
+    rw [← hPrem.r_s_eq] at hmul
+    exact hmul
+  constructor
+  · have hqge' : 5 ^ s * 2 ^ Wp ≤ 5 ^ s * q :=
+      Nat.mul_le_mul_left (5 ^ s) hPrem.q_ge
+    have hle : 5 ^ s * 2 ^ Wp ≤ A_s + 5 ^ s * q := by
+      nlinarith [hqge']
+    nlinarith [heq, hle]
+  · have h1 : 5 ^ s * q < 5 ^ s * 2 ^ Wj :=
+      (Nat.mul_lt_mul_left (Nat.pow_pos (by decide : 0 < 5))).2 hPrem.q_lt
+    have hlt : A_s + 5 ^ s * q < 5 ^ s * (2 ^ Wj + 1) := by
+      nlinarith [h1, hPrem.A_s_lt]
+    nlinarith [heq, hlt]
+
 /-- The CRT representative of `S6Audit.crtRep` is below `n*m`. -/
 theorem crtRep_lt (a b n m : Nat) (h : a ≡ b [MOD Nat.gcd n m])
     (hn : n ≠ 0) (hm : m ≠ 0) :
@@ -634,6 +660,53 @@ lemma failure_rs_cleared_congruence
   rw [hmodulus] at hmain
   simpa [v] using hmain
 
+/-- Since `3` is a unit modulo `2^k`, the `+1` can be cancelled from
+`3*a+1 ≡ 3*b+1`. -/
+lemma three_cancel_modEq (k a b : Nat)
+    (h : 3 * a + 1 ≡ 3 * b + 1 [MOD 2 ^ k]) :
+    a ≡ b [MOD 2 ^ k] := by
+  by_cases hk : 1 ≤ k
+  · let M := 2 ^ k
+    have hodd : (3 : Nat) % 2 = 1 := by norm_num
+    have hspec := invOdd_mod_pow_spec 3 k hodd hk
+    have hmod1 : 1 % 2 ^ k = 1 := by
+      exact Nat.mod_eq_of_lt (one_lt_pow' (by decide : 1 < 2) (by omega : k ≠ 0))
+    let inv := StringFlow.Word.invOdd 3 (k - 1) % M
+    have hinv : 3 * inv ≡ 1 [MOD M] := by
+      dsimp [inv, M]
+      rw [Nat.ModEq]
+      simpa [hmod1] using hspec
+    have hcancel1 : 3 * a ≡ 3 * b [MOD M] := Nat.ModEq.add_right_cancel' 1 h
+    have hmul : (3 * a) * inv ≡ (3 * b) * inv [MOD M] := hcancel1.mul_right inv
+    have hleft : (3 * a) * inv ≡ a [MOD M] := by
+      have h' := hinv.mul_left a
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using h'
+    have hright : (3 * b) * inv ≡ b [MOD M] := by
+      have h' := hinv.mul_left b
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using h'
+    simpa [M] using (hleft.symm.trans (hmul.trans hright))
+  · have hmod : a ≡ b [MOD 1] := by
+      rw [Nat.ModEq]
+      simp [Nat.mod_one]
+    have hk0 : k = 0 := by omega
+    subst k
+    exact hmod
+
+/-- Any two terminal failures give the same `r_s` class modulo
+`2^(L+H_s+3)`: the candidate family is a single residue class. -/
+lemma failure_rs_unique
+    (L H_s r_s r_s' : Nat) (hH : 2 ≤ H_s)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hL' : L + 4 = twoValuation (3 * r_s' + 1))
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1)
+    (hfail' : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s' + 1) :
+    r_s ≡ r_s' [MOD 2 ^ (L + H_s + 3)] := by
+  have h1 := failure_rs_cleared_congruence L H_s r_s hH hL hfail
+  have h2 := failure_rs_cleared_congruence L H_s r_s' hH hL' hfail'
+  have h3 : 3 * r_s + 1 ≡ 3 * r_s' + 1 [MOD 2 ^ (L + H_s + 3)] :=
+    h1.trans h2.symm
+  exact three_cancel_modEq (L + H_s + 3) r_s r_s' h3
+
 /-- The `y*` residue of document 36.18, written as the least nonnegative
 representative of `-(w + 5^(-(L+3))) * (3*5^s)^(-1)` modulo `2^(H_s-1)`. -/
 def yStar (L H_s s r_s : Nat) : Nat :=
@@ -800,6 +873,10 @@ theorem unified_core_final_no_hge
 | `unified_core_forms_equivalent` | missing | the bridge between `unified_core_t2` and `unified_core_local` is the unified core itself, not a separately derivable step |
 | `yStar` / `yStar_eq_zero_iff_congruence` / `terminal_bound_iff_yStar_ne_zero` | proved | terminal inequality iff `y* != 0`, i.e. failure congruence absent |
 | `terminal_bound_iff_not_dvd` | proved | valuation bound iff `2^(H_s-1)` does not divide the failure numerator |
+| `wTerminal_mul_eq` / `failure_cleared_iff` | proved | `3*r_s+1=2^(L+4)*w` and the cleared failure congruence modulo `2^(L+H_s+3)` |
+| `failure_w_congruence` / `failure_rs_cleared_congruence` | proved | failure fixes `w` to `uResidue L (H_s-1)` and pins `3*r_s+1` modulo `2^(L+H_s+3)` |
+| `three_cancel_modEq` / `failure_rs_unique` | proved | `3` is a unit modulo `2^k`; any two failures give the same `r_s` candidate class |
+| `r_s_dyadic_bounds_of_no_hge` | proved | integer dyadic bounds `5^s*2^Wp ≤ 2^W_s*r_s < 5^s*(2^Wj+1)` |
 | `q0_unique_of_congruence` / `q0_interval_iff_rj_bound` | proved | congruence uniqueness of `q0` below `2^W_s`, and `[2^Wp,2^Wj)` iff `5^j <= 2^t*r_j` with `r_j < 5^j` |
 | `blockB_bound_of_no_hge` | proved | (B1) does not need `H_ge`; B2 itself is the finite suffix closure already proved in `S6Audit` and is not restated here |
 | `rj0_ge_of_size_conditions_no_hge` | proved | (B1)+(B2)+(B3) imply `rj0 >= 5^j`; this is the sufficient half of item 7 |
