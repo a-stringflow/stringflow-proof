@@ -375,6 +375,129 @@ theorem candidateRj_mod_five (x t : Nat) (ht : t = 1 ∨ t = 2)
       norm_num at hmod'
       exact h4
 
+/-- Converse of `candidateRj_mod_five`: a state with the correct mod-5
+class is the `t`-reset successor of an integer `x`. -/
+lemma candidateRj_of_mod_five (r t : Nat)
+    (ht : t = 1 ∨ t = 2)
+    (hmod : (t = 1 → r % 5 = 3) ∧ (t = 2 → r % 5 = 4)) :
+    ∃ x : Nat, r = candidateRj x t := by
+  rcases ht with ht1 | ht2
+  · subst t
+    have hr5 : r % 5 = 3 := hmod.1 rfl
+    let q := r / 5
+    have hrq : r = 5 * q + 3 := by
+      have hdivmod := (Nat.div_add_mod r 5).symm
+      simpa [q, hr5] using hdivmod
+    have hbase : 2 * r = 10 * q + 6 := by
+      rw [hrq]
+      ring
+    have hdvd : 5 ∣ 2 * r - 1 := by
+      refine ⟨2 * q + 1, ?_⟩
+      have hge : 1 ≤ 2 * r := by
+        rw [hbase]
+        omega
+      rw [hbase]
+      have hsub : 10 * q + 6 - 1 = 10 * q + 5 := by omega
+      rw [hsub]
+      ring
+    let x := (2 * r - 1) / 5
+    have hmul : 2 * r = 5 * x + 1 := by
+      have hx : x = (2 * r - 1) / 5 := rfl
+      have h' : 2 * r - 1 = 5 * x := by
+        rw [hx]
+        exact (Nat.mul_div_cancel' hdvd).symm
+      have hge : 1 ≤ 2 * r := by
+        rw [hbase]
+        omega
+      omega
+    have hdiv2 : (5 * x + 1) % 2 = 0 := by
+      rw [← hmul]
+      rw [Nat.mul_mod, Nat.mod_self]
+      simp
+    refine ⟨x, ?_⟩
+    unfold candidateRj
+    have hdiv2' : 2 ∣ 5 * x + 1 := Nat.dvd_iff_mod_eq_zero.mpr hdiv2
+    have hmul2 : 2 * ((5 * x + 1) / 2) = 5 * x + 1 :=
+      Nat.mul_div_cancel' hdiv2'
+    have hleft : 2 * r = 2 * ((5 * x + 1) / 2) := by rw [hmul, hmul2]
+    exact Nat.eq_of_mul_eq_mul_left (by decide : 0 < 2) hleft
+  · subst t
+    have hr5 : r % 5 = 4 := hmod.2 rfl
+    let q := r / 5
+    have hrq : r = 5 * q + 4 := by
+      have hdivmod := (Nat.div_add_mod r 5).symm
+      simpa [q, hr5] using hdivmod
+    have hbase : 4 * r = 20 * q + 16 := by
+      rw [hrq]
+      ring
+    have hdvd : 5 ∣ 4 * r - 1 := by
+      refine ⟨4 * q + 3, ?_⟩
+      have hge : 1 ≤ 4 * r := by
+        rw [hbase]
+        omega
+      rw [hbase]
+      have hsub : 20 * q + 16 - 1 = 20 * q + 15 := by omega
+      rw [hsub]
+      ring
+    let x := (4 * r - 1) / 5
+    have hmul : 4 * r = 5 * x + 1 := by
+      have hx : x = (4 * r - 1) / 5 := rfl
+      have h' : 4 * r - 1 = 5 * x := by
+        rw [hx]
+        exact (Nat.mul_div_cancel' hdvd).symm
+      have hge : 1 ≤ 4 * r := by
+        rw [hbase]
+        omega
+      omega
+    have hdiv2 : (5 * x + 1) % 4 = 0 := by
+      rw [← hmul]
+      rw [Nat.mul_mod, Nat.mod_self]
+      simp
+    refine ⟨x, ?_⟩
+    unfold candidateRj
+    have hdiv4 : 4 ∣ 5 * x + 1 := Nat.dvd_iff_mod_eq_zero.mpr hdiv2
+    have hmul4 : 4 * ((5 * x + 1) / 4) = 5 * x + 1 :=
+      Nat.mul_div_cancel' hdiv4
+    have hleft : 4 * r = 4 * ((5 * x + 1) / 4) := by rw [hmul, hmul4]
+    have heq : r = (5 * x + 1) / 4 :=
+      Nat.eq_of_mul_eq_mul_left (by decide : 0 < 4) hleft
+    simpa using heq
+
+/-- The no-`H_ge` block-head rigidity plus `FullOrbitFrom7 r` supplies the
+reset weight `t∈{1,2}` and an integer predecessor `x` with
+`r = candidateRj x t`. -/
+theorem reset_predecessor_of_block_head_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : FullOrbitFrom7 r) :
+    ∃ t x : Nat, (t = 1 ∨ t = 2) ∧ r = candidateRj x t := by
+  have hcong := UnifiedCoreAudit.block_head_mod_five_congruence_of_premises
+    j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach
+  rcases hPrem.tj_mem with htj1 | htj2
+  · have ht : Wj - Wp = 1 := by omega
+    have hinv : StringFlow.Lte.invMod5 2 % 5 = 3 := by
+      norm_num [StringFlow.Lte.invMod5]
+    have hc : r ≡ 3 [MOD 5] := by
+      rw [ht] at hcong
+      simpa [hinv] using hcong
+    rw [Nat.ModEq] at hc
+    norm_num at hc
+    rcases candidateRj_of_mod_five r 1 (Or.inl rfl)
+      ⟨fun _ => hc, fun h => by norm_num at h⟩ with ⟨x, hx⟩
+    exact ⟨1, x, Or.inl rfl, hx⟩
+  · have ht : Wj - Wp = 2 := by omega
+    have hinv : StringFlow.Lte.invMod5 4 % 5 = 4 := by
+      norm_num [StringFlow.Lte.invMod5]
+    have hc : r ≡ 4 [MOD 5] := by
+      rw [ht] at hcong
+      simpa [hinv] using hcong
+    rw [Nat.ModEq] at hc
+    norm_num at hc
+    rcases candidateRj_of_mod_five r 2 (Or.inr rfl)
+      ⟨fun h => by norm_num at h, fun _ => hc⟩ with ⟨x, hx⟩
+    exact ⟨2, x, Or.inr rfl, hx⟩
+
 /-- 36.30.23.4 branch table, `e=2`: `candidateX ≡ 2+δ (mod 4)`
 when the full-orbit state `g` is odd. -/
 lemma two_mul_odd_mod4 (g : Nat) (hgodd : g % 2 = 1) : (2 * g) % 4 = 2 := by
