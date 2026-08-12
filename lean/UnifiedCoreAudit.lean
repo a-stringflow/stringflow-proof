@@ -638,6 +638,38 @@ lemma block_tail_equation_of_no_hge
   rw [← hPrem.Wj_def, ← hPrem.Ws_def] at hb
   exact hb
 
+/-- A run of consecutive `t=1` block steps advances `blockState` by the
+`t=1` step equation, with the integrality witness. -/
+lemma block_trailing_ones_step (weight : Nat → Nat) (q k m : Nat)
+    (hsteps : ∀ i < m, weight (k + i + 1) = weight (k + i) + 1)
+    (hvalid : ∀ i ≤ m,
+      (wordMolecule weight (k + i) + 5 ^ (k + i) * q) % 2 ^ weight (k + i) = 0) :
+    ∀ i < m, blockState weight q (k + i + 1) = (5 * blockState weight q (k + i) + 1) / 2 ∧
+      (5 * blockState weight q (k + i) + 1) % 2 = 0 := by
+  intro i hi
+  have hstep := blockState_step weight q (k + i) 1 (hsteps i hi)
+    (hvalid i (by omega)) (hvalid (i + 1) (by omega))
+  have hstep' : (5 * blockState weight q (k + i) + 1) % 2 = 0 ∧
+      (5 * blockState weight q (k + i) + 1) / 2 = blockState weight q (k + i + 1) := by
+    simpa using hstep
+  exact ⟨hstep'.2.symm, hstep'.1⟩
+
+/-- A run of consecutive `t=2` block steps advances `blockState` by the
+`t=2` step equation, with the integrality witness. -/
+lemma block_trailing_twos_step (weight : Nat → Nat) (q k m : Nat)
+    (hsteps : ∀ i < m, weight (k + i + 1) = weight (k + i) + 2)
+    (hvalid : ∀ i ≤ m,
+      (wordMolecule weight (k + i) + 5 ^ (k + i) * q) % 2 ^ weight (k + i) = 0) :
+    ∀ i < m, blockState weight q (k + i + 1) = (5 * blockState weight q (k + i) + 1) / 4 ∧
+      (5 * blockState weight q (k + i) + 1) % 4 = 0 := by
+  intro i hi
+  have hstep := blockState_step weight q (k + i) 2 (hsteps i hi)
+    (hvalid i (by omega)) (hvalid (i + 1) (by omega))
+  have hstep' : (5 * blockState weight q (k + i) + 1) % 4 = 0 ∧
+      (5 * blockState weight q (k + i) + 1) / 4 = blockState weight q (k + i + 1) := by
+    simpa using hstep
+  exact ⟨hstep'.2.symm, hstep'.1⟩
+
 /-- `liftToNonneg` returns the least `t` satisfying the predicate. -/
 lemma liftToNonneg_minimal (B0 R C t : Nat) (hC : 0 < C)
     (h : R ≤ B0 + C * t) :
@@ -2381,6 +2413,7 @@ theorem unified_core_final_no_hge
 | `failure_congruence_lift_w` | proved | 36.29.3 clearing: `2^(H_s-1) | 5^(L+3)w+1` with `w=z/2^(L+3)` lifts to `2^(L+H_s+2) | 5^(L+3)z+2^(L+3)` |
 | `t2_run_wTerminal_mul` / `t2_run_failure_congruence` | proved | 36.29.3: `2^(L+3)wTerminal = 3·5^m·u−1`, and the failure becomes `2^(L+H_s+2) | 5^(L+3)(3·5^m·u−1)+2^(L+3)` |
 | `tail_wTerminal_full` | proved | 36.29.3 full tail: `m1` t=1 strips + `m2` t=2 run give `wTerminal L r_s = 5^m1·(3·5^m2·u−1)/2^(L+m1+3)` |
+| `block_trailing_ones_step` / `block_trailing_twos_step` | proved | a `t=1`/`t=2` run in `weight_step` advances `blockState` by the exact step equation with the divisibility witness |
 | `r_s_mem_orbit25_of_premises_no_hge` / `r_s_eq_229_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` force `r_s∈orbit25` and `r_s=229` |
 | `s_le_9_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` force `s<=9` |
 | `concat_word_eq_path_of_rs229_no_hge` / `bad_*_no_hge` | proved | no-`H_ge` path uniqueness and pseudo-candidate exclusions, used by the finite base |
