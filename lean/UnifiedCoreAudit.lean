@@ -1178,6 +1178,71 @@ lemma t1_strip_iter_wTerminal (r : Nat → Nat) (m L : Nat)
       rw [hsum1, hsum2, Nat.pow_succ]
       ring
 
+/-- 36.29.2 step: one exact `t=2` step satisfies `4*(r'+1)=5*(r+1)`. -/
+lemma t2_step_plus_one_mul (r r' : Nat)
+    (hstep : r' = (5 * r + 1) / 4)
+    (hdiv : (5 * r + 1) % 4 = 0) :
+    4 * (r' + 1) = 5 * (r + 1) := by
+  have hmul : 4 * r' = 5 * r + 1 := by
+    rw [hstep]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  calc
+    4 * (r' + 1) = 4 * r' + 4 := by ring
+    _ = 5 * r + 1 + 4 := by rw [hmul]
+    _ = 5 * (r + 1) := by ring
+
+/-- 36.29.2 iterated: `m` consecutive `t=2` steps multiply `r+1` by
+`5^m/4^m`. -/
+lemma t2_run_mul (r : Nat → Nat) (m : Nat)
+    (hsteps : ∀ i, i < m → r (i + 1) = (5 * r i + 1) / 4 ∧ (5 * r i + 1) % 4 = 0) :
+    4 ^ m * (r m + 1) = 5 ^ m * (r 0 + 1) := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+      have hstep_m : r (m + 1) = (5 * r m + 1) / 4 := (hsteps m (by omega)).1
+      have hdiv_m : (5 * r m + 1) % 4 = 0 := (hsteps m (by omega)).2
+      have hmul_step : 4 * (r (m + 1) + 1) = 5 * (r m + 1) :=
+        t2_step_plus_one_mul (r m) (r (m + 1)) hstep_m hdiv_m
+      have hih := ih (fun i hi => hsteps i (by omega))
+      calc
+        4 ^ (m + 1) * (r (m + 1) + 1)
+            = 4 ^ m * (4 * (r (m + 1) + 1)) := by
+                rw [Nat.pow_succ]
+                ring
+          _ = 4 ^ m * (5 * (r m + 1)) := by rw [hmul_step]
+          _ = 5 * (4 ^ m * (r m + 1)) := by ring
+          _ = 5 * (5 ^ m * (r 0 + 1)) := by rw [hih]
+          _ = 5 ^ (m + 1) * (r 0 + 1) := by
+                rw [Nat.pow_succ]
+                ring
+
+/-- 36.29.2 closed form: with `r_0+1=2^(2m+1)·u`, the `t=2` run end is
+`r_m+1=2·5^m·u`. -/
+lemma t2_run_closed_form (r : Nat → Nat) (m u : Nat)
+    (hsteps : ∀ i, i < m → r (i + 1) = (5 * r i + 1) / 4 ∧ (5 * r i + 1) % 4 = 0)
+    (hstart : r 0 + 1 = 2 ^ (2 * m + 1) * u) :
+    r m + 1 = 2 * 5 ^ m * u := by
+  have hmul := t2_run_mul r m hsteps
+  have hpow4 : 4 ^ m = 2 ^ (2 * m) := by
+    rw [show 4 = 2 ^ 2 by norm_num]
+    rw [← Nat.pow_mul]
+  have hpow1 : 2 ^ (2 * m + 1) = 2 * 2 ^ (2 * m) := by
+    have hsucc : 2 * m + 1 = (2 * m) + 1 := by omega
+    rw [hsucc, Nat.pow_add, Nat.pow_one]
+    ring
+  have hmain : 2 ^ (2 * m) * (r m + 1) = 2 * 5 ^ m * (2 ^ (2 * m) * u) := by
+    calc
+      2 ^ (2 * m) * (r m + 1) = 4 ^ m * (r m + 1) := by rw [hpow4]
+      _ = 5 ^ m * (r 0 + 1) := hmul
+      _ = 5 ^ m * (2 ^ (2 * m + 1) * u) := by rw [hstart]
+      _ = 2 * 5 ^ m * (2 ^ (2 * m) * u) := by
+            rw [hpow1]
+            ring
+  have hpos : 0 < 2 ^ (2 * m) := by positivity
+  apply Nat.eq_of_mul_eq_mul_left hpos
+  rw [hmain]
+  ring
+
 /-- The terminal failure congruence, cleared of the odd-part denominator:
 `2^(H_s-1) | 5^(L+3)*w+1` iff
 `2^(L+H_s+3) | 5^(L+3)*(3*r_s+1)+2^(L+4)`. -/
@@ -2198,6 +2263,7 @@ theorem unified_core_final_no_hge
 | `rj0_ge_of_size_conditions_no_hge` | proved | (B1)+(B2)+(B3) imply `rj0 >= 5^j`; this is the sufficient half of item 7 |
 | `rj0_le_of_exact_equation` | proved | the least nonnegative 36.26 solution is no larger than any other solution with the same mod-5 block-head residue; wires `failure_rj_satisfies_exact_equation` into `rj0_le_of_failure_no_hge` |
 | `t1_strip_twoValuation` / `t1_strip_wTerminal_mul` / `t1_strip_iter_wTerminal` | proved | 36.29.1: one `t=1` strip raises `v2(3r+1)` by one and multiplies `wTerminal` by `5`; `m` strips give `wTerminal L r_m = 5^m · wTerminal (L+m) r_0` |
+| `t2_step_plus_one_mul` / `t2_run_mul` / `t2_run_closed_form` | proved | 36.29.2: `4(r'+1)=5(r+1)`, `4^m(r_m+1)=5^m(r_0+1)`, and `r_0+1=2^(2m+1)u ⇒ r_m+1=2·5^m·u` |
 | `r_s_mem_orbit25_of_premises_no_hge` / `r_s_eq_229_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` force `r_s∈orbit25` and `r_s=229` |
 | `s_le_9_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` force `s<=9` |
 | `concat_word_eq_path_of_rs229_no_hge` / `bad_*_no_hge` | proved | no-`H_ge` path uniqueness and pseudo-candidate exclusions, used by the finite base |
