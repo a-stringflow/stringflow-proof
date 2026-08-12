@@ -1243,13 +1243,13 @@ lemma t2_run_closed_form (r : Nat → Nat) (m u : Nat)
   rw [hmain]
   ring
 
-/-- 36.29.2 conclusion: under the `t=2` run decomposition, the odd part is
-`wTerminal L (r_m) = (3·5^m·u − 1)/2^(L+3)`. -/
-lemma t2_run_wTerminal (r : Nat → Nat) (m L u : Nat)
+/-- 36.29.2 cleared form: under the `t=2` run decomposition,
+`2^(L+3)·wTerminal L (r_m) = 3·5^m·u − 1`. -/
+lemma t2_run_wTerminal_mul (r : Nat → Nat) (m L u : Nat)
     (hsteps : ∀ i, i < m → r (i + 1) = (5 * r i + 1) / 4 ∧ (5 * r i + 1) % 4 = 0)
     (hstart : r 0 + 1 = 2 ^ (2 * m + 1) * u)
     (hL : L + 4 = twoValuation (3 * (r m) + 1)) :
-    wTerminal L (r m) = (3 * 5 ^ m * u - 1) / 2 ^ (L + 3) := by
+    2 ^ (L + 3) * wTerminal L (r m) = 3 * 5 ^ m * u - 1 := by
   have hclose := t2_run_closed_form r m u hsteps hstart
   have hpos : 0 < r m + 1 := by positivity
   have hge : 1 ≤ 2 * 5 ^ m * u := by
@@ -1288,6 +1288,17 @@ lemma t2_run_wTerminal (r : Nat → Nat) (m L u : Nat)
       rw [hpow] at hw2
       simpa [Nat.mul_assoc] using hw2
     exact Nat.eq_of_mul_eq_mul_left (by norm_num : 0 < 2) hw2'
+  exact hw3.symm
+
+/-- 36.29.2 conclusion: under the `t=2` run decomposition, the odd part is
+`wTerminal L (r_m) = (3·5^m·u − 1)/2^(L+3)`. -/
+lemma t2_run_wTerminal (r : Nat → Nat) (m L u : Nat)
+    (hsteps : ∀ i, i < m → r (i + 1) = (5 * r i + 1) / 4 ∧ (5 * r i + 1) % 4 = 0)
+    (hstart : r 0 + 1 = 2 ^ (2 * m + 1) * u)
+    (hL : L + 4 = twoValuation (3 * (r m) + 1)) :
+    wTerminal L (r m) = (3 * 5 ^ m * u - 1) / 2 ^ (L + 3) := by
+  have hz := t2_run_wTerminal_mul r m L u hsteps hstart hL
+  have hw3 : 3 * 5 ^ m * u - 1 = 2 ^ (L + 3) * wTerminal L (r m) := hz.symm
   have hdvd : 2 ^ (L + 3) ∣ 3 * 5 ^ m * u - 1 := ⟨wTerminal L (r m), hw3⟩
   have hcancel : (3 * 5 ^ m * u - 1) / 2 ^ (L + 3) = wTerminal L (r m) := by
     rw [hw3]
@@ -1315,6 +1326,19 @@ lemma failure_congruence_lift_w
       _ = 2 ^ (L + 3) * (2 ^ (H_s - 1) * k) := by rw [hk]
       _ = 2 ^ (L + H_s + 2) * k := by
             rw [← Nat.mul_assoc, hpow]
+
+/-- 36.29.3: the failure congruence for the `t=2` run end, written as a
+single 2-adic congruence on `u`. -/
+lemma t2_run_failure_congruence
+    (r : Nat → Nat) (m L H_s u : Nat)
+    (hsteps : ∀ i, i < m → r (i + 1) = (5 * r i + 1) / 4 ∧ (5 * r i + 1) % 4 = 0)
+    (hstart : r 0 + 1 = 2 ^ (2 * m + 1) * u)
+    (hL : L + 4 = twoValuation (3 * (r m) + 1))
+    (hH : 2 ≤ H_s)
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L (r m) + 1) :
+    2 ^ (L + H_s + 2) ∣ 5 ^ (L + 3) * (3 * 5 ^ m * u - 1) + 2 ^ (L + 3) := by
+  have hz := t2_run_wTerminal_mul r m L u hsteps hstart hL
+  exact failure_congruence_lift_w L H_s (3 * 5 ^ m * u - 1) (wTerminal L (r m)) hH hz hfail
 
 /-- The terminal failure congruence, cleared of the odd-part denominator:
 `2^(H_s-1) | 5^(L+3)*w+1` iff
@@ -2339,6 +2363,7 @@ theorem unified_core_final_no_hge
 | `t2_step_plus_one_mul` / `t2_run_mul` / `t2_run_closed_form` | proved | 36.29.2: `4(r'+1)=5(r+1)`, `4^m(r_m+1)=5^m(r_0+1)`, and `r_0+1=2^(2m+1)u ⇒ r_m+1=2·5^m·u` |
 | `t2_run_wTerminal` | proved | 36.29.2 conclusion: under the `t=2` run decomposition, `wTerminal L (r_m) = (3·5^m·u−1)/2^(L+3)` |
 | `failure_congruence_lift_w` | proved | 36.29.3 clearing: `2^(H_s-1) | 5^(L+3)w+1` with `w=z/2^(L+3)` lifts to `2^(L+H_s+2) | 5^(L+3)z+2^(L+3)` |
+| `t2_run_wTerminal_mul` / `t2_run_failure_congruence` | proved | 36.29.3: `2^(L+3)wTerminal = 3·5^m·u−1`, and the failure becomes `2^(L+H_s+2) | 5^(L+3)(3·5^m·u−1)+2^(L+3)` |
 | `r_s_mem_orbit25_of_premises_no_hge` / `r_s_eq_229_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` force `r_s∈orbit25` and `r_s=229` |
 | `s_le_9_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` force `s<=9` |
 | `concat_word_eq_path_of_rs229_no_hge` / `bad_*_no_hge` | proved | no-`H_ge` path uniqueness and pseudo-candidate exclusions, used by the finite base |
