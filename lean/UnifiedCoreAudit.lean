@@ -2069,7 +2069,10 @@ theorem unified_core_final_no_hge
     (hReach : S6Audit.FullOrbitFrom7 r)
     (hH : 2 ≤ H_s) :
     twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) ≤ H_s - 2 := by
-  sorry
+  rcases hReach with ⟨n, hn⟩
+  by_cases hn15 : n ≤ 15
+  · exact unified_core_final_no_hge_le15 j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj ⟨n, hn⟩ hH ⟨n, hn, hn15⟩
+  · sorry
 
 /-!
 # Status table
@@ -2103,7 +2106,7 @@ theorem unified_core_final_no_hge
 | `pow5Inv_correct` | proved | `5^s * pow5Inv s m ≡ 1 (mod 2^m)` |
 | `crtRep_lt` / `crtRep_unique` / `rj0_crt_candidate_unique` | proved | CRT representative is `< n*m` and unique below the product |
 | `rj0_ge_iff_terminal_bound` | missing | the full iff through B2/B3 and the CRT lift; not yet formalized |
-| `unified_core_final_no_hge` | **open** | the unique final core: no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + `2 <= H_s`; marked with `by sorry` |
+| `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch (1a/1b candidate parameterization + d-exclusions) |
 | `FinitePrefix.fullOrbit_first_t_ge3_is_exactly_3` | proved | `lean/FinitePrefix.lean`: explicit 17-state expansion by `simp [StringFlow.twoValuation_succ]`, zero `native_decide`; closes 36.30.23 at math level |
 | `UnifiedCoreBridge` | encoded | `lean/UnifiedCoreBridge.lean`: `candidateX`, `candidateRj`, `orbitState`, `orbitStepWeight`; step 1 of the assembly plan |
 | `UnifiedCoreBridge.fullOrbitStep_mul_eq` | proved | exact `2^t * fullOrbitStep x = 5*x+1`; used by the full-orbit rigidity lemmas |
