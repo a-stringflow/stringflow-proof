@@ -1079,6 +1079,56 @@ lemma wTerminal_mul_eq (L r_s : Nat)
   rw [hq]
   exact hdec'
 
+/-- 36.29.1: stripping one trailing `t=1` step multiplies the odd part
+`wTerminal` by `5` and increments `L`. -/
+lemma t1_strip_wTerminal_mul (r r' L : Nat)
+    (hstep : r' = (5 * r + 1) / 2)
+    (hdiv : (5 * r + 1) % 2 = 0)
+    (hL : L + 4 = twoValuation (3 * r' + 1)) :
+    wTerminal L r' = 5 * wTerminal (L + 1) r := by
+  have hmul : 2 * r' = 5 * r + 1 := by
+    rw [hstep]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have h2z : 2 * (3 * r' + 1) = 5 * (3 * r + 1) := by
+    calc
+      2 * (3 * r' + 1) = 6 * r' + 2 := by ring
+      _ = 3 * (2 * r') + 2 := by ring
+      _ = 3 * (5 * r + 1) + 2 := by rw [hmul]
+      _ = 5 * (3 * r + 1) := by ring
+  have hpos : 0 < 3 * r + 1 := by positivity
+  have hval : L + 5 = twoValuation (3 * r + 1) := by
+    have hleftv : twoValuation (2 * (3 * r' + 1)) = twoValuation (3 * r' + 1) + 1 := by
+      exact StringFlow.twoValuation_mul_two (3 * r' + 1) (by positivity)
+    have hrightv : twoValuation (5 * (3 * r + 1)) = twoValuation (3 * r + 1) := by
+      exact StringFlow.Lte.twoValuation_mul_odd 5 (3 * r + 1) (by norm_num) hpos
+    have heqv : twoValuation (2 * (3 * r' + 1)) = twoValuation (5 * (3 * r + 1)) := by
+      rw [h2z]
+    rw [hleftv, hrightv] at heqv
+    rw [← hL] at heqv
+    omega
+  have hw' : 3 * r' + 1 = 2 ^ (L + 4) * wTerminal L r' := wTerminal_mul_eq L r' hL
+  have hw : 3 * r + 1 = 2 ^ (L + 5) * wTerminal (L + 1) r := wTerminal_mul_eq (L + 1) r hval
+  have hmain : 2 * (2 ^ (L + 4) * wTerminal L r') =
+      5 * (2 ^ (L + 5) * wTerminal (L + 1) r) := by
+    rw [← hw', ← hw, h2z]
+  have hpow : 2 * 2 ^ (L + 4) = 2 ^ (L + 5) := by
+    rw [show L + 5 = (L + 4) + 1 by omega]
+    rw [Nat.pow_add]
+    ring_nf
+  have hmain' : 2 ^ (L + 5) * wTerminal L r' =
+      5 * (2 ^ (L + 5) * wTerminal (L + 1) r) := by
+    calc
+      2 ^ (L + 5) * wTerminal L r' = 2 * (2 ^ (L + 4) * wTerminal L r') := by
+        rw [← hpow]
+        ring
+      _ = 5 * (2 ^ (L + 5) * wTerminal (L + 1) r) := hmain
+  have hcancel : wTerminal L r' = 5 * wTerminal (L + 1) r := by
+    have hpos2 : 0 < 2 ^ (L + 5) := by positivity
+    apply Nat.eq_of_mul_eq_mul_left hpos2
+    rw [hmain']
+    ring
+  exact hcancel
+
 /-- The terminal failure congruence, cleared of the odd-part denominator:
 `2^(H_s-1) | 5^(L+3)*w+1` iff
 `2^(L+H_s+3) | 5^(L+3)*(3*r_s+1)+2^(L+4)`. -/
