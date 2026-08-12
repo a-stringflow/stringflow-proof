@@ -2138,6 +2138,7 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.candidateX_mod4_of_e2/e_ge3` | proved | 36.30.23.4 branch table: `e=2⇒x≡2+δ (mod 4)`, `e≥3⇒x≡δ (mod 4)` |
 | `UnifiedCoreBridge.orbitSegmentWord_*` | proved | exact segment word `2^W·x=5^d·g+A` for consecutive full-orbit steps |
 | `UnifiedCoreBridge.d1_segment_equation/d2_segment_equation` | proved | exact `d=1`/`d=2` candidate segment equations from the actual orbit |
+| `UnifiedCoreBridge.candidate_d1_input` | proved | converse of `d1_segment_equation`: a single `1+4a` orbit step from `g` to `x` makes `fullOrbitIter j = candidateX` |
 | `UnifiedCoreBridge.d1_exclusion_of_orbit/d2_exclusion_of_orbit` | proved | orbit-data wrappers that invoke `d1_exclusion`/`d2_exclusion` |
 | directed legal-word check (length <= 20) | evidence, not proof | 130,322 legal fixed-`q` blocks satisfy the no-`H_ge` premises with `2 <= H_s`; 0 violate the final inequality; 3 have real-orbit heads |
 
