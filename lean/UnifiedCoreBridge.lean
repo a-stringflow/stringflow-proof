@@ -219,6 +219,67 @@ theorem block_head_identity_of_reset
     rw [hres2]
   exact hcomb.symm.trans htarget
 
+/-- Converse of `block_head_identity_of_reset`: the exact 36.30.8.2
+identity `A_j + 5^j*q = 2^Wp*(5^(k+1)*s0 - 4 + δ*5^j)` is equivalent to
+the reset equation for a block head with reset weight `t`. -/
+theorem reset_head_eq_of_block_head_identity
+    (j Wp Wj q Aj rj s0 k t δ : Nat)
+    (hs0 : 0 < s0)
+    (hW : Wj = Wp + t)
+    (ht : t = 1 ∨ t = 2)
+    (hδ : (t = 1 → δ = 1) ∧ (t = 2 → δ = 1 ∨ δ = 3))
+    (hrj : rj = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hdiv : (Aj + 5 ^ j * q) % 2 ^ Wj = 0)
+    (hident : Aj + 5 ^ j * q = 2 ^ Wp * (5 ^ (k + 1) * s0 - 4 + δ * 5 ^ j)) :
+    ResetHeadEq s0 j k t δ rj := by
+  have hmul : 2 ^ Wj * rj = Aj + 5 ^ j * q := by
+    rw [hrj]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have hpow : 2 ^ Wj = 2 ^ Wp * 2 ^ t := by
+    rw [hW, Nat.pow_add]
+  have hmain : 2 ^ Wp * (2 ^ t * rj) = 2 ^ Wp * (5 ^ (k + 1) * s0 - 4 + δ * 5 ^ j) := by
+    calc
+      2 ^ Wp * (2 ^ t * rj) = 2 ^ Wj * rj := by
+        rw [hpow]
+        ring
+      _ = Aj + 5 ^ j * q := hmul
+      _ = 2 ^ Wp * (5 ^ (k + 1) * s0 - 4 + δ * 5 ^ j) := hident
+  have hcore : 2 ^ t * rj = 5 ^ (k + 1) * s0 - 4 + δ * 5 ^ j := by
+    exact Nat.eq_of_mul_eq_mul_left (Nat.pow_pos (by decide : 0 < 2) : 0 < 2 ^ Wp) hmain
+  rcases ht with ht1 | ht2
+  · subst t
+    have hδ1 : δ = 1 := hδ.1 rfl
+    subst δ
+    left
+    refine ⟨rfl, rfl, ?_⟩
+    have hXge : 4 ≤ 5 ^ (k + 1) * s0 := by
+      have h5 : 5 ≤ 5 ^ (k + 1) := by
+        have hk : 1 ≤ k + 1 := by omega
+        simpa using (Nat.pow_le_pow_right (by decide : 0 < 5) hk)
+      nlinarith
+    have hcore' : 2 * rj = 5 ^ (k + 1) * s0 + 5 ^ j - 4 := by
+      norm_num at hcore ⊢
+      rw [← Nat.sub_add_comm hXge] at hcore
+      omega
+    have hge : 4 ≤ 5 ^ (k + 1) * s0 + 5 ^ j := by
+      omega
+    omega
+  · subst t
+    right
+    refine ⟨rfl, hδ.2 rfl, ?_⟩
+    have hXge : 4 ≤ 5 ^ (k + 1) * s0 := by
+      have h5 : 5 ≤ 5 ^ (k + 1) := by
+        have hk : 1 ≤ k + 1 := by omega
+        simpa using (Nat.pow_le_pow_right (by decide : 0 < 5) hk)
+      nlinarith
+    have hcore' : 4 * rj = 5 ^ (k + 1) * s0 + δ * 5 ^ j - 4 := by
+      norm_num at hcore ⊢
+      rw [← Nat.sub_add_comm hXge] at hcore
+      omega
+    have hge : 4 ≤ 5 ^ (k + 1) * s0 + δ * 5 ^ j := by
+      omega
+    omega
+
 /-- The exact full-orbit step rewrites as `2^t * fullOrbitStep x = 5*x+1`. -/
 lemma fullOrbitStep_mul_eq (x : Nat) :
     2 ^ twoValuation (5 * x + 1) * fullOrbitStep x = 5 * x + 1 := by
