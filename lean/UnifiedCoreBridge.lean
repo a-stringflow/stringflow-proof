@@ -1181,6 +1181,37 @@ lemma d1_segment_equation
   rw [hw, hA] at hgen
   exact hgen.symm
 
+/-- Converse of `d1_segment_equation`: a single full-orbit step of weight
+`1+4a` from `g` to `x` makes `x` the depth-`j` candidate state. -/
+theorem candidate_d1_input
+    (j e g δ a x : Nat)
+    (hj : 1 ≤ j)
+    (hg : fullOrbitIter (j - 1) = g)
+    (hxeq : x = candidateX j e g δ)
+    (hstep : orbitStepWeight (j - 1) = 1 + 4 * a)
+    (hseg : 5 * g + 1 = 2 ^ (1 + 4 * a) * x) :
+    fullOrbitIter j = candidateX j e g δ := by
+  have hji : j - 1 + 1 = j := by omega
+  have hfj0 : fullOrbitIter (j - 1 + 1) = fullOrbitStep (fullOrbitIter (j - 1)) := by
+    rw [show j - 1 + 1 = Nat.succ (j - 1) by omega]
+    simp [fullOrbitIter]
+  have hfj1 : fullOrbitStep (fullOrbitIter (j - 1)) =
+      (5 * g + 1) / 2 ^ orbitStepWeight (j - 1) := by
+    rw [hg]
+    simp [fullOrbitStep]
+    simp [orbitStepWeight, hg]
+  have hstep_idx : fullOrbitIter j = fullOrbitStep (fullOrbitIter (j - 1)) := by
+    rw [← hji]
+    exact hfj0
+  have hfj : fullOrbitIter j = (5 * g + 1) / 2 ^ orbitStepWeight (j - 1) := by
+    rw [hstep_idx, hfj1]
+  rw [hstep, hseg] at hfj
+  have hcancel : (2 ^ (1 + 4 * a) * x) / 2 ^ (1 + 4 * a) = x :=
+    Nat.mul_div_right x (Nat.pow_pos (by decide : 0 < 2))
+  rw [hcancel] at hfj
+  rw [hxeq] at hfj
+  exact hfj
+
 /-- `d=2` bridge: with `a=0` (so the second segment step has weight
 `1`), the exact segment equation is the `hseg` input of
 `d2_exclusion`. -/
