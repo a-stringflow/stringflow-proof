@@ -63,6 +63,64 @@ lemma no_t2_step_at_depth_16_17 (n_a : Nat)
     have h17w : 3 ≤ orbitStepWeight 17 := orbitStepWeight_17_ge_three
     omega
 
+/-- From `2*q ≡ 1 (mod 5)`, the inverse `2^{-1} ≡ 3 (mod 5)` forces
+`q ≡ 3 (mod 5)`. -/
+lemma mod5_cancel_two (q : Nat) (h : (2 * q) % 5 = 1) : q % 5 = 3 := by
+  have hmod : 2 * q ≡ 1 [MOD 5] := by rw [Nat.ModEq]; exact h
+  have h6 : 6 ≡ 1 [MOD 5] := by norm_num [Nat.ModEq]
+  have hq3 : q ≡ 3 [MOD 5] := by
+    have h1 := hmod.mul_right 3
+    have hleft : (2 * q) * 3 ≡ q [MOD 5] := by
+      rw [show (2 * q) * 3 = q * 6 by ring]
+      simpa using h6.mul_left q
+    exact hleft.symm.trans h1
+  rw [Nat.ModEq] at hq3
+  norm_num at hq3
+  exact hq3
+
+/-- From `4*q ≡ 1 (mod 5)`, the inverse `4^{-1} ≡ 4 (mod 5)` forces
+`q ≡ 4 (mod 5)`. -/
+lemma mod5_cancel_four (q : Nat) (h : (4 * q) % 5 = 1) : q % 5 = 4 := by
+  have hmod : 4 * q ≡ 1 [MOD 5] := by rw [Nat.ModEq]; exact h
+  have h16 : 16 ≡ 1 [MOD 5] := by norm_num [Nat.ModEq]
+  have hq4 : q ≡ 4 [MOD 5] := by
+    have h1 := hmod.mul_right 4
+    have hleft : (4 * q) * 4 ≡ q [MOD 5] := by
+      rw [show (4 * q) * 4 = q * 16 by ring]
+      simpa using h16.mul_left q
+    exact hleft.symm.trans h1
+  rw [Nat.ModEq] at hq4
+  norm_num at hq4
+  exact hq4
+
+/-- A legal `t=1` or `t=2` step always lands in `3` or `4` modulo `5`,
+since `2^-1 ≡ 3` and `2^-2 ≡ 4` modulo `5`. -/
+lemma legal_step_next_mod5 (x t : Nat) (ht : t = 1 ∨ t = 2)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    ((5 * x + 1) / 2 ^ t) % 5 = 3 ∨ ((5 * x + 1) / 2 ^ t) % 5 = 4 := by
+  have hmod1 : (5 * x + 1) % 5 = 1 := by
+    rw [Nat.add_mod, Nat.mul_mod]
+    norm_num
+  rcases ht with rfl | rfl
+  · have hdvd : 2 ∣ 5 * x + 1 := by
+      simpa [Nat.pow_one] using Nat.dvd_iff_mod_eq_zero.mpr hdiv
+    have hmul : 2 * ((5 * x + 1) / 2) = 5 * x + 1 := Nat.mul_div_cancel' hdvd
+    have hq2 : (2 * ((5 * x + 1) / 2)) % 5 = 1 := by
+      rw [hmul]
+      exact hmod1
+    have hq : ((5 * x + 1) / 2) % 5 = 3 := mod5_cancel_two ((5 * x + 1) / 2) hq2
+    left
+    exact hq
+  · have hdvd : 2 ^ 2 ∣ 5 * x + 1 := by
+      simpa [Nat.pow_two] using Nat.dvd_iff_mod_eq_zero.mpr hdiv
+    have hmul : 4 * ((5 * x + 1) / 4) = 5 * x + 1 := Nat.mul_div_cancel' hdvd
+    have hq4 : (4 * ((5 * x + 1) / 4)) % 5 = 1 := by
+      rw [hmul]
+      exact hmod1
+    have hq : ((5 * x + 1) / 4) % 5 = 4 := mod5_cancel_four ((5 * x + 1) / 4) hq4
+    right
+    exact hq
+
 /-- 36.30.9.1: from the reset equation and `rj=(5x+1)/2^t`, the full
 predecessor is `x = 5^k*s0 + δ*5^(j-1) - 1`. -/
 theorem reset_head_predecessor (s0 j k t δ rj x : Nat)
@@ -2185,6 +2243,74 @@ lemma blockState_step_exact_of_premises_fullOrbit
     rw [hv]
     omega
 
+/-- Every block state after a legal step is `3` or `4` modulo `5`. -/
+lemma blockState_next_mod5_of_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s k : Nat) (weight : Nat → Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hk : k < s) :
+    (blockState weight q (k + 1)) % 5 = 3 ∨ (blockState weight q (k + 1)) % 5 = 4 := by
+  rcases hPrem.weight_step k hk with ht1 | ht2
+  · have hstep := blockState_step weight q k 1 ht1
+      (hPrem.valid_prefix k (by omega))
+      (hPrem.valid_prefix (k + 1) (by omega))
+    have hmod := legal_step_next_mod5 (blockState weight q k) 1 (Or.inl rfl) hstep.1
+    rw [hstep.2] at hmod
+    exact hmod
+  · have hstep := blockState_step weight q k 2 ht2
+      (hPrem.valid_prefix k (by omega))
+      (hPrem.valid_prefix (k + 1) (by omega))
+    have hmod := legal_step_next_mod5 (blockState weight q k) 2 (Or.inr rfl) hstep.1
+    rw [hstep.2] at hmod
+    exact hmod
+
+/-- Every block state from a full-orbit block head to the tail is `3` or
+`4` modulo `5`: the head is a reset head, and each legal `t∈{1,2}` step
+preserves membership in `{3,4}` modulo `5`. -/
+lemma blockState_mod5_of_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : FullOrbitFrom7 r)
+    (k : Nat) (hjk : j ≤ k) (hks : k ≤ s) :
+    (blockState weight q k) % 5 = 3 ∨ (blockState weight q k) % 5 = 4 := by
+  have hbsj : blockState weight q j = r := by
+    dsimp [blockState]
+    rw [← hPrem.Aj_mol, ← hPrem.Wj_def, ← hrj]
+  have hhead : r % 5 = 3 ∨ r % 5 = 4 := by
+    have hcong := UnifiedCoreAudit.block_head_mod_five_congruence_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s
+      weight r hPrem hrj hReach
+    rcases hPrem.tj_mem with ht1 | ht2
+    · have ht : Wj - Wp = 1 := by omega
+      have hc : r % 5 = 3 := by
+        rw [ht] at hcong
+        rw [Nat.ModEq] at hcong
+        norm_num [StringFlow.Lte.invMod5] at hcong
+        exact hcong
+      exact Or.inl hc
+    · have ht : Wj - Wp = 2 := by omega
+      have hc : r % 5 = 4 := by
+        rw [ht] at hcong
+        rw [Nat.ModEq] at hcong
+        norm_num [StringFlow.Lte.invMod5] at hcong
+        exact hcong
+      exact Or.inr hc
+  induction k with
+  | zero =>
+      have hjpos : 1 ≤ j := hPrem.j_pos
+      exfalso
+      omega
+  | succ k ih =>
+      by_cases hklt : k < j
+      · have hkj : k + 1 = j := by omega
+        have h' : blockState weight q (k + 1) = r := by
+          rw [hkj]
+          exact hbsj
+        rw [h']
+        exact hhead
+      · have hprev := ih (by omega) (by omega)
+        exact blockState_next_mod5_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s k
+          weight hPrem (by omega)
+
 /-- Word-segment continuity: if the block head `r` is a full-orbit state at
 depth `n0`, then every block prefix of length `n` equals the corresponding
 full-orbit suffix word, and its endpoint is the full-orbit iterate. -/
@@ -2439,6 +2565,7 @@ lemma tail_failure_m2_pos_audit
     ∃ r2 u w n0 : Nat,
       r2 + 1 = 2 ^ (2 * m2 + 1) * u ∧
       fullOrbitIter n0 = r2 ∧
+      r2 = blockState weight q (j + (n - m1 - m2)) ∧
       ((m2 % 2 = 0 ∧ u % 8 = 3) ∨ (m2 % 2 = 1 ∧ u % 8 = 7)) ∧
       3 * 5 ^ m2 * u - 1 = 2 ^ ((L + m1) + 3) * w ∧
       w % 2 = 1 ∧
@@ -2476,7 +2603,47 @@ lemma tail_failure_m2_pos_audit
     · right
       have hpar1 : m2 % 2 = 1 := by omega
       exact ⟨hpar1, tail_failure_m2_odd_u_mod8 m1 m2 L H_s u w hpar1 hupos hcong⟩
-  exact ⟨blockState weight q a, u, w, n0, hstart', hiter, hres, hcong, hwodd, hdiv⟩
+  exact ⟨blockState weight q a, u, w, n0, hstart', hiter, rfl, hres, hcong, hwodd, hdiv⟩
+
+/-- Full `m2>0` audit with the modulo-5 word rigidity: the run start
+`r_a` is also `3` or `4` modulo `5`. -/
+lemma tail_failure_m2_pos_audit_mod5
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : FullOrbitFrom7 r)
+    (hn : n = s - j)
+    (hm : (m1, m2) = UnifiedCoreAudit.tailSplit (blockWord weight j n))
+    (hm2 : 1 ≤ m2)
+    (hH : 2 ≤ H_s)
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * UnifiedCoreAudit.wTerminal L r_s + 1) :
+    ∃ r2 u w n0 : Nat,
+      r2 + 1 = 2 ^ (2 * m2 + 1) * u ∧
+      fullOrbitIter n0 = r2 ∧
+      (r2 % 5 = 3 ∨ r2 % 5 = 4) ∧
+      ((m2 % 2 = 0 ∧ u % 8 = 3) ∨ (m2 % 2 = 1 ∧ u % 8 = 7)) ∧
+      3 * 5 ^ m2 * u - 1 = 2 ^ ((L + m1) + 3) * w ∧
+      w % 2 = 1 ∧
+      2 ^ (H_s - 1) ∣ 5 ^ ((L + m1) + 3) * w + 1 := by
+  rcases tail_failure_m2_pos_audit j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 weight r
+    hPrem hrj hReach hn hm hm2 hH hfail with
+    ⟨r2, u, w, n0, hstart, hiter, hr2, hres, hcong, hwodd, hdiv⟩
+  let a := j + (n - m1 - m2)
+  have hja : j ≤ a := by dsimp [a]; omega
+  have has : a ≤ s := by
+    dsimp [a]
+    have hsum := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum
+    rw [hlen] at hsum
+    have hn' : n = s - j := hn
+    omega
+  have hmod5 : (blockState weight q a) % 5 = 3 ∨ (blockState weight q a) % 5 = 4 :=
+    blockState_mod5_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach a hja has
+  have hmod5' : r2 % 5 = 3 ∨ r2 % 5 = 4 := by
+    rw [hr2]
+    exact hmod5
+  exact ⟨r2, u, w, n0, hstart, hiter, hmod5', hres, hcong, hwodd, hdiv⟩
 
 /-- In the `m2>0` tail, the first `t=2` step is an exact full-orbit step:
 the run start `r_a` has full-orbit depth `n_a` with `orbitStepWeight n_a = 2`. -/

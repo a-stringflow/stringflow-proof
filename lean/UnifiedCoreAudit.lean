@@ -3513,6 +3513,10 @@ theorem unified_core_final_no_hge
 | `FinitePrefix.fullOrbitIter_prefix_expand_18` / `fullOrbit_prefix_step_weights_17` | proved | finite base extends to depths 17/18: `t_16=1`, `t_17=4` |
 | `UnifiedCoreBridge.no_t2_step_at_depth_16_17` | proved | no exact `t=2` step at depths 16 or 17; hence the `m2>0` run cannot start at those depths |
 | `UnifiedCoreBridge.m2_pos_tail_start_ge_18` | proved | in the n≥16 branch, the `m2>0` run start is at full-orbit depth at least 18: exact suffix gives `n_a≥16`, finite base excludes `n_a∈{16,17}` |
+| `UnifiedCoreBridge.mod5_cancel_two/mod5_cancel_four` | proved | modular-inverse cancellation: `2q≡1 (mod5)` forces `q≡3`, `4q≡1 (mod5)` forces `q≡4` |
+| `UnifiedCoreBridge.legal_step_next_mod5` | proved | a legal `t∈{1,2}` step always lands in `{3,4}` modulo `5` |
+| `UnifiedCoreBridge.blockState_next_mod5_of_premises` / `blockState_mod5_of_premises` | proved | every block state from a full-orbit block head to the tail is `3` or `4` modulo `5`; new word-rigidity constraint for the m2>0 audit |
+| `UnifiedCoreBridge.tail_failure_m2_pos_audit_mod5` | proved | combined `m2>0` audit: `r_a` is full-orbit, `r_a%5∈{3,4}`, `u mod 8` fixed by `m2` parity, and the high 2-adic window holds |
 | directed legal-word check (length <= 20) | evidence, not proof | 130,322 legal fixed-`q` blocks satisfy the no-`H_ge` premises with `2 <= H_s`; 0 violate the final inequality; 3 have real-orbit heads |
 
 Minimum failing premises found so far:

@@ -102,6 +102,23 @@ namespace S6Audit
 -- Axioms used by the depth-`≥18` run-start constraint.
 #print axioms m2_pos_tail_start_ge_18
 
+-- Statement check: modulo-5 rigidity of all block states.
+#check mod5_cancel_two
+#check mod5_cancel_four
+#check legal_step_next_mod5
+#check blockState_next_mod5_of_premises
+#check blockState_mod5_of_premises
+
+-- Axioms used by the modulo-5 block rigidity lemmas.
+#print axioms legal_step_next_mod5
+#print axioms blockState_mod5_of_premises
+
+-- Statement check: full `m2>0` audit with modulo-5 rigidity.
+#check tail_failure_m2_pos_audit_mod5
+
+-- Axioms used by the combined `m2>0` audit.
+#print axioms tail_failure_m2_pos_audit_mod5
+
 end S6Audit
 
 namespace StringFlow
