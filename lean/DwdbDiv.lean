@@ -18,13 +18,16 @@ import UnifiedCoreAudit
 
 namespace StringFlow.DwdbDiv
 
-/-- 统一核心闭合接口：所有 36.20 参数实例均成立。 -/
+/-- 统一核心闭合接口：所有 36.20 参数实例均成立。修正：显式携带
+块首重置前提 `∃ s0 k t δ, ResetHeadEq s0 j k t δ r`，它对应文档
+36.20 中“j 是上一偶数终端后的重置步”这一条。 -/
 def unifiedCoreClosed : Prop :=
   ∀ (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat),
     ∀ (_hPrem : UnifiedCoreAudit.All36_20PremisesNoHge
           j Wp Wj q Aj A_s s W_s r_s L H_s weight)
       (_hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
       (_hReach : S6Audit.FullOrbitFrom7 r)
+      (_hReset : ∃ s0 k t δ : Nat, S6Audit.ResetHeadEq s0 j k t δ r)
       (_hH : 2 ≤ H_s),
       S6Audit.twoValuation
         (5 ^ (L + 3) * UnifiedCoreAudit.wTerminal L r_s + 1) ≤ H_s - 2

@@ -3350,6 +3350,7 @@ theorem unified_core_final_no_hge_le15
     (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
     (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
     (hReach : S6Audit.FullOrbitFrom7 r)
+    (_hReset : ∃ s0 k t δ : Nat, S6Audit.ResetHeadEq s0 j k t δ r)
     (hH : 2 ≤ H_s)
     (hshort : ∃ n : Nat, S6Audit.fullOrbitIter n = r ∧ n ≤ 15) :
     twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) ≤ H_s - 2 := by
@@ -3370,6 +3371,9 @@ under `All36_20PremisesNoHge` (no `H_ge` input) and with the explicit
 block-head reachability `FullOrbitFrom7 r`, where
 `r = (Aj + 5^j*q)/2^Wj`.  `FullOrbitFrom7` is the real accelerated 7
 orbit, not `GeneralOrbitFrom7` and not mere legal-word membership.
+The premise `hReset` records the explicit 36.20 block-head condition
+that `r` is reached from a previous even terminal by the reset equation;
+the d-segment bridge needs it to instantiate the candidate family.
 The premise `2 <= H_s` is a domain condition needed for `H_s - 1` to be a
 valid modulus; it is not the forbidden `H_ge` input.  This is the unique
 `sorry` in this audit file.
@@ -3399,11 +3403,12 @@ theorem unified_core_final_no_hge
     (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
     (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
     (hReach : S6Audit.FullOrbitFrom7 r)
+    (hReset : ∃ s0 k t δ : Nat, S6Audit.ResetHeadEq s0 j k t δ r)
     (hH : 2 ≤ H_s) :
     twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) ≤ H_s - 2 := by
   rcases hReach with ⟨n, hn⟩
   by_cases hn15 : n ≤ 15
-  · exact unified_core_final_no_hge_le15 j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj ⟨n, hn⟩ hH ⟨n, hn, hn15⟩
+  · exact unified_core_final_no_hge_le15 j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj ⟨n, hn⟩ hReset hH ⟨n, hn, hn15⟩
   · sorry
 
 /-!
@@ -3457,12 +3462,14 @@ theorem unified_core_final_no_hge
 | `tail_failure_m2_zero_block_head_mod16` | proved | exact `m2=0` tail residue: failure forces `r % 16 = 5` (i.e. `u % 8 = 3`); this is the true content of the single tail congruence |
 | `tail_failure_m2_zero_not_rj_mod64` | proved | the stated `failure_implies_rj_mod_64` bridge is false: `r % 16 = 5` excludes `r % 64 = 33` |
 | `predecessor_mod32_of_block_head_mod16_t1` / `predecessor_mod64_of_block_head_mod16_t2` | proved | corrected predecessor residues: `t=1` gives `x ≡ 21 (mod 32)`, `t=2` gives `x ≡ 55 (mod 64)`; zero `sorry`, only `propext / Classical.choice / Quot.sound` |
-| `UnifiedCoreBridge.d2_survivor_terminal_even` | proved | corrected `d=2` family: `x+1 ≡ 4 (mod 5)` and even for all `j ≡ 4 (mod 16)`; violates `ResetHeadEq` `s0` odd, so the `d=2` survivor is a pseudo-candidate, not a counterexample |
-| `UnifiedCoreBridge.d3_survivor_terminal_even` | proved | corrected `d=3` survivor family (`t=2,δ=1,e=2,u1=u2=1`, `j≡168 mod 432`): `x+1 ≡ 4 (mod 5)` and even; violates `ResetHeadEq` `s0` odd, so the only `d=3` congruence survivor is a pseudo-candidate |
+| `UnifiedCoreBridge.d2_survivor_terminal_even` | proved | corrected `d=2` family: `x+1 ≡ 4 (mod 5)` and even for all `j ≡ 4 (mod 16)`; this does NOT violate `ResetHeadEq`, because the terminal odd part is `s0 = x+1-5^(j-1)` (odd), see `d2_survivor_candidate_s0_odd` |
+| `UnifiedCoreBridge.d2_survivor_parameterization_corrected` | proved | corrected `d=2` segment equation + `x ≡ 183 (mod 320)` force `j ≡ 4 (mod 16)`, `17 | 25*5^(j-1)-14`, and the survivor formula for `x` |
+| `UnifiedCoreBridge.d2_survivor_candidate_s0_odd` | proved | `s0 = x+1-5^(j-1)` is odd for the corrected `d=2` survivor; the document's "even `s0`" exclusion is invalid, so `d=2` remains open |
+| `UnifiedCoreBridge.d3_survivor_terminal_even` | proved | corrected `d=3` survivor family (`t=2,δ=1,e=2,u1=u2=1`, `j≡168 mod 432`): `x+1 ≡ 4 (mod 5)` and even; as in `d=2` this does NOT violate `ResetHeadEq`; `d=3` is closed by the weight-6 full-orbit step, not by this parity |
 | `UnifiedCoreBridge.d3_*_no_pow_mod32/64` (10 branches) | proved | 10 of the 21 no-solution `d=3` branches are excluded by the mod-`2^k` power-period set (`C mod 2^k` is not a power of `5`); zero `sorry`, only `propext / Classical.choice / Quot.sound` |
 | `UnifiedCoreBridge.d3_*_no_pow` (11 branches) | proved | the remaining 11 `d=3` branches are excluded by CRT: mod-`2^k` fixes `j % 2^(k-2)`, then the mod-`m` period table (`m∈{31,61,93,109}`) has no `s`; zero `sorry`, only `propext / Classical.choice / Quot.sound` |
 | `UnifiedCoreBridge.dge4_e3_j17_t1_corrected_excluded` / `dge4_e3_j17_t2_delta3_corrected_excluded` | proved | d≥4 `e=3,j=17` branches still excluded under corrected residues: `x≡133 (mod 160)` vs required `53`, and `x≡263 (mod 320)` vs required `183` |
-| `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch; d=1/2/3/≥4 corrected exclusions are formalized, but the remaining open statements are (a) the `m2>0` tail branch (not covered by the `m2=0` candidate residue) and (b) the premises-to-candidate parameterization bridge |
+| `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + explicit reset premise `hReset : ∃ s0 k t δ, ResetHeadEq s0 j k t δ r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch; `d=1`, `d=3` and `d≥4` corrected exclusions are formalized, but `d=2` is NOT closed: the corrected survivor family survives `ResetHeadEq` and is the remaining d-segment obstruction; the other open item is the `m2>0` tail branch |
 | `failure_implies_rj_mod_64` | **invalid as stated** | 36.29/36.30.5 core: the tail congruence contradicts the claimed `r % 64 = 33`; the true `m2=0` residue is `r % 16 = 5` |
 | `FinitePrefix.fullOrbit_first_t_ge3_is_exactly_3` | proved | `lean/FinitePrefix.lean`: explicit 17-state expansion by `simp [StringFlow.twoValuation_succ]`, zero `native_decide`; closes 36.30.23 at math level |
 | `UnifiedCoreBridge` | encoded | `lean/UnifiedCoreBridge.lean`: `candidateX`, `candidateRj`, `orbitState`, `orbitStepWeight`; step 1 of the assembly plan |
@@ -3473,12 +3480,12 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.d2_size_exclusion` | proved | 36.30.23.5 `d=2`: non-surviving branches excluded by `g < 5^(j-1)/2^(e-1)` |
 | `UnifiedCoreBridge.five_pow_mod17_eq` / `five_pow_mod256_eq` | proved | period-16 and period-64 discrete-log lemmas used by the `d=2` survivor |
 | `UnifiedCoreBridge.d2_survivor_mod_contradicts` | proved | `5^m ≡ 6 (mod 17)` and `5^m ≡ 45 (mod 256)` are incompatible |
-| `UnifiedCoreBridge.d2_survivor_congruences` | proved | `d=2` survivor equations force the two power congruences |
-| `UnifiedCoreBridge.d2_exclusion` | proved | full `d=2` segment exclusion: size branches plus survivor congruence contradiction |
+| `UnifiedCoreBridge.d2_survivor_congruences` | stale (old residue) | derives `5^m ≡ 6 (mod 17)` and `5^m ≡ 45 (mod 256)` from the invalidated residue `x ≡ 743 (mod 1280)`; not applicable to the corrected class |
+| `UnifiedCoreBridge.d2_exclusion` | stale (old residue) | full `d=2` exclusion only for the invalidated `x ≡ 743 (mod 1280)` class; under the corrected `x ≡ 183 (mod 320)` the survivor family is real, so this theorem does not close `d=2` |
 | `UnifiedCoreBridge.orbitStepWeight_of_mul` | proved | `fullOrbitIter n = y`, `5y+1=2^k*x`, `x` odd ⇒ `orbitStepWeight n = k`; the reusable first-big-step input for `d=3`/`d≥4` |
 | `UnifiedCoreBridge.d3_family_big_weight_excluded` | proved | `d=3` unique family: `z→w` has weight `6` at depth `j+4`, contradicting `FinitePrefix` |
 | `UnifiedCoreBridge.dge4_e2_a_ge1_excluded` | proved | `d≥4`, `e=2,a≥1`: `y→x` has weight `1+4a≥5`, contradicting `FinitePrefix` |
-| `UnifiedCoreBridge.dge4_e3_j17_t1_excluded` / `dge4_e3_j17_t2_delta3_excluded` | proved | `d≥4`, `e=3,j=17` branches fail the `mod 640/1280` candidate residue |
+| `UnifiedCoreBridge.dge4_e3_j17_t1_excluded` / `dge4_e3_j17_t2_delta3_excluded` | stale (old residue) | old `mod 640/1280` wrappers; the corrected versions are `dge4_e3_j17_t1_corrected_excluded` / `dge4_e3_j17_t2_delta3_corrected_excluded` (row above) |
 | `UnifiedCoreBridge.d3_exclusion_of_orbit` | proved | orbit-data wrapper for the `d=3` unique family: `z→w` weight `6` at depth `j+4` |
 | `UnifiedCoreBridge.dge4_e2_exclusion_of_orbit` | proved | orbit-data wrapper for `d≥4`, `e=2,a≥1`: first big step weight `1+4a≥5` |
 | `UnifiedCoreBridge.reset_head_predecessor` | proved | 36.30.9.1: `ResetHeadEq` + `rj=(5x+1)/2^t` force `x=5^k·s0+δ·5^(j-1)-1` |
@@ -3496,14 +3503,14 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.candidate_parameterization_of_reset_full_orbit` | proved | packaged candidate bridge: `ResetHeadEq s0 (n0-1) 0 t δ r` + `s0=2^(e-1)*g+1` + exact full-orbit weights give `x = candidateX (n0-1) e g δ`, `x=fullOrbitIter (n0-1)`, `g=fullOrbitIter (n0-2)`, `e=orbitStepWeight (n0-3)` |
 | `UnifiedCoreBridge.d1_exclusion_of_reset_candidate` | proved | `d=1` exclusion assembled from the reset bridge: reset terminal data + exact full-orbit weights satisfy `d1_exclusion_of_orbit`; a template for `d=2/3/≥4` assembly |
 | `UnifiedCoreBridge.candidate_parameterization_of_reset_full_orbit_d` | proved | segment-length-`d` version: `g` is `d` steps before `x`, `e` is the weight into `g`; packages the reset premises, while the `d≥2` candidate depth still needs the `n0-d` shift |
-| `UnifiedCoreBridge.d2_exclusion_of_reset_candidate` | proved | `d=2` exclusion assembled from the segment-length-`d` bridge: candidate depth `n0-2`, `g` at `n0-3`, `e` at `n0-4` |
+| `UnifiedCoreBridge.d2_exclusion_of_reset_candidate` | stale (old residue) | assembled from the old `x ≡ 743 (mod 1280)` exclusion; not usable for the corrected `x ≡ 183 (mod 320)` survivor |
 | `FinitePrefix.fullOrbitPrefix_wordValid/wordOrbit/imp_OrbitFrom7` | proved | depth `n≤15` full-orbit states are `OrbitFrom7`-reachable via `[2,1,2,1,1,2,1,1,1,2,2,2,2,1,1]` prefixes |
 | `UnifiedCoreBridge.fullOrbitFrom7_le15_imp_OrbitFrom7` | proved | `FullOrbitFrom7` with depth `≤15` reduces to `OrbitFrom7` |
 | `UnifiedCoreBridge.candidateX_mod4_of_e2/e_ge3` | proved | 36.30.23.4 branch table: `e=2⇒x≡2+δ (mod 4)`, `e≥3⇒x≡δ (mod 4)` |
 | `UnifiedCoreBridge.orbitSegmentWord_*` | proved | exact segment word `2^W·x=5^d·g+A` for consecutive full-orbit steps |
 | `UnifiedCoreBridge.d1_segment_equation/d2_segment_equation` | proved | exact `d=1`/`d=2` candidate segment equations from the actual orbit |
 | `UnifiedCoreBridge.candidate_d1_input` | proved | converse of `d1_segment_equation`: a single `1+4a` orbit step from `g` to `x` makes `fullOrbitIter j = candidateX` |
-| `UnifiedCoreBridge.d1_exclusion_of_orbit/d2_exclusion_of_orbit` | proved | orbit-data wrappers that invoke `d1_exclusion`/`d2_exclusion` |
+| `UnifiedCoreBridge.d1_exclusion_of_orbit/d2_exclusion_of_orbit` | proved / stale | `d=1` wrapper is usable; the `d=2` wrapper invokes the old-residue `d2_exclusion` and is not usable for the corrected class |
 | `UnifiedCoreBridge.blockWord_eq_orbitSegment_of_fullOrbit` | proved | word-segment continuity: a legal block from a full-orbit head is the exact continuous full-orbit suffix `orbitSegmentWord (n0+1) n`, and every block state is `fullOrbitIter (n0+n)` |
 | `UnifiedCoreBridge.blockWord_full_suffix_of_fullOrbit(_reach)` | proved | the full block word equals the full-orbit suffix and `r_s=fullOrbitIter (n0+(s-j))`; existential form from `FullOrbitFrom7 r` |
 | `UnifiedCoreBridge.blockState_fullOrbit_of_premises_fullOrbit` | proved | every block state from a full-orbit block head is itself a full-orbit state |
@@ -3537,22 +3544,30 @@ Minimum failing premises found so far:
    `w_eff=(3*5^m2*u-1)/2^(L_eff+3)` and a single 2-adic congruence on
    `u`.  The word-segment continuity lemma now supplies the exact prefix
    position of `r_a` and the word shape from `r_j` to `r_a`; the `m2>0`
-   tail residue on `u` is fixed by `tail_failure_m2_even_u_mod8` and
-   `tail_failure_m2_odd_u_mod8`.  The reset equation (`ResetHeadEq` from
-   the previous even terminal) is still not encoded in
-   `All36_20PremisesNoHge`, so the premises-to-candidate bridge and the
-   `m2>0` exclusion remain open.  Until those enter the proof, no true-card
-   or candidate-true-card verdict is allowed; the audit remains open.
+    tail residue on `u` is fixed by `tail_failure_m2_even_u_mod8` and
+    `tail_failure_m2_odd_u_mod8`.  The reset equation (`ResetHeadEq` from
+    the previous even terminal) is now encoded explicitly as `hReset` in
+    `unified_core_final_no_hge` and `DwdbDiv.unifiedCoreClosed`, so the
+    premises-to-candidate bridge has its missing input.  The two remaining
+    open statements are the `m2>0` tail exclusion and the corrected `d=2`
+    survivor family: document 36.30.24's "even `s0`" exclusion is invalid,
+    because the actual terminal odd part is `s0 = x+1-5^(j-1)`, which is
+    odd (`d2_survivor_candidate_s0_odd`).  Until those enter the proof, no
+    true-card or candidate-true-card verdict is allowed; the audit remains
+    open.
 
-Math-level closure (2026-08-13): with `FinitePrefix` formalized, the
-`d=1`, `d=2`, `d=3` and `d≥4` exclusions in document 36.30.23.5 close
-the candidate family, hence the block-head candidate exclusion and the
-downstream chain.  Lean assembly of that chain into
-`unified_core_final_no_hge` is in progress: `FinitePrefix`, the
-`d=1` and full `d=2` exclusions, and the 36.30.23.0/1 rigidity lemmas
-now compile; the remaining assembly is the premises-to-parameterization
-bridge and the `d=3`, `d≥4` exclusions.  The theorem above remains
-`by sorry` and no Lean closure is claimed.
+ Math-level status (2026-08-13): `d=1`, `d=3` and `d≥4` exclusions in
+ document 36.30.23.5/36.30.24 are closed, with corrected residues
+ `x ≡ 53 (mod 160)` / `x ≡ 183 (mod 320)` for the `e=3,j=17` branches.
+ The `d=2` exclusion is NOT closed: under the corrected residue
+ `x ≡ 183 (mod 320)` the survivor family exists and survives
+ `ResetHeadEq` (`s0` odd).  Lean assembly into
+ `unified_core_final_no_hge` is in progress: `FinitePrefix`, the
+ `d=1` exclusion, the corrected `d=3`/`d≥4` exclusion lemmas, and the
+ 36.30.23.0/1 rigidity lemmas now compile; the remaining assembly is the
+ premises-to-parameterization bridge for `d≥2`, the corrected `d=2`
+ survivor exclusion, and the `m2>0` tail exclusion.  The theorem above
+ remains `by sorry` and no Lean closure is claimed.
 -/
 
 end UnifiedCoreAudit

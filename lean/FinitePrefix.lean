@@ -155,19 +155,23 @@ theorem d3_family_mod_contradicts_base
     False := by
   exact d3_unique_family_contradicts_base j n (j_ge_924_of_mod j hjmod) hn hsmall hbig
 
-/-- `e=3, j=17`, `t_j=1`, `δ=1`: the candidate `x` fails the required
-residue modulo `640`. -/
-theorem e3_j17_t1_excluded
+/-- `e=3, j=17`, `t_j=1`, `δ=1`: the candidate `x` fails the corrected
+residue `x ≡ 53 (mod 160)` (the actual value is `x ≡ 133 (mod 160)`).
+The old modulus `640`/residue `13` belonged to the invalidated
+`36.30.6` class and is not used here. -/
+theorem e3_j17_t1_corrected_excluded
     (x : Nat) (hx : x = 4 * 34177 + 5 ^ 16)
-    (hmod : x % 640 = 13) : False := by
+    (hmod : x % 160 = 53) : False := by
   rw [hx] at hmod
   norm_num at hmod
 
-/-- `e=3, j=17`, `t_j=2`, `δ=3`: the candidate `x` fails the required
-residue modulo `1280`. -/
-theorem e3_j17_t2_delta3_excluded
+/-- `e=3, j=17`, `t_j=2`, `δ=3`: the candidate `x` fails the corrected
+residue `x ≡ 183 (mod 320)` (the actual value is `x ≡ 263 (mod 320)`).
+The old modulus `1280`/residue `743` belonged to the invalidated
+`36.30.6` class and is not used here. -/
+theorem e3_j17_t2_delta3_corrected_excluded
     (x : Nat) (hx : x = 4 * 34177 + 3 * 5 ^ 16)
-    (hmod : x % 1280 = 743) : False := by
+    (hmod : x % 320 = 183) : False := by
   rw [hx] at hmod
   norm_num at hmod
 

@@ -1018,6 +1018,21 @@ lemma five_pow_mod64_reduce (q r : Nat) :
       rw [hrewrite, five_pow_mod64_period]
       exact ih
 
+/-- Discrete logarithm of `61` base `5` modulo `64`: the exponent is
+`3` modulo `16`. -/
+lemma five_pow_mod64_eq_61 (m : Nat) :
+    5 ^ m % 64 = 61 → m % 16 = 3 := by
+  intro h
+  have hq := Nat.div_add_mod m 16
+  have hred := five_pow_mod64_reduce (m / 16) (m % 16)
+  have hred' : 5 ^ (16 * (m / 16) + m % 16) % 64 = 5 ^ (m % 16) % 64 := by
+    simpa [Nat.mul_comm] using hred
+  rw [← hq] at h
+  rw [hred'] at h
+  have hlt : m % 16 < 16 := Nat.mod_lt _ (by norm_num)
+  interval_cases m % 16
+  all_goals (norm_num at h; try norm_num)
+
 /-- If `C mod 32` is not in the period-8 power set of `5`, then
 `5^m ≢ C (mod 32)` for every `m`. -/
 lemma pow_five_mod32_not_of_not_period (C : Nat)
@@ -1460,8 +1475,8 @@ theorem d2_survivor_mod_contradicts (m : Nat)
 
 /-- Corrected `d=2` survivor family: for `j ≡ 4 (mod 16)`, the reset
 predecessor `x = (25·5^(j-1)-14)/17` has `x+1 ≡ 4 (mod 5)` and is even.
-With `k=0` this gives an even terminal odd part `s0`, violating the
-`ResetHeadEq` condition `s0` odd. -/
+This does NOT violate `ResetHeadEq`: with `k=0` the terminal odd part is
+`s0 = x+1-5^(j-1)`, which is odd (`d2_survivor_candidate_s0_odd`). -/
 lemma d2_survivor_terminal_even (j x : Nat)
     (hj : j % 16 = 4)
     (hint : 17 ∣ 25 * 5 ^ (j - 1) - 14)
@@ -1550,10 +1565,144 @@ lemma d2_survivor_terminal_even (j x : Nat)
     all_goals norm_num
   exact ⟨hx1_even, hx1_mod5⟩
 
+/-- Corrected `d=2` survivor parameterization: under the corrected
+residue `x ≡ 183 (mod 320)`, the `d=2` segment equation forces
+`j ≡ 4 (mod 16)` and the survivor formulas for `g` and `x`. -/
+theorem d2_survivor_parameterization_corrected
+    (j g : Nat) (hj : 3 ≤ j)
+    (hseg : 8 * g + 4 * 5 ^ (j - 1) = 7 + 25 * g)
+    (hxmod : candidateX j 2 g 1 % 320 = 183) :
+    j % 16 = 4 ∧
+      17 ∣ 25 * 5 ^ (j - 1) - 14 ∧
+      candidateX j 2 g 1 = (25 * 5 ^ (j - 1) - 14) / 17 := by
+  let P := 5 ^ (j - 1)
+  have h17g : 4 * P = 7 + 17 * g := by
+    dsimp [P]
+    nlinarith [hseg]
+  have hx : candidateX j 2 g 1 = 2 * g + P := by
+    simp [candidateX, P]
+  have hge : 7 ≤ 4 * P := by
+    have h1 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+    nlinarith
+  have hge14 : 14 ≤ 25 * P := by nlinarith
+  have h17x : 17 * candidateX j 2 g 1 = 25 * P - 14 := by
+    rw [hx]
+    have h17x' : 17 * (2 * g + P) + 14 = 25 * P := by
+      nlinarith [h17g]
+    omega
+  have hdiv : 17 ∣ 25 * P - 14 := by
+    refine ⟨2 * g + P, ?_⟩
+    rw [← h17x, hx]
+  have hxeq : candidateX j 2 g 1 = (25 * P - 14) / 17 := by
+    rw [← h17x]
+    exact (Nat.mul_div_right (candidateX j 2 g 1) (by decide : 0 < 17)).symm
+  have hxmodEq : candidateX j 2 g 1 ≡ 183 [MOD 320] := by
+    rw [Nat.ModEq]
+    exact hxmod
+  have hmul := hxmodEq.mul_right 17
+  have h17mod : (17 * candidateX j 2 g 1) % 320 = 231 := by
+    rw [Nat.ModEq] at hmul
+    norm_num at hmul
+    simpa [Nat.mul_comm] using hmul
+  have hsub : (25 * P - 14) % 320 = 231 := by
+    rw [h17x] at h17mod
+    exact h17mod
+  have h25mod320 : (25 * P) % 320 = 245 := by
+    have hsubEq : 25 * P - 14 ≡ 231 [MOD 320] := by
+      rw [Nat.ModEq]
+      exact hsub
+    have hplus := hsubEq.add_right 14
+    have hmod' : (25 * P - 14 + 14) % 320 = (231 + 14) % 320 := by
+      rw [Nat.ModEq] at hplus
+      exact hplus
+    have hcancel : (25 * P - 14) + 14 = 25 * P := Nat.sub_add_cancel hge14
+    rw [hcancel] at hmod'
+    norm_num at hmod'
+    exact hmod'
+  have hmod64 : (25 * P) % 64 = 53 := by
+    have hred : (25 * P) % 320 % 64 = (25 * P) % 64 :=
+      Nat.mod_mod_of_dvd (25 * P) (c := 64) (b := 320) (by norm_num)
+    rw [h25mod320] at hred
+    norm_num at hred
+    exact hred.symm
+  have h25inv : 25 * 41 ≡ 1 [MOD 64] := by norm_num [Nat.ModEq]
+  have hP64 : P % 64 = 61 := by
+    have hmodEq : 25 * P ≡ 53 [MOD 64] := by
+      rw [Nat.ModEq]
+      exact hmod64
+    have hmul' := hmodEq.mul_right 41
+    have hleft : (25 * P) * 41 ≡ P [MOD 64] := by
+      have h1 := h25inv.mul_left P
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using h1
+    have hright : (25 * P) * 41 ≡ 53 * 41 [MOD 64] := hmul'
+    have htarget : P ≡ 61 [MOD 64] := by
+      have htrans := hleft.symm.trans hright
+      norm_num at htrans ⊢
+      exact htrans
+    rw [Nat.ModEq] at htarget
+    exact htarget
+  have hP16 : (j - 1) % 16 = 3 := by
+    have h := hP64
+    dsimp [P] at h
+    exact five_pow_mod64_eq_61 (j - 1) h
+  have hj16 : j % 16 = 4 := by
+    have hmod : j % 16 = ((j - 1) % 16 + 1) % 16 := by
+      have hsubj : j = (j - 1) + 1 := by omega
+      rw [hsubj, Nat.add_mod]
+      simp
+    rw [hmod, hP16]
+  exact ⟨hj16, hdiv, hxeq⟩
+
+/-- For the corrected `d=2` survivor, the reset odd part is
+`s0 = x + 1 - 5^(j-1)` and is odd.  In particular `s0` is not `x + 1`,
+so the "even `s0`" exclusion in the document is not valid. -/
+theorem d2_survivor_candidate_s0_odd (j x : Nat)
+    (hj4 : j % 16 = 4)
+    (hint : 17 ∣ 25 * 5 ^ (j - 1) - 14)
+    (hx : x = (25 * 5 ^ (j - 1) - 14) / 17) :
+    (x + 1 - 5 ^ (j - 1)) % 2 = 1 := by
+  have hpar := d2_survivor_terminal_even j x hj4 hint hx
+  let P := 5 ^ (j - 1)
+  have hPodd : P % 2 = 1 := by
+    dsimp [P]
+    exact StringFlow.Lte.five_pow_odd (j - 1)
+  have hge : 14 ≤ 25 * P := by
+    have h1 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+    dsimp [P]
+    nlinarith
+  have h17x : 17 * x = 25 * P - 14 := by
+    have hc := Nat.mul_div_cancel' hint
+    rw [← hx] at hc
+    exact hc
+  have h17x1 : 17 * (x + 1) = 25 * P + 3 := by
+    have hmul : 17 * x + 17 = 25 * P + 3 := by omega
+    nlinarith
+  have hgeP : P ≤ x + 1 := by
+    have hle17 : 17 * P ≤ 25 * P + 3 := by nlinarith
+    have hle17' : 17 * P ≤ 17 * (x + 1) := by
+      rw [h17x1]
+      exact hle17
+    exact Nat.le_of_mul_le_mul_left hle17' (by decide : 0 < 17)
+  have hA : (((x + 1 - P) % 2) + 1) % 2 = 0 := by
+    have hsub : (x + 1 - P) + P = x + 1 := Nat.sub_add_cancel hgeP
+    have hmod : ((x + 1 - P) + P) % 2 = 0 := by
+      rw [hsub]
+      exact hpar.1
+    rw [Nat.add_mod, hPodd] at hmod
+    exact hmod
+  have hlt : (x + 1 - P) % 2 < 2 := Nat.mod_lt (x + 1 - P) (by norm_num)
+  rcases Nat.mod_two_eq_zero_or_one (x + 1 - P) with h0 | h1
+  · have hbad : (0 + 1) % 2 = 0 := by
+      rw [h0] at hA
+      exact hA
+    norm_num at hbad
+  · exact h1
+
 /-- Corrected `d=3` survivor family (`t=2, δ=1, e=2, u1=u2=1`): with
 `X = 5^(j-1) ≡ 73 (mod 109)` and `x = (125X-78)/109`, the reset
-predecessor has `x+1 ≡ 4 (mod 5)` and is even, violating `ResetHeadEq`
-`s0` odd. -/
+predecessor has `x+1 ≡ 4 (mod 5)` and is even.  As in `d=2`, this does
+not violate `ResetHeadEq`; the `d=3` exclusion is closed by the weight-6
+full-orbit step, not by this parity. -/
 lemma d3_survivor_terminal_even (j x : Nat)
     (hX : 5 ^ (j - 1) % 109 = 73)
     (hint : 109 ∣ 125 * 5 ^ (j - 1) - 78)
@@ -1796,20 +1945,6 @@ theorem dge4_e2_a_ge1_excluded
     orbitStepWeight_of_mul n (1 + 4 * a) y x hy hxodd hstep
   have hk : 5 ≤ 1 + 4 * a := by omega
   exact candidate_first_big_weight_ge_five_bridge n (1 + 4 * a) hk hsmall hbig
-
-/-- 36.30.23.5, `d≥4`, `e=3, j=17`, `t_j=1`, `未=1`: the candidate
-`x` fails the required residue modulo `640`. -/
-theorem dge4_e3_j17_t1_excluded (x : Nat)
-    (hx : x = 4 * 34177 + 5 ^ 16)
-    (hmod : x % 640 = 13) : False :=
-  e3_j17_t1_excluded x hx hmod
-
-/-- 36.30.23.5, `d≥4`, `e=3, j=17`, `t_j=2`, `未=3`: the candidate
-`x` fails the required residue modulo `1280`. -/
-theorem dge4_e3_j17_t2_delta3_excluded (x : Nat)
-    (hx : x = 4 * 34177 + 3 * 5 ^ 16)
-    (hmod : x % 1280 = 743) : False :=
-  e3_j17_t2_delta3_excluded x hx hmod
 
 /-- A full-orbit state at depth at most 15 is also `OrbitFrom7`
 reachable.  This is the finite-prefix half of the `FullOrbitFrom7`
