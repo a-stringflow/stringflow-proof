@@ -3512,6 +3512,7 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.m2_pos_first_step_weight_two` | proved | `m2>0` run start is an exact full-orbit step with `orbitStepWeight n_a = 2` |
 | `FinitePrefix.fullOrbitIter_prefix_expand_18` / `fullOrbit_prefix_step_weights_17` | proved | finite base extends to depths 17/18: `t_16=1`, `t_17=4` |
 | `UnifiedCoreBridge.no_t2_step_at_depth_16_17` | proved | no exact `t=2` step at depths 16 or 17; hence the `m2>0` run cannot start at those depths |
+| `UnifiedCoreBridge.m2_pos_tail_start_ge_18` | proved | in the n≥16 branch, the `m2>0` run start is at full-orbit depth at least 18: exact suffix gives `n_a≥16`, finite base excludes `n_a∈{16,17}` |
 | directed legal-word check (length <= 20) | evidence, not proof | 130,322 legal fixed-`q` blocks satisfy the no-`H_ge` premises with `2 <= H_s`; 0 violate the final inequality; 3 have real-orbit heads |
 
 Minimum failing premises found so far:

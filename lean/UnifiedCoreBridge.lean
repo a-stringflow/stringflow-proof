@@ -2536,4 +2536,72 @@ lemma m2_pos_first_step_weight_two
     exact hval
   exact ⟨n_a, hiter, hw2⟩
 
+/-- In the `n≥16` branch, the `m2>0` run start is pushed to full-orbit
+depth at least `18`: the exact suffix gives `n_a = n0+(a-j) ≥ 16`, and the
+finite base excludes exact `t=2` steps at depths 16 and 17. -/
+lemma m2_pos_tail_start_ge_18
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 n0 : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hiter0 : fullOrbitIter n0 = r)
+    (hhead : 16 ≤ n0)
+    (hn : n = s - j)
+    (hm : (m1, m2) = UnifiedCoreAudit.tailSplit (blockWord weight j n))
+    (hm2 : 1 ≤ m2) :
+    ∃ n_a : Nat, fullOrbitIter n_a = blockState weight q (j + (n - m1 - m2)) ∧ 18 ≤ n_a := by
+  let a := j + (n - m1 - m2)
+  let n_a := n0 + (a - j)
+  have hja : j ≤ a := by dsimp [a]; omega
+  have hsum : j + (a - j) = a := Nat.add_sub_of_le hja
+  rcases blockWord_eq_orbitSegment_of_fullOrbit j Wp Wj q Aj A_s s W_s r_s L H_s n0
+    weight r hPrem hrj hiter0 (a - j) (by omega) with ⟨_hw, hcont2⟩
+  have hbs : blockState weight q a = fullOrbitIter n_a := by
+    dsimp [n_a]
+    rw [hsum] at hcont2
+    exact hcont2
+  have has : a ≤ s := by
+    dsimp [a]
+    have hsum' := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum'
+    rw [hlen] at hsum'
+    have hn' : n = s - j := hn
+    omega
+  have haslt : a < s := by
+    dsimp [a]
+    have hsum' := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum'
+    rw [hlen] at hsum'
+    have hn' : n = s - j := hn
+    omega
+  have hstep := blockState_step_exact_of_premises_fullOrbit j Wp Wj q Aj A_s s W_s r_s L H_s a
+    weight hPrem haslt
+  have hwstep : ∀ k < n, weight (j + k + 1) = weight (j + k) + 1 ∨
+      weight (j + k + 1) = weight (j + k) + 2 := by
+    intro k hk
+    have hk' : j + k < s := by
+      have hn' : n = s - j := hn
+      omega
+    exact hPrem.weight_step (j + k) hk'
+  have htwos := UnifiedCoreAudit.blockWord_tailSplit_twos_weight weight j n m1 m2 hwstep hm
+  have htwo := htwos 0 (by omega)
+  have hw : weight (a + 1) - weight a = 2 := by
+    have htwo' : weight (a + 1) = weight a + 2 := by
+      simpa [a, Nat.add_assoc] using htwo
+    omega
+  have hval : twoValuation (5 * blockState weight q a + 1) = 2 := by
+    rw [← hstep, hw]
+  have hweight : orbitStepWeight n_a = 2 := by
+    unfold orbitStepWeight
+    rw [← hbs]
+    exact hval
+  have hne := no_t2_step_at_depth_16_17 n_a hweight
+  have hge : 18 ≤ n_a := by
+    have h16 : 16 ≤ n_a := by
+      dsimp [n_a]
+      omega
+    omega
+  exact ⟨n_a, hbs.symm, hge⟩
+
 end S6Audit

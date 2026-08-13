@@ -96,6 +96,12 @@ namespace S6Audit
 #print axioms no_t2_step_at_depth_16_17
 #print axioms m2_pos_first_step_weight_two
 
+-- Statement check: `m2>0` run start pushed to depth at least 18.
+#check m2_pos_tail_start_ge_18
+
+-- Axioms used by the depth-`≥18` run-start constraint.
+#print axioms m2_pos_tail_start_ge_18
+
 end S6Audit
 
 namespace StringFlow
