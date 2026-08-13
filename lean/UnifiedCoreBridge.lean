@@ -4684,4 +4684,55 @@ lemma reset_terminal_hterm_of_alignment
     rwa [Nat.mul_comm] at hterm0
   rwa [h_int] at hterm0'
 
+/-- If the aligned reset terminal-chain input `hterm` is available, the
+reset predecessor is exactly the even intermediate plus the reset jump
+`δ * 5^(j-1)`.  This is the d-segment form read at the block index
+`j`. -/
+lemma reset_predecessor_d_segment_of_hterm
+    (j n0 k t δ s0 x r : Nat)
+    (hj : 3 ≤ j) (hjn : j + 2 ≤ n0)
+    (hs0 : 0 < s0)
+    (hx_iter : x = fullOrbitIter (n0 - 1))
+    (hx : x = 5 ^ k * s0 + δ * 5 ^ (j - 1) - 1)
+    (hδ : δ = 1 ∨ δ = 3)
+    (hiter : fullOrbitIter n0 = r)
+    (hstep_t : orbitStepWeight (n0 - 1) = t)
+    (hres : ResetHeadEq s0 j k t δ r)
+    (hterm : 5 ^ k * s0 =
+      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) + 1)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    x = (5 * fullOrbitIter (j - 2) + 1) / 2 + δ * 5 ^ (j - 1) := by
+  have hn0 : 4 ≤ n0 := by omega
+  have hbridge := candidate_parameterization_of_reset_full_orbit_d_aligned
+    j n0 k t δ s0 x r hj hn0 hs0 hx_iter hx hδ hiter hstep_t hres hterm hr hdiv
+  have h_even := previous_terminal_even_intermediate_eq j n0 hj hjn
+  rw [hbridge.1]
+  unfold candidateX
+  rw [← h_even]
+
+/-- The d-segment equation is equivalent to the previous-terminal
+relation `s0 * 5^k = r_prev + 1` with `r_prev` equal to the even
+intermediate.  This extracts `hterm0` from the segment equation and the
+reset predecessor formula. -/
+lemma reset_terminal_hterm_of_d_segment
+    (j n0 k δ s0 x : Nat)
+    (hδ : δ = 1 ∨ δ = 3)
+    (hx : x = 5 ^ k * s0 + δ * 5 ^ (j - 1) - 1)
+    (hseg : x = (5 * fullOrbitIter (j - 2) + 1) / 2 + δ * 5 ^ (j - 1)) :
+    s0 * 5 ^ k = (5 * fullOrbitIter (j - 2) + 1) / 2 + 1 := by
+  have hδge : 1 ≤ δ := by rcases hδ with rfl | rfl <;> norm_num
+  have h5 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+  have hBpos : 1 ≤ δ * 5 ^ (j - 1) := by nlinarith
+  have hA : 0 ≤ 5 ^ k * s0 := by positivity
+  have hpos : 1 ≤ 5 ^ k * s0 + δ * 5 ^ (j - 1) := by nlinarith [hBpos, hA]
+  have hx1 : x + 1 = 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+    rw [hx]
+    exact Nat.sub_add_cancel hpos
+  rw [Nat.mul_comm] at hx1
+  have hx1' : s0 * 5 ^ k + δ * 5 ^ (j - 1) = x + 1 := by omega
+  have hseg1 : x + 1 = (5 * fullOrbitIter (j - 2) + 1) / 2 + δ * 5 ^ (j - 1) + 1 := by
+    rw [hseg]
+  omega
+
 end S6Audit
