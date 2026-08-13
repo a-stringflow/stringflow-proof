@@ -4716,7 +4716,7 @@ relation `s0 * 5^k = r_prev + 1` with `r_prev` equal to the even
 intermediate.  This extracts `hterm0` from the segment equation and the
 reset predecessor formula. -/
 lemma reset_terminal_hterm_of_d_segment
-    (j n0 k δ s0 x : Nat)
+    (j _n0 k δ s0 x : Nat)
     (hδ : δ = 1 ∨ δ = 3)
     (hx : x = 5 ^ k * s0 + δ * 5 ^ (j - 1) - 1)
     (hseg : x = (5 * fullOrbitIter (j - 2) + 1) / 2 + δ * 5 ^ (j - 1)) :
@@ -4734,5 +4734,20 @@ lemma reset_terminal_hterm_of_d_segment
   have hseg1 : x + 1 = (5 * fullOrbitIter (j - 2) + 1) / 2 + δ * 5 ^ (j - 1) + 1 := by
     rw [hseg]
   omega
+
+/-- Combined d-segment to terminal-chain bridge: if the reset
+predecessor satisfies the d-segment equation, then the terminal-chain
+input `hterm` used by `candidate_parameterization_of_reset_full_orbit_d_aligned`
+follows directly. -/
+lemma reset_terminal_hterm_of_d_segment_aligned
+    (j n0 k δ s0 x : Nat)
+    (hj : 3 ≤ j) (hjn : j + 2 ≤ n0)
+    (hδ : δ = 1 ∨ δ = 3)
+    (hx : x = 5 ^ k * s0 + δ * 5 ^ (j - 1) - 1)
+    (hseg : x = (5 * fullOrbitIter (j - 2) + 1) / 2 + δ * 5 ^ (j - 1)) :
+    5 ^ k * s0 =
+      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) + 1 := by
+  have h0 := reset_terminal_hterm_of_d_segment j n0 k δ s0 x hδ hx hseg
+  exact reset_terminal_hterm_of_alignment j n0 k s0 hj hjn h0
 
 end S6Audit
