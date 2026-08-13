@@ -3472,7 +3472,7 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.d3_*_no_pow_mod32/64` (10 branches) | proved | 10 of the 21 no-solution `d=3` branches are excluded by the mod-`2^k` power-period set (`C mod 2^k` is not a power of `5`); zero `sorry`, only `propext / Classical.choice / Quot.sound` |
 | `UnifiedCoreBridge.d3_*_no_pow` (11 branches) | proved | the remaining 11 `d=3` branches are excluded by CRT: mod-`2^k` fixes `j % 2^(k-2)`, then the mod-`m` period table (`m∈{31,61,93,109}`) has no `s`; zero `sorry`, only `propext / Classical.choice / Quot.sound` |
 | `UnifiedCoreBridge.dge4_e3_j17_t1_corrected_excluded` / `dge4_e3_j17_t2_delta3_corrected_excluded` | proved | d≥4 `e=3,j=17` branches still excluded under corrected residues: `x≡133 (mod 160)` vs required `53`, and `x≡263 (mod 320)` vs required `183` |
-| `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + explicit reset premise `hReset : ∃ s0 k t δ, ResetHeadEq s0 j k t δ r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch; `d=1`, `d=2`, `d=3` and `d≥4` corrected exclusions are formalized (`d=2` via the full-orbit size bound); the bridge works for every `k` via `candidateX_of_reset_and_terminal_general` + `terminal_chain_identity_of_full_orbit_d`, and `hr` is now proved from the general-word terminal decomposition (`previous_terminal_hr_of_word_and_segment`); the remaining open items are supplying that word decomposition from the real block word, the `m2>0` tail exclusion, and instantiating the `d≥2` candidate family |
+| `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + explicit reset premise `hReset : ∃ s0 k t δ, ResetHeadEq s0 j k t δ r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch; `d=1`, `d=2`, `d=3` and `d≥4` corrected exclusions are formalized (`d=2` via the full-orbit size bound); the bridge works for every `k` via `candidateX_of_reset_and_terminal_general` + `terminal_chain_identity_of_full_orbit_d`, `hr` is proved from the general-word terminal decomposition (`previous_terminal_hr_of_word_and_segment`), and the `k≥1` branch is excluded by `kge1_excluded_by_segment_step`; the remaining open items are supplying that word decomposition from the real block word, the `m2>0` tail exclusion, and instantiating the `d≥2` candidate family |
 | `failure_implies_rj_mod_64` | **invalid as stated** | 36.29/36.30.5 core: the tail congruence contradicts the claimed `r % 64 = 33`; the true `m2=0` residue is `r % 16 = 5` |
 | `FinitePrefix.fullOrbit_first_t_ge3_is_exactly_3` | proved | `lean/FinitePrefix.lean`: explicit 17-state expansion by `simp [StringFlow.twoValuation_succ]`, zero `native_decide`; closes 36.30.23 at math level |
 | `UnifiedCoreBridge` | encoded | `lean/UnifiedCoreBridge.lean`: `candidateX`, `candidateRj`, `orbitState`, `orbitStepWeight`; step 1 of the assembly plan |
@@ -3502,6 +3502,10 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.previous_even_terminal_of_full_orbit_segment` | proved | `(5*g_prev+1)/2 = 2^(e-1)*g` from the full-orbit segment alone |
 | `UnifiedCoreBridge.previous_terminal_eq_even_intermediate_of_word` | proved | word-level `hr` half: if the terminal word splits as `w' ++ [1]` with `w'` reaching `g_prev`, then `r = (5*g_prev+1)/2`; proved, not assumed |
 | `UnifiedCoreBridge.previous_terminal_hr_of_word_and_segment` | proved | combined `hr`: word decomposition + full-orbit segment give `r = 2^(e-1)*g` |
+| `UnifiedCoreBridge.reset_k_is_five_valuation` | proved | `k` is not free: `5^k·s0 = 2^(e-1)·g+1` + `¬5∣s0` give the exact 5-adic valuation `k = v5(2^(e-1)·g+1)` |
+| `UnifiedCoreBridge.five_dvd_x_plus_one_of_kge1` | proved | `k≥1` forces `5 ∣ x+1` |
+| `UnifiedCoreBridge.no_legal_step_into_x_of_x4` | proved | `x≡4 (mod 5)` contradicts a segment step `5y+1 = 2^(1+4a)·x` |
+| `UnifiedCoreBridge.kge1_excluded_by_segment_step` | proved | combined `k≥1` exclusion: `k≥1 ⇒ x+1≡0 (mod 5) ⇒ x≡4 (mod 5)` contradicts the `1+4a` step into `x` |
 | `UnifiedCoreBridge.reset_q0_form` | proved | 36.30.8.2: exact identity `A_j+5^j·q=2^L·(B+δ·5^j)` gives `q=m+δ·2^L` with `m<2^L` |
 | `UnifiedCoreBridge.block_head_identity_of_reset` | proved | block-head representation + `ResetHeadEq` give `A_j+5^j·q=2^Wp·(5^(k+1)·s0-4+δ·5^j)` |
 | `UnifiedCoreBridge.reset_head_eq_of_block_head_identity` | proved | converse: the 36.30.8.2 exact identity plus the block-head representation recover `ResetHeadEq` |
@@ -3569,7 +3573,7 @@ Minimum failing premises found so far:
     `previous_terminal_eq_even_intermediate_of_word` gives
     `r = (5*g_prev+1)/2` from `w = w' ++ [1]` with `w'` reaching
     `g_prev`, and `previous_terminal_hr_of_word_and_segment` combines it
-    with the full-orbit segment to get `r = 2^(e-1)*g`.  The remaining
+    with the full-orbit segment to get `r = 2^(e-1)*g`.  The `k≥1` branch is excluded by `kge1_excluded_by_segment_step`: `k≥1` forces `x+1≡0 (mod 5)`, hence `x≡4 (mod 5)`, contradicting any `1+4a` step into `x`.  The remaining
     wiring is supplying that word decomposition from the real block word
     and `hprod` from `ResetWindowReachability`.  The documented shortcut
     "`x+1 ≡ 22,56 (mod 32,64)` is prime to `5`" is invalid (`x ≡ 21

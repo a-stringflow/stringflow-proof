@@ -133,6 +133,10 @@ namespace S6Audit
 #print axioms previous_terminal_hr_of_word_and_segment
 #print axioms d2_exclusion_of_corrected_residue
 
+-- Axioms used by the `k≥1` exclusion chain.
+#print axioms reset_k_is_five_valuation
+#print axioms kge1_excluded_by_segment_step
+
 end S6Audit
 
 namespace StringFlow

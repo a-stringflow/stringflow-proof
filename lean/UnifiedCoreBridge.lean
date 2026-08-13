@@ -729,6 +729,125 @@ theorem previous_terminal_hr_of_word_and_segment
     hiter_g hiter_gp hstep_e he
   exact hmid.trans hhr
 
+/-- `k` is not a free parameter: from the terminal-chain identity and
+`¬ 5 ∣ s0`, the exact 5-adic valuation of `2^(e-1)*g+1` is `k`. -/
+theorem reset_k_is_five_valuation (k s0 e g : Nat)
+    (hterm : 5 ^ k * s0 = 2 ^ (e - 1) * g + 1)
+    (hnd5 : ¬ 5 ∣ s0) :
+    5 ^ k ∣ 2 ^ (e - 1) * g + 1 ∧ ¬ 5 ^ (k + 1) ∣ 2 ^ (e - 1) * g + 1 := by
+  constructor
+  · rw [← hterm]
+    exact ⟨s0, rfl⟩
+  · intro h
+    rcases h with ⟨t, ht⟩
+    have hmain : 5 ^ k * s0 = 5 ^ (k + 1) * t := by
+      rw [← hterm] at ht
+      exact ht
+    have hpow : 5 ^ (k + 1) = 5 * 5 ^ k := by
+      rw [pow_succ]
+      ring
+    have hmain' : 5 ^ k * s0 = (5 * 5 ^ k) * t := by
+      rw [hpow] at hmain
+      exact hmain
+    have hmain'' : 5 ^ k * s0 = 5 ^ k * (5 * t) := by
+      rw [show (5 * 5 ^ k) * t = 5 ^ k * (5 * t) by ring] at hmain'
+      exact hmain'
+    have hcancel : s0 = 5 * t :=
+      Nat.eq_of_mul_eq_mul_left (by positivity : 0 < 5 ^ k) hmain''
+    exact hnd5 ⟨t, hcancel⟩
+
+/-- For `k ≥ 1`, the reset predecessor satisfies `5 ∣ x+1`. -/
+theorem five_dvd_x_plus_one_of_kge1
+    (s0 j k t δ rj x : Nat) (hj : 2 ≤ j) (hk : 1 ≤ k)
+    (hres : ResetHeadEq s0 j k t δ rj)
+    (hrj : rj = (5 * x + 1) / 2 ^ t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    5 ∣ x + 1 := by
+  have hx := reset_head_predecessor s0 j k t δ rj x (by omega) hres hrj hdiv
+  have hdpos : 0 < δ * 5 ^ (j - 1) := by
+    rcases hres with h1 | h2
+    · rcases h1 with ⟨ht, hδ, _⟩
+      subst δ
+      positivity
+    · rcases h2 with ⟨ht, hδ, _⟩
+      rcases hδ with hδ1 | hδ3
+      · subst δ
+        positivity
+      · subst δ
+        positivity
+  have hge1 : 1 ≤ 5 ^ k * s0 + δ * 5 ^ (j - 1) := by omega
+  have hx1 : x + 1 = 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+    rw [hx]
+    omega
+  have hdivA : 5 ∣ 5 ^ k * s0 := by
+    refine ⟨5 ^ (k - 1) * s0, ?_⟩
+    have hpow : 5 ^ k = 5 * 5 ^ (k - 1) := by
+      have hk' : k = (k - 1) + 1 := by omega
+      calc
+        5 ^ k = 5 ^ ((k - 1) + 1) := by conv_lhs => rw [hk']
+        _ = 5 * 5 ^ (k - 1) := by rw [Nat.pow_add, Nat.pow_one]; ring
+    rw [hpow]
+    ring
+  have hdivB : 5 ∣ δ * 5 ^ (j - 1) := by
+    refine ⟨δ * 5 ^ (j - 2), ?_⟩
+    have hj' : j - 1 = (j - 2) + 1 := by omega
+    calc
+      δ * 5 ^ (j - 1) = δ * 5 ^ ((j - 2) + 1) := by conv_lhs => rw [hj']
+      _ = 5 * (δ * 5 ^ (j - 2)) := by rw [Nat.pow_add, Nat.pow_one]; ring_nf
+  rw [hx1]
+  exact dvd_add hdivA hdivB
+
+/-- `2^(1+4a) ≡ 2 (mod 5)` for every `a`. -/
+lemma two_pow_one_add_four_mul_mod5 (a : Nat) :
+    (2 ^ (1 + 4 * a)) % 5 = 2 := by
+  induction a with
+  | zero => norm_num
+  | succ a ih =>
+      have hstep : 1 + 4 * (a + 1) = (1 + 4 * a) + 4 := by omega
+      rw [hstep, Nat.pow_add, Nat.mul_mod, ih]
+
+/-- `x ≡ 4 (mod 5)` is impossible for a segment step of weight `1+4a`
+into `x`, because `2^(1+4a) ≡ 2 (mod 5)` but the step forces
+`2^(1+4a)·x ≡ 1 (mod 5)`. -/
+theorem no_legal_step_into_x_of_x4 (x y a : Nat)
+    (hstep : 5 * y + 1 = 2 ^ (1 + 4 * a) * x)
+    (hx4 : x % 5 = 4) : False := by
+  have hmod1 : (2 ^ (1 + 4 * a) * x) % 5 = 1 := by
+    rw [← hstep, Nat.add_mod, Nat.mul_mod]
+    norm_num
+  have hpow : (2 ^ (1 + 4 * a)) % 5 = 2 := two_pow_one_add_four_mul_mod5 a
+  have hx : (2 ^ (1 + 4 * a) * (x % 5)) % 5 = 1 := by
+    rw [Nat.mul_mod] at hmod1
+    simpa [Nat.mul_mod] using hmod1
+  rw [hx4, Nat.mul_mod, hpow] at hx
+  norm_num at hx
+
+/-- `(r+1) ≡ 0 (mod 5)` with `r < 5` forces `r = 4`. -/
+lemma mod5_add_one_eq_zero_iff (r : Nat) (hr : r < 5) :
+    (r + 1) % 5 = 0 ↔ r = 4 := by
+  interval_cases r <;> norm_num
+
+/-- Combined `k≥1` exclusion: `k≥1` forces `x+1 ≡ 0 (mod 5)`, hence
+`x ≡ 4 (mod 5)`, contradicting any legal segment step of weight `1+4a`
+into `x`. -/
+theorem kge1_excluded_by_segment_step
+    (s0 j k t δ rj x y a : Nat) (hj : 2 ≤ j) (hk : 1 ≤ k)
+    (hres : ResetHeadEq s0 j k t δ rj)
+    (hrj : rj = (5 * x + 1) / 2 ^ t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (hstep : 5 * y + 1 = 2 ^ (1 + 4 * a) * x) :
+    False := by
+  have h5 := five_dvd_x_plus_one_of_kge1 s0 j k t δ rj x hj hk hres hrj hdiv
+  have hmod : (x + 1) % 5 = 0 := Nat.dvd_iff_mod_eq_zero.mp h5
+  have hxmod : (x % 5 + 1) % 5 = 0 := by
+    have h : (x + 1) % 5 = (x % 5 + 1) % 5 := by
+      rw [Nat.add_mod]
+    rw [h] at hmod
+    exact hmod
+  have hx4 : x % 5 = 4 :=
+    (mod5_add_one_eq_zero_iff (x % 5) (Nat.mod_lt x (by norm_num))).mp hxmod
+  exact no_legal_step_into_x_of_x4 x y a hstep hx4
+
 /-- The terminal-chain identity instantiated from the exact full-orbit
 segment: `g` at depth `n0-(1+d)`, `g_prev` one step before it, and `e`
 the weight of the step into `g`. -/
