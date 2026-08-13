@@ -5219,7 +5219,245 @@ terminal `7→...→r_prev`, so its legal orbit word has length exactly
 `j-1` and every prefix step is the corresponding full-orbit step.  The
 proof body follows the document: `k=0` is first derived by the
 candidate-level `k≥1` exclusion, then the strip endpoint is pinned to
-`8`, and the prefix word is the exact full-orbit segment. -/
+`8`, and the prefix word is the exact full-orbit segment.  The depth
+condition `r_prev = (5*fullOrbitIter(j-2)+1)/2` is the faithful
+translation of the document's "深度 `j-1` 的真实偶数终端"; it is carried
+by `PreviousTerminalAtDepth`, not as a separate arithmetic input. -/
+def PreviousTerminalAtDepth (s0 j k r_prev : Nat) : Prop :=
+  IsPreviousEvenTerminal s0 j k ∧
+    r_prev = (5 * fullOrbitIter (j - 2) + 1) / 2
+
+/-- The depth condition forces `5 ∤ r_prev+1`, so the terminal exponent
+`k` in `s0·5^k = r_prev+1` is zero. -/
+lemma reset_k_zero_of_previous_terminal_depth
+    (s0 j k r_prev : Nat)
+    (hprev : PreviousTerminalAtDepth s0 j k r_prev)
+    (hprod : s0 * 5 ^ k = r_prev + 1) :
+    k = 0 := by
+  rcases hprev with ⟨hprev0, hdepth⟩
+  rcases hprev0 with ⟨r, hprod', _hodd, _hnd5, _hlt, _horbit⟩
+  have hr : r_prev = r := by
+    have h1 : s0 * 5 ^ k = r + 1 := hprod'
+    omega
+  have hnd5_r : ¬ 5 ∣ r_prev + 1 := by
+    intro hdiv
+    have hodd : IsOdd (fullOrbitIter (j - 2)) := fullOrbitIter_odd (j - 2)
+    have heven : (5 * fullOrbitIter (j - 2) + 1) % 2 = 0 := by
+      have h5 : 5 % 2 = 1 := by norm_num
+      rw [Nat.add_mod, Nat.mul_mod, h5]
+      simp
+      rw [Nat.add_mod, hodd]
+    have hdvd : 2 ∣ 5 * fullOrbitIter (j - 2) + 1 := Nat.dvd_of_mod_eq_zero heven
+    have h2 : 2 * (r_prev + 1) = 5 * fullOrbitIter (j - 2) + 3 := by
+      have hmul : 2 * r_prev = 5 * fullOrbitIter (j - 2) + 1 := by
+        rw [hdepth]
+        exact Nat.mul_div_cancel' hdvd
+      omega
+    have hmod : (r_prev + 1) % 5 = 4 :=
+      s_mod_five_of_t1 (fullOrbitIter (j - 2)) (r_prev + 1) h2
+    have hmod0 : (r_prev + 1) % 5 = 0 := Nat.dvd_iff_mod_eq_zero.mp hdiv
+    omega
+  by_contra hk
+  have hk1 : 1 ≤ k := by omega
+  have h5 : 5 ∣ r_prev + 1 := by
+    rw [← hprod]
+    refine ⟨s0 * 5 ^ (k - 1), ?_⟩
+    have hpow : 5 ^ k = 5 * 5 ^ (k - 1) := by
+      have hk' : k = (k - 1) + 1 := by omega
+      calc
+        5 ^ k = 5 ^ ((k - 1) + 1) := by conv_lhs => rw [hk']
+        _ = 5 * 5 ^ (k - 1) := by rw [Nat.pow_add, Nat.pow_one]; ring
+    rw [hpow]
+    ring
+  exact hnd5_r h5
+
+/-- A nonempty legal word has its `r+1` value in `4` or `0` modulo `5`,
+according to whether the last step is `t=1` or `t=2`. -/
+lemma s_mod_of_legal_nonempty_word
+    (u : List Nat) (hne : u ≠ [])
+    (hvalid : StringFlow.Word.wordValid u 7)
+    (hok : ∀ t ∈ u, t = 1 ∨ t = 2) :
+    (StringFlow.Word.wordOrbit u 7 + 1) % 5 = 4 ∨
+      (StringFlow.Word.wordOrbit u 7 + 1) % 5 = 0 := by
+  have hlast12 : StringFlow.Word.wordLast u = 1 ∨ StringFlow.Word.wordLast u = 2 :=
+    hok (StringFlow.Word.wordLast u) (wordLast_mem u hne)
+  have hsplit : u = u.dropLast ++ [StringFlow.Word.wordLast u] :=
+    word_eq_dropLast_append_last u hne
+  let x := StringFlow.Word.wordOrbit (u.dropLast) 7
+  let s := StringFlow.Word.wordOrbit u 7 + 1
+  rcases hlast12 with h1 | h2
+  · have hvalid' : StringFlow.Word.wordValid (u.dropLast ++ [1]) 7 := by
+      have hv0 : StringFlow.Word.wordValid (u.dropLast ++ [StringFlow.Word.wordLast u]) 7 := by
+        rwa [← hsplit]
+      simpa [h1] using hv0
+    have hv := (wordValid_append_singleton (u.dropLast) 7 1).mp hvalid'
+    have hdiv : (5 * x + 1) % 2 = 0 := by
+      dsimp [x]
+      exact hv.2
+    have h2s : 2 * s = 5 * x + 3 := by
+      dsimp [x, s]
+      have hdvd : 2 ∣ 5 * StringFlow.Word.wordOrbit (u.dropLast) 7 + 1 :=
+        Nat.dvd_iff_mod_eq_zero.mpr hdiv
+      have h2r : 2 * ((5 * StringFlow.Word.wordOrbit (u.dropLast) 7 + 1) / 2) =
+          5 * StringFlow.Word.wordOrbit (u.dropLast) 7 + 1 := Nat.mul_div_cancel' hdvd
+      have horbit : StringFlow.Word.wordOrbit u 7 =
+          (5 * StringFlow.Word.wordOrbit (u.dropLast) 7 + 1) / 2 := by
+        rw [hsplit, h1]
+        simpa using wordOrbit_append_singleton (u.dropLast) 7 1
+      rw [← horbit] at h2r
+      omega
+    exact Or.inl (s_mod_five_of_t1 x s h2s)
+  · have hvalid' : StringFlow.Word.wordValid (u.dropLast ++ [2]) 7 := by
+      have hv0 : StringFlow.Word.wordValid (u.dropLast ++ [StringFlow.Word.wordLast u]) 7 := by
+        rwa [← hsplit]
+      simpa [h2] using hv0
+    have hv := (wordValid_append_singleton (u.dropLast) 7 2).mp hvalid'
+    have hdiv : (5 * x + 1) % 4 = 0 := by
+      dsimp [x]
+      simpa using hv.2
+    have h4s : 4 * s = 5 * x + 5 := by
+      dsimp [x, s]
+      have hdvd : 4 ∣ 5 * StringFlow.Word.wordOrbit (u.dropLast) 7 + 1 :=
+        Nat.dvd_iff_mod_eq_zero.mpr hdiv
+      have h4r : 4 * ((5 * StringFlow.Word.wordOrbit (u.dropLast) 7 + 1) / 4) =
+          5 * StringFlow.Word.wordOrbit (u.dropLast) 7 + 1 := Nat.mul_div_cancel' hdvd
+      have horbit : StringFlow.Word.wordOrbit u 7 =
+          (5 * StringFlow.Word.wordOrbit (u.dropLast) 7 + 1) / 4 := by
+        rw [hsplit, h2]
+        simpa using wordOrbit_append_singleton (u.dropLast) 7 2
+      rw [← horbit] at h4r
+      omega
+    exact Or.inr (s_mod_five_of_t2 x s h4s)
+
+/-- While stripping a legal word from the end, every state before the
+final one is still enterable by a `t∈{1,2}` step, so its `S=r+1` value
+is `4` or `0` modulo `5`. -/
+lemma reverseStripN_before_end_not_stop
+    (w : List Nat) (i : Nat) (hi : i < w.length)
+    (hvalid : StringFlow.Word.wordValid w 7)
+    (hok : ∀ t ∈ w, t = 1 ∨ t = 2) :
+    (reverseStripN i (StringFlow.Word.wordOrbit w 7 + 1)) % 5 = 4 ∨
+      (reverseStripN i (StringFlow.Word.wordOrbit w 7 + 1)) % 5 = 0 := by
+  induction i generalizing w hvalid hok with
+  | zero =>
+      have hne : w ≠ [] := by
+        intro hw
+        subst w
+        simp at hi
+      exact s_mod_of_legal_nonempty_word w hne hvalid hok
+  | succ i ih =>
+      have hne : w ≠ [] := by
+        intro hw
+        subst w
+        simp at hi
+      have hlast12 : StringFlow.Word.wordLast w = 1 ∨ StringFlow.Word.wordLast w = 2 :=
+        hok (StringFlow.Word.wordLast w) (wordLast_mem w hne)
+      have hsplit : w = w.dropLast ++ [StringFlow.Word.wordLast w] :=
+        word_eq_dropLast_append_last w hne
+      let w' := w.dropLast
+      have hvalid' : StringFlow.Word.wordValid w' 7 := by
+        have hv0 : StringFlow.Word.wordValid (w' ++ [StringFlow.Word.wordLast w]) 7 := by
+          dsimp [w']
+          rwa [← hsplit]
+        exact (wordValid_append_singleton w' 7 (StringFlow.Word.wordLast w)).mp hv0 |>.1
+      have hok' : ∀ t ∈ w', t = 1 ∨ t = 2 := by
+        intro t ht
+        apply hok t
+        rw [hsplit]
+        exact List.mem_append.mpr (Or.inl ht)
+      have hi' : i < w'.length := by
+        dsimp [w']
+        rw [List.length_dropLast]
+        have hwpos : 1 ≤ w.length := by omega
+        omega
+      have hstep : reverseStripN (i + 1) (StringFlow.Word.wordOrbit w 7 + 1) =
+          reverseStripN i (StringFlow.Word.wordOrbit w' 7 + 1) := by
+        let s := StringFlow.Word.wordOrbit w 7 + 1
+        rcases hlast12 with ht1 | ht2
+        · have hdiv : (5 * StringFlow.Word.wordOrbit w' 7 + 1) % 2 = 0 := by
+            have hv0 : StringFlow.Word.wordValid (w' ++ [1]) 7 := by
+              have hv0' : StringFlow.Word.wordValid (w' ++ [StringFlow.Word.wordLast w]) 7 := by
+                dsimp [w']
+                rwa [← hsplit]
+              simpa [ht1] using hv0'
+            have hv := (wordValid_append_singleton w' 7 1).mp hv0
+            simpa using hv.2
+          have h2s : 2 * s = 5 * StringFlow.Word.wordOrbit w' 7 + 3 := by
+            dsimp [s]
+            have hdvd : 2 ∣ 5 * StringFlow.Word.wordOrbit w' 7 + 1 :=
+              Nat.dvd_iff_mod_eq_zero.mpr hdiv
+            have h2r : 2 * ((5 * StringFlow.Word.wordOrbit w' 7 + 1) / 2) =
+                5 * StringFlow.Word.wordOrbit w' 7 + 1 := Nat.mul_div_cancel' hdvd
+            have horbit : StringFlow.Word.wordOrbit w 7 =
+                (5 * StringFlow.Word.wordOrbit w' 7 + 1) / 2 := by
+              rw [hsplit, ht1]
+              simpa using wordOrbit_append_singleton w' 7 1
+            rw [← horbit] at h2r
+            omega
+          have h4mod : s % 5 = 4 :=
+            s_mod_five_of_t1 (StringFlow.Word.wordOrbit w' 7) s h2s
+          rw [reverseStripN_t1 i s h4mod]
+          dsimp [s]
+          have hq : (2 * (StringFlow.Word.wordOrbit w 7 + 1) + 2) / 5 =
+              StringFlow.Word.wordOrbit w' 7 + 1 :=
+            div_t1 (StringFlow.Word.wordOrbit w' 7) (StringFlow.Word.wordOrbit w 7 + 1) h2s
+          rw [hq]
+        · have hdiv : (5 * StringFlow.Word.wordOrbit w' 7 + 1) % 4 = 0 := by
+            have hv0 : StringFlow.Word.wordValid (w' ++ [2]) 7 := by
+              have hv0' : StringFlow.Word.wordValid (w' ++ [StringFlow.Word.wordLast w]) 7 := by
+                dsimp [w']
+                rwa [← hsplit]
+              simpa [ht2] using hv0'
+            have hv := (wordValid_append_singleton w' 7 2).mp hv0
+            simpa using hv.2
+          have h4s : 4 * s = 5 * StringFlow.Word.wordOrbit w' 7 + 5 := by
+            dsimp [s]
+            have hdvd : 4 ∣ 5 * StringFlow.Word.wordOrbit w' 7 + 1 :=
+              Nat.dvd_iff_mod_eq_zero.mpr hdiv
+            have h4r : 4 * ((5 * StringFlow.Word.wordOrbit w' 7 + 1) / 4) =
+                5 * StringFlow.Word.wordOrbit w' 7 + 1 := Nat.mul_div_cancel' hdvd
+            have horbit : StringFlow.Word.wordOrbit w 7 =
+                (5 * StringFlow.Word.wordOrbit w' 7 + 1) / 4 := by
+              rw [hsplit, ht2]
+              simpa using wordOrbit_append_singleton w' 7 2
+            rw [← horbit] at h4r
+            omega
+          have h0mod : s % 5 = 0 :=
+            s_mod_five_of_t2 (StringFlow.Word.wordOrbit w' 7) s h4s
+          rw [reverseStripN_t2 i s h0mod]
+          dsimp [s]
+          have hq : (4 * (StringFlow.Word.wordOrbit w 7 + 1)) / 5 =
+              StringFlow.Word.wordOrbit w' 7 + 1 :=
+            div_t2 (StringFlow.Word.wordOrbit w' 7) (StringFlow.Word.wordOrbit w 7 + 1) h4s
+          rw [hq]
+      rw [hstep]
+      exact ih w' hi' hvalid' hok'
+
+/-- If two strip runs both first stop at `8`, and neither stops before
+their respective run lengths, then the run lengths agree. -/
+lemma reverseStripN_first_stop_unique
+    (n m S : Nat)
+    (h1 : reverseStripN n S = 8)
+    (h2 : reverseStripN m S = 8)
+    (hstop1 : ∀ i : Nat, i < n → (reverseStripN i S) % 5 = 4 ∨
+      (reverseStripN i S) % 5 = 0)
+    (hstop2 : ∀ i : Nat, i < m → (reverseStripN i S) % 5 = 4 ∨
+      (reverseStripN i S) % 5 = 0) :
+    n = m := by
+  by_contra hne
+  by_cases hnm : n < m
+  · have hmod := hstop2 n hnm
+    have h8mod : 8 % 5 = 3 := by norm_num
+    have h8 : reverseStripN n S % 5 = 8 % 5 := by rw [h1]
+    rw [h8mod] at h8
+    rcases hmod with h4 | h0 <;> omega
+  · have hmn : m < n := by omega
+    have hmod := hstop1 m hmn
+    have h8mod : 8 % 5 = 3 := by norm_num
+    have h8 : reverseStripN m S % 5 = 8 % 5 := by rw [h2]
+    rw [h8mod] at h8
+    rcases hmod with h4 | h0 <;> omega
+
 theorem firstBlockPrefixExact_of_premises
     (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
     (r r_prev k : Nat) (w : List Nat)
@@ -5228,13 +5466,16 @@ theorem firstBlockPrefixExact_of_premises
     (hReach : FullOrbitFrom7 r)
     (hReset : ∃ s0 t δ : Nat,
       ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
-        IsPreviousEvenTerminal s0 j k)
+        PreviousTerminalAtDepth s0 j k r_prev)
     (hvalid : StringFlow.Word.wordValid w 7)
     (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
     (hw : StringFlow.Word.wordOrbit w 7 = r_prev) :
     FirstBlockPrefixExact j w := by
   rcases hReset with ⟨s0, t, δ, hre, hprod, hprev⟩
-  rcases hprev with ⟨r0, hprod', hodd_s0, _hnd5, _hlt, _horbit⟩
+  rcases hprev with ⟨hprev_terminal, hr_prev_depth⟩
+  have hk : k = 0 :=
+    reset_k_zero_of_previous_terminal_depth s0 j k r_prev ⟨hprev_terminal, hr_prev_depth⟩ hprod
+  rcases hprev_terminal with ⟨r0, hprod', hodd_s0, hnd5, _hlt, _horbit⟩
   have hrprev_even : r_prev % 2 = 0 := by
     have hodd_l : (s0 * 5 ^ k) % 2 = 1 :=
       StringFlow.Lte.odd_mul_odd_mod_two s0 (5 ^ k) hodd_s0
@@ -5250,8 +5491,21 @@ theorem firstBlockPrefixExact_of_premises
       norm_num at hodd_l
   have hprefix : ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i :=
     legal_word_prefix_exact_of_even_terminal w r_prev hvalid hok hw hrprev_even
+  subst k
+  have hne : w ≠ [] := by
+    intro hw
+    subst w
+    change 7 = r_prev at hw
+    rw [← hw] at hrprev_even
+    norm_num at hrprev_even
+  have hs0 : s0 = StringFlow.Word.wordOrbit w 7 + 1 := by
+    simpa [hw] using hprod
+  have hlast : StringFlow.Word.wordLast w = 1 :=
+    previous_terminal_word_last_one_of_k0 w s0 0 hvalid hok hne (by simpa using hs0)
+      (by rfl) hnd5
   constructor
-  · -- 36.30.23.2 剩余半：块首深度对齐给出 `w.length = j-1`.
+  · -- 36.30.23.2 剩余半：由 `hr_prev_depth` 与反向剥离确定性重建
+    -- 首块词，得到 `w.length = j-1`.
     sorry
   · exact hprefix
 
