@@ -150,6 +150,8 @@ namespace S6Audit
 #check m2_pos_H_s_exact
 #check m2_pos_failure_size_inequality
 #check m2_pos_failure_word_inequality
+#check orbitSegmentWord_getD
+#check m2_pos_block_head_depth_ge_18
 
 -- Axioms used by the `m2>0` word-weight relations.
 #print axioms weight_diff_ge_steps
@@ -164,6 +166,8 @@ namespace S6Audit
 #print axioms m2_pos_H_s_exact
 #print axioms m2_pos_failure_size_inequality
 #print axioms m2_pos_failure_word_inequality
+#print axioms orbitSegmentWord_getD
+#print axioms m2_pos_block_head_depth_ge_18
 
 end S6Audit
 

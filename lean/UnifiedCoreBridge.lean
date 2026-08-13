@@ -2461,6 +2461,31 @@ lemma orbitSegmentWord_length (j d : Nat) :
   | zero => simp [orbitSegmentWord]
   | succ d ih => simp [orbitSegmentWord, ih]
 
+/-- The entry at index `i` of the orbit segment word is the exact
+full-orbit step weight at depth `j-1+i`. -/
+lemma orbitSegmentWord_getD (j d i : Nat) (hi : i < d) :
+    (orbitSegmentWord j d).getD i 0 = orbitStepWeight (j - 1 + i) := by
+  induction d generalizing i with
+  | zero => omega
+  | succ d ih =>
+      rw [orbitSegmentWord]
+      by_cases hid : i < d
+      · have hlen : i < (orbitSegmentWord j d).length := by
+          rw [orbitSegmentWord_length]
+          exact hid
+        rw [UnifiedCoreAudit.getD_append_left (orbitSegmentWord j d)
+          [orbitStepWeight (j - 1 + d)] i 0 hlen]
+        exact ih i hid
+      · have hi' : i = d := by omega
+        subst i
+        have hlen : d = (orbitSegmentWord j d).length :=
+          (orbitSegmentWord_length j d).symm
+        conv_lhs =>
+          arg 2
+          rw [hlen]
+        rw [UnifiedCoreAudit.getD_append_last (orbitSegmentWord j d)
+          (orbitStepWeight (j - 1 + d)) 0]
+
 /-- The segment word maps `g = fullOrbitIter (j-1)` to
 `x = fullOrbitIter (j-1+d)`. -/
 lemma orbitSegmentWord_orbit (j d : Nat) :
@@ -4114,5 +4139,61 @@ lemma m2_pos_failure_word_inequality
       exact hsum'
     omega
   rwa [hLHS] at hineq
+
+/-- Word-segment alignment for the `m2>0` branch: the block head is
+itself a full-orbit state at depth at least 18.  If the head were at
+depth `≤17`, the exact block suffix would contain the depth-17 step,
+whose weight is 4, contradicting the block's `{1,2}` word. -/
+lemma m2_pos_block_head_depth_ge_18
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 n0 : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hiter : fullOrbitIter n0 = r)
+    (hn : n = s - j)
+    (hm : (m1, m2) = UnifiedCoreAudit.tailSplit (blockWord weight j n))
+    (hm2 : 1 ≤ m2)
+    (hn_a : 18 ≤ n0 + (n - m1 - m2)) :
+    18 ≤ n0 := by
+  by_contra h
+  have hn0le : n0 ≤ 17 := by omega
+  have hseg := blockWord_eq_orbitSegment_of_fullOrbit j Wp Wj q Aj A_s s W_s r_s L H_s n0
+    weight r hPrem hrj hiter n (by
+      have hsum' := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+      have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+      rw [← hm] at hsum'
+      rw [hlen] at hsum'
+      have hn' : n = s - j := hn
+      omega)
+  have hi : 17 - n0 < n := by
+    have hsum' := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum'
+    rw [hlen] at hsum'
+    have hn' : n = s - j := hn
+    omega
+  have hb := UnifiedCoreAudit.blockWord_getD weight j n (17 - n0) hi
+  have hb' : (orbitSegmentWord (n0 + 1) n).getD (17 - n0) 0 =
+      weight (j + (17 - n0) + 1) - weight (j + (17 - n0)) := by
+    rw [← hseg.1]
+    exact hb
+  have hsegEntry := orbitSegmentWord_getD (n0 + 1) n (17 - n0) hi
+  have hsegEntry17 : orbitStepWeight 17 =
+      weight (j + (17 - n0) + 1) - weight (j + (17 - n0)) := by
+    have hidx2 : n0 + 1 - 1 + (17 - n0) = 17 := by omega
+    rw [hidx2] at hsegEntry
+    rw [← hsegEntry, hb']
+  have h17eq : orbitStepWeight 17 = 4 := by
+    unfold orbitStepWeight
+    rw [fullOrbit_prefix_step_weights_17.2]
+  have h4 : weight (j + (17 - n0) + 1) - weight (j + (17 - n0)) = 4 := by
+    rw [← hsegEntry17]
+    exact h17eq
+  have hk' : j + (17 - n0) < s := by
+    have hn' : n = s - j := hn
+    omega
+  have hcase : weight (j + (17 - n0) + 1) = weight (j + (17 - n0)) + 1 ∨
+      weight (j + (17 - n0) + 1) = weight (j + (17 - n0)) + 2 :=
+    hPrem.weight_step (j + (17 - n0)) hk'
+  rcases hcase with h1 | h2 <;> omega
 
 end S6Audit
