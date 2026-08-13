@@ -79,6 +79,12 @@ namespace S6Audit
 -- Axioms used by the segment-length-`d` candidate bridge.
 #print axioms candidate_parameterization_of_reset_full_orbit_d
 
+-- Statement check: `d=2` exclusion assembled from the reset bridge.
+#check d2_exclusion_of_reset_candidate
+
+-- Axioms used by the `d=2` reset-candidate exclusion.
+#print axioms d2_exclusion_of_reset_candidate
+
 end S6Audit
 
 namespace StringFlow

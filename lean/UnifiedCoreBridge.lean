@@ -646,8 +646,9 @@ theorem candidate_parameterization_of_reset_full_orbit
   exact ⟨hx_cand, hx_iter, hiter_g.symm, hstep_e.symm⟩
 
 /-- Same bridge for a general segment length `d`: `g` is `d` full-orbit
-steps before `x`, and `e` is the weight of the step into `g`.  This is the
-input shape used by the `d=2`, `d=3` and `d≥4` exclusions. -/
+steps before `x`, `e` is the weight of the step into `g`, and the reset
+head depth is `n0-d`.  This is the input shape used by the `d=2`, `d=3`
+and `d≥4` exclusions. -/
 theorem candidate_parameterization_of_reset_full_orbit_d
     (n0 d t δ e g s0 x r : Nat)
     (_hd : 1 ≤ d)
@@ -656,14 +657,14 @@ theorem candidate_parameterization_of_reset_full_orbit_d
     (hiter_g : fullOrbitIter (n0 - (1 + d)) = g)
     (hstep_e : orbitStepWeight (n0 - (2 + d)) = e)
     (hstep_t : orbitStepWeight (n0 - 1) = t)
-    (hres : ResetHeadEq s0 (n0 - 1) 0 t δ r)
+    (hres : ResetHeadEq s0 (n0 - d) 0 t δ r)
     (hterm : s0 = 2 ^ (e - 1) * g + 1)
     (hr : r = candidateRj x t)
     (hdiv : (5 * x + 1) % 2 ^ t = 0) :
-    x = candidateX (n0 - 1) e g δ ∧ x = fullOrbitIter (n0 - 1) ∧
+    x = candidateX (n0 - d) e g δ ∧ x = fullOrbitIter (n0 - 1) ∧
       g = fullOrbitIter (n0 - (1 + d)) ∧ e = orbitStepWeight (n0 - (2 + d)) := by
   have hx_iter := candidateRj_eq_fullOrbitIter_of_weight n0 x t r (by omega) hiter hstep_t hr hdiv
-  have hx_cand := candidateX_of_reset_and_terminal s0 (n0 - 1) t δ r x e g
+  have hx_cand := candidateX_of_reset_and_terminal s0 (n0 - d) t δ r x e g
     (by omega) hres hr hdiv hterm
   exact ⟨hx_cand, hx_iter, hiter_g.symm, hstep_e.symm⟩
 
@@ -1972,6 +1973,40 @@ theorem d2_exclusion_of_orbit
     False := by
   have hseg := d2_segment_equation j e g δ u1 (by omega) he hiter hx hstep1 hstep2
   exact d2_exclusion j e g δ u1 hj hgpos hg hδ he hu1 hseg hxmod
+
+/-- `d=2` exclusion assembled from the segment-length-`d` reset bridge:
+`g` is two full-orbit steps before the reset predecessor `x`, and the
+candidate depth is `n0-2`. -/
+theorem d2_exclusion_of_reset_candidate
+    (n0 t δ e g u1 s0 x r : Nat)
+    (hn0 : 6 ≤ n0)
+    (hiter : fullOrbitIter n0 = r)
+    (hiter_g : fullOrbitIter (n0 - 3) = g)
+    (hstep_e : orbitStepWeight (n0 - 4) = e)
+    (hstep_t : orbitStepWeight (n0 - 1) = t)
+    (hstep1 : orbitStepWeight (n0 - 3) = u1)
+    (hstep2 : orbitStepWeight (n0 - 2) = 1)
+    (hres : ResetHeadEq s0 (n0 - 2) 0 t δ r)
+    (hterm : s0 = 2 ^ (e - 1) * g + 1)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (hgpos : 0 < g)
+    (hg : g < 5 ^ (n0 - 3) / 2 ^ (e - 1))
+    (hδ : δ = 1 ∨ δ = 3)
+    (he : 2 ≤ e)
+    (hu1 : u1 = 1 ∨ u1 = 2)
+    (hxmod : candidateX (n0 - 2) e g δ % 1280 = 743) :
+    False := by
+  have hbridge := candidate_parameterization_of_reset_full_orbit_d n0 2 t δ e g s0 x r
+    (by norm_num) (by omega) hiter hiter_g hstep_e hstep_t hres hterm hr hdiv
+  have hx : fullOrbitIter (n0 - 1) = candidateX (n0 - 2) e g δ := by
+    rw [← hbridge.2.1, hbridge.1]
+  have hx' : fullOrbitIter (n0 - 2 + 1) = candidateX (n0 - 2) e g δ := by
+    have hidx : n0 - 2 + 1 = n0 - 1 := by omega
+    rw [hidx]
+    exact hx
+  exact d2_exclusion_of_orbit (n0 - 2) e g δ u1 (by omega) hgpos hg hδ he hu1
+    hiter_g hx' hstep1 hstep2 hxmod
 
 /-- `d=3` unique family exclusion, expressed directly on the actual
 full-orbit segment `z→w`. -/
