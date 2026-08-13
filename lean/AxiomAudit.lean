@@ -61,6 +61,12 @@ namespace S6Audit
 -- Axioms used by the exact-predecessor bridge lemma.
 #print axioms candidateRj_eq_fullOrbitIter_of_weight
 
+-- Statement check: packaged candidate parameterization from reset data.
+#check candidate_parameterization_of_reset_full_orbit
+
+-- Axioms used by the packaged candidate bridge.
+#print axioms candidate_parameterization_of_reset_full_orbit
+
 end S6Audit
 
 namespace StringFlow

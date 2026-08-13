@@ -622,6 +622,29 @@ lemma candidateRj_eq_fullOrbitIter_of_weight
   dsimp [x0] at hx0x
   exact hx0x.symm
 
+/-- Packaged candidate parameterization: if the full-orbit step into the
+block head `r` has weight `t`, and the reset terminal satisfies
+`s0 = 2^(e-1)*g + 1` with `g` two full-orbit steps before `r`, then the
+reset predecessor `x` is simultaneously the full-orbit predecessor and
+the candidate `candidateX (n0-1) e g δ`. -/
+theorem candidate_parameterization_of_reset_full_orbit
+    (n0 t δ e g s0 x r : Nat)
+    (hn0 : 2 ≤ n0)
+    (hiter : fullOrbitIter n0 = r)
+    (hiter_g : fullOrbitIter (n0 - 2) = g)
+    (hstep_e : orbitStepWeight (n0 - 2) = e)
+    (hstep_t : orbitStepWeight (n0 - 1) = t)
+    (hres : ResetHeadEq s0 (n0 - 1) 0 t δ r)
+    (hterm : s0 = 2 ^ (e - 1) * g + 1)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    x = candidateX (n0 - 1) e g δ ∧ x = fullOrbitIter (n0 - 1) ∧
+      g = fullOrbitIter (n0 - 2) ∧ e = orbitStepWeight (n0 - 2) := by
+  have hx_iter := candidateRj_eq_fullOrbitIter_of_weight n0 x t r (by omega) hiter hstep_t hr hdiv
+  have hx_cand := candidateX_of_reset_and_terminal s0 (n0 - 1) t δ r x e g
+    (by omega) hres hr hdiv hterm
+  exact ⟨hx_cand, hx_iter, hiter_g.symm, hstep_e.symm⟩
+
 /-- 36.30.23.4 branch table, `e=2`: `candidateX ≡ 2+δ (mod 4)`
 when the full-orbit state `g` is odd. -/
 lemma two_mul_odd_mod4 (g : Nat) (hgodd : g % 2 = 1) : (2 * g) % 4 = 2 := by
