@@ -3499,6 +3499,10 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.d1_segment_equation/d2_segment_equation` | proved | exact `d=1`/`d=2` candidate segment equations from the actual orbit |
 | `UnifiedCoreBridge.candidate_d1_input` | proved | converse of `d1_segment_equation`: a single `1+4a` orbit step from `g` to `x` makes `fullOrbitIter j = candidateX` |
 | `UnifiedCoreBridge.d1_exclusion_of_orbit/d2_exclusion_of_orbit` | proved | orbit-data wrappers that invoke `d1_exclusion`/`d2_exclusion` |
+| `UnifiedCoreBridge.blockWord_eq_orbitSegment_of_fullOrbit` | proved | word-segment continuity: a legal block from a full-orbit head is the exact continuous full-orbit suffix `orbitSegmentWord (n0+1) n`, and every block state is `fullOrbitIter (n0+n)` |
+| `UnifiedCoreBridge.blockWord_full_suffix_of_fullOrbit(_reach)` | proved | the full block word equals the full-orbit suffix and `r_s=fullOrbitIter (n0+(s-j))`; existential form from `FullOrbitFrom7 r` |
+| `UnifiedCoreBridge.blockState_fullOrbit_of_premises_fullOrbit` | proved | every block state from a full-orbit block head is itself a full-orbit state |
+| `UnifiedCoreBridge.tail_failure_m2_even_u_mod8` / `tail_failure_m2_odd_u_mod8` | proved | exact `m2>0` tail residue on `u`: `m2` even gives `u≡3 (mod 8)`, `m2` odd gives `u≡7 (mod 8)`; pure arithmetic, no scan |
 | directed legal-word check (length <= 20) | evidence, not proof | 130,322 legal fixed-`q` blocks satisfy the no-`H_ge` premises with `2 <= H_s`; 0 violate the final inequality; 3 have real-orbit heads |
 
 Minimum failing premises found so far:
@@ -3517,10 +3521,14 @@ Minimum failing premises found so far:
    `t=1` steps strip to `L_eff=L+m1`, and a final `t=2` run of length
    `m2` gives `r_a+1=2^(2*m2+1)*u` with
    `w_eff=(3*5^m2*u-1)/2^(L_eff+3)` and a single 2-adic congruence on
-   `u`.  The remaining `FullOrbitFrom7` facts not yet used are the exact
-   prefix position of `r_a`, the word shape from `r_j` to `r_a`, and the
-   reset equation.  Until those enter the proof, no true-card or
-   candidate-true-card verdict is allowed; the audit remains open.
+   `u`.  The word-segment continuity lemma now supplies the exact prefix
+   position of `r_a` and the word shape from `r_j` to `r_a`; the `m2>0`
+   tail residue on `u` is fixed by `tail_failure_m2_even_u_mod8` and
+   `tail_failure_m2_odd_u_mod8`.  The reset equation (`ResetHeadEq` from
+   the previous even terminal) is still not encoded in
+   `All36_20PremisesNoHge`, so the premises-to-candidate bridge and the
+   `m2>0` exclusion remain open.  Until those enter the proof, no true-card
+   or candidate-true-card verdict is allowed; the audit remains open.
 
 Math-level closure (2026-08-13): with `FinitePrefix` formalized, the
 `d=1`, `d=2`, `d=3` and `d≥4` exclusions in document 36.30.23.5 close

@@ -1880,4 +1880,370 @@ theorem dge4_e2_exclusion_of_orbit (n a y x : Nat)
     False :=
   dge4_e2_a_ge1_excluded n a y x ha hy hxodd hstep hsmall
 
+/-- An even block state cannot take a legal `t=1` or `t=2` step, because
+`5*y+1` is then odd. -/
+lemma no_legal_step_of_even (y : Nat) (hy : y % 2 = 0) :
+    ∀ t : Nat, t = 1 ∨ t = 2 → (5 * y + 1) % 2 ^ t ≠ 0 := by
+  intro t ht
+  have hmod : (5 * y + 1) % 2 = 1 := by
+    rw [Nat.add_mod, Nat.mul_mod, hy]
+  rcases ht with rfl | rfl
+  · intro hzero
+    have hzero2 : (5 * y + 1) % 2 = 0 := by simpa [Nat.pow_one] using hzero
+    omega
+  · intro hzero
+    have hdiv4 : 2 ^ 2 ∣ 5 * y + 1 := Nat.dvd_iff_mod_eq_zero.mpr hzero
+    have hdiv2 : 2 ∣ 5 * y + 1 := dvd_trans (by norm_num : 2 ∣ 2 ^ 2) hdiv4
+    have hzero2 : (5 * y + 1) % 2 = 0 := Nat.dvd_iff_mod_eq_zero.mp hdiv2
+    omega
+
+/-- The terminal block state is exactly `r_s`. -/
+lemma blockState_eq_r_s_of_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight) :
+    blockState weight q s = r_s := by
+  dsimp [blockState]
+  rw [← hPrem.A_s_mol, ← hPrem.Ws_def, hPrem.r_s_eq]
+
+/-- Every interior block state before the tail is odd: an even state has no
+legal successor, and the tail itself is `5 mod 8`. -/
+lemma blockState_next_odd_of_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s k : Nat) (weight : Nat → Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hk : k < s) :
+    (blockState weight q (k + 1)) % 2 = 1 := by
+  by_contra hnot
+  have heven : (blockState weight q (k + 1)) % 2 = 0 := by
+    have hlt : (blockState weight q (k + 1)) % 2 < 2 := Nat.mod_lt _ (by decide)
+    omega
+  by_cases hks : k + 1 < s
+  · rcases hPrem.weight_step (k + 1) hks with ht1 | ht2
+    · have hstep := blockState_step weight q (k + 1) 1 ht1
+        (hPrem.valid_prefix (k + 1) (by omega))
+        (hPrem.valid_prefix (k + 2) (by omega))
+      exact no_legal_step_of_even (blockState weight q (k + 1)) heven 1 (Or.inl rfl) hstep.1
+    · have hstep := blockState_step weight q (k + 1) 2 ht2
+        (hPrem.valid_prefix (k + 1) (by omega))
+        (hPrem.valid_prefix (k + 2) (by omega))
+      exact no_legal_step_of_even (blockState weight q (k + 1)) heven 2 (Or.inr rfl) hstep.1
+  · have hk1 : k + 1 = s := by omega
+    have hrs : blockState weight q s = r_s :=
+      blockState_eq_r_s_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s weight hPrem
+    have heven' : r_s % 2 = 0 := by
+      rw [← hrs, ← hk1]
+      exact heven
+    have hmod2 : r_s % 2 = (r_s % 8) % 2 := by
+      exact (Nat.mod_mod_of_dvd r_s (c := 2) (b := 8) (by norm_num : 2 ∣ 8)).symm
+    have hodd : r_s % 2 = 1 := by
+      rw [hmod2, hPrem.r_s_mod8]
+    omega
+
+/-- All block states from the full-orbit block head to the tail are odd. -/
+lemma blockState_odd_of_premises_fullOrbit
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : FullOrbitFrom7 r)
+    (k : Nat) (hjk : j ≤ k) (hks : k ≤ s) :
+    (blockState weight q k) % 2 = 1 := by
+  have hbsj : blockState weight q j = r := by
+    dsimp [blockState]
+    rw [← hPrem.Aj_mol, ← hPrem.Wj_def, ← hrj]
+  have hodd0 : r % 2 = 1 := by
+    simpa [IsOdd] using FullOrbitFrom7_odd r hReach
+  induction k with
+  | zero =>
+      have hjpos : 1 ≤ j := hPrem.j_pos
+      exfalso
+      omega
+  | succ k ih =>
+      by_cases hklt : k < j
+      · have hkj : k + 1 = j := by omega
+        have h' : blockState weight q (k + 1) = r := by
+          rw [hkj]
+          exact hbsj
+        rw [h']
+        exact hodd0
+      · have hprev := ih (by omega) (by omega)
+        exact blockState_next_odd_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s k
+          weight hPrem (by omega)
+
+/-- In a legal block, the block step weight is the exact full-orbit step
+weight: `t = v2(5*x+1)`. -/
+lemma blockState_step_exact_of_premises_fullOrbit
+    (j Wp Wj q Aj A_s s W_s r_s L H_s k : Nat) (weight : Nat → Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hk : k < s) :
+    weight (k + 1) - weight k = twoValuation (5 * blockState weight q k + 1) := by
+  rcases hPrem.weight_step k hk with ht1 | ht2
+  · have hstep := blockState_step weight q k 1 ht1
+      (hPrem.valid_prefix k (by omega))
+      (hPrem.valid_prefix (k + 1) (by omega))
+    have hodd : (blockState weight q (k + 1)) % 2 = 1 :=
+      blockState_next_odd_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s k weight hPrem hk
+    have hdvd : 2 ^ 1 ∣ 5 * blockState weight q k + 1 := Nat.dvd_iff_mod_eq_zero.mpr hstep.1
+    have hmul : 2 ^ 1 * blockState weight q (k + 1) = 5 * blockState weight q k + 1 := by
+      rw [← hstep.2]
+      exact Nat.mul_div_cancel' hdvd
+    have hv : twoValuation (5 * blockState weight q k + 1) = 1 := by
+      have hv' := StringFlow.Lte.twoValuation_mul_two_pow_eq 1
+        (blockState weight q (k + 1)) hodd
+      rw [hmul] at hv'
+      exact hv'
+    rw [hv]
+    omega
+  · have hstep := blockState_step weight q k 2 ht2
+      (hPrem.valid_prefix k (by omega))
+      (hPrem.valid_prefix (k + 1) (by omega))
+    have hodd : (blockState weight q (k + 1)) % 2 = 1 :=
+      blockState_next_odd_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s k weight hPrem hk
+    have hdvd : 2 ^ 2 ∣ 5 * blockState weight q k + 1 := Nat.dvd_iff_mod_eq_zero.mpr hstep.1
+    have hmul : 2 ^ 2 * blockState weight q (k + 1) = 5 * blockState weight q k + 1 := by
+      rw [← hstep.2]
+      exact Nat.mul_div_cancel' hdvd
+    have hv : twoValuation (5 * blockState weight q k + 1) = 2 := by
+      have hv' := StringFlow.Lte.twoValuation_mul_two_pow_eq 2
+        (blockState weight q (k + 1)) hodd
+      rw [hmul] at hv'
+      exact hv'
+    rw [hv]
+    omega
+
+/-- Word-segment continuity: if the block head `r` is a full-orbit state at
+depth `n0`, then every block prefix of length `n` equals the corresponding
+full-orbit suffix word, and its endpoint is the full-orbit iterate. -/
+theorem blockWord_eq_orbitSegment_of_fullOrbit
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n0 : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hiter : fullOrbitIter n0 = r)
+    (n : Nat) (hn : n ≤ s - j) :
+    blockWord weight j n = orbitSegmentWord (n0 + 1) n ∧
+      blockState weight q (j + n) = fullOrbitIter (n0 + n) := by
+  let hReach : FullOrbitFrom7 r := ⟨n0, hiter⟩
+  induction n with
+  | zero =>
+      constructor
+      · simp [blockWord, orbitSegmentWord]
+      · have hbsj : blockState weight q j = r := by
+          dsimp [blockState]
+          rw [← hPrem.Aj_mol, ← hPrem.Wj_def, ← hrj]
+        simp [hbsj, hiter]
+  | succ n ih =>
+      have hnle : n ≤ s - j := by omega
+      rcases ih hnle with ⟨hw, hbs⟩
+      have hk : j + n < s := by omega
+      have hexact := blockState_step_exact_of_premises_fullOrbit
+        j Wp Wj q Aj A_s s W_s r_s L H_s (j + n) weight hPrem hk
+      have hval : twoValuation (5 * blockState weight q (j + n) + 1) =
+          weight (j + n + 1) - weight (j + n) := hexact.symm
+      have hweight : orbitStepWeight (n0 + n) = weight (j + n + 1) - weight (j + n) := by
+        unfold orbitStepWeight
+        rw [← hbs]
+        exact hval
+      have hw' : blockWord weight j (n + 1) = orbitSegmentWord (n0 + 1) (n + 1) := by
+        simp [blockWord, orbitSegmentWord, hw, hweight]
+      have hnext : blockState weight q (j + (n + 1)) = fullOrbitIter (n0 + (n + 1)) := by
+        have hk1 : j + n + 1 = j + (n + 1) := by omega
+        have hk2 : n0 + n + 1 = n0 + (n + 1) := by omega
+        rw [← hk1, ← hk2]
+        have hbs' : blockState weight q ((j + n) + 1) = fullOrbitStep (blockState weight q (j + n)) := by
+          rcases hPrem.weight_step (j + n) hk with ht1 | ht2
+          · have hstep := blockState_step weight q (j + n) 1 ht1
+              (hPrem.valid_prefix (j + n) (by omega))
+              (hPrem.valid_prefix (j + n + 1) (by omega))
+            have hv1 : twoValuation (5 * blockState weight q (j + n) + 1) = 1 := by
+              have hex' : twoValuation (5 * blockState weight q (j + n) + 1) =
+                  weight (j + n + 1) - weight (j + n) := hexact.symm
+              rw [hex', ht1]
+              norm_num
+            unfold fullOrbitStep
+            rw [hv1]
+            exact hstep.2.symm
+          · have hstep := blockState_step weight q (j + n) 2 ht2
+              (hPrem.valid_prefix (j + n) (by omega))
+              (hPrem.valid_prefix (j + n + 1) (by omega))
+            have hv2 : twoValuation (5 * blockState weight q (j + n) + 1) = 2 := by
+              have hex' : twoValuation (5 * blockState weight q (j + n) + 1) =
+                  weight (j + n + 1) - weight (j + n) := hexact.symm
+              rw [hex', ht2]
+              norm_num
+            unfold fullOrbitStep
+            rw [hv2]
+            exact hstep.2.symm
+        rw [hbs']
+        rw [hbs]
+        rfl
+      constructor
+      · exact hw'
+      · exact hnext
+
+/-- The full block word is the corresponding full-orbit suffix, and the
+block tail is its full-orbit endpoint. -/
+theorem blockWord_full_suffix_of_fullOrbit
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n0 : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hiter : fullOrbitIter n0 = r) :
+    blockWord weight j (s - j) = orbitSegmentWord (n0 + 1) (s - j) ∧
+      r_s = fullOrbitIter (n0 + (s - j)) := by
+  have h := blockWord_eq_orbitSegment_of_fullOrbit j Wp Wj q Aj A_s s W_s r_s L H_s n0
+    weight r hPrem hrj hiter (s - j) (by omega)
+  constructor
+  · exact h.1
+  · have hk : j + (s - j) = s := Nat.add_sub_of_le hPrem.j_le_s
+    have h2 : blockState weight q (j + (s - j)) = fullOrbitIter (n0 + (s - j)) := h.2
+    have hrs : blockState weight q s = r_s :=
+      blockState_eq_r_s_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s weight hPrem
+    rw [hk] at h2
+    rw [hrs] at h2
+    exact h2
+
+/-- A full-orbit block head makes the whole block word a full-orbit suffix:
+the existential form of `FullOrbitFrom7 r`. -/
+theorem blockWord_full_suffix_of_fullOrbit_reach
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : FullOrbitFrom7 r) :
+    ∃ n0 : Nat, fullOrbitIter n0 = r ∧
+      blockWord weight j (s - j) = orbitSegmentWord (n0 + 1) (s - j) ∧
+        r_s = fullOrbitIter (n0 + (s - j)) := by
+  rcases hReach with ⟨n0, hiter⟩
+  have h := blockWord_full_suffix_of_fullOrbit j Wp Wj q Aj A_s s W_s r_s L H_s n0
+    weight r hPrem hrj hiter
+  exact ⟨n0, hiter, h.1, h.2⟩
+
+/-- Every block state between a full-orbit block head and the block tail is
+itself a full-orbit state. -/
+theorem blockState_fullOrbit_of_premises_fullOrbit
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : FullOrbitFrom7 r)
+    (k : Nat) (hjk : j ≤ k) (hks : k ≤ s) :
+    FullOrbitFrom7 (blockState weight q k) := by
+  rcases hReach with ⟨n0, hiter⟩
+  have h := blockWord_eq_orbitSegment_of_fullOrbit j Wp Wj q Aj A_s s W_s r_s L H_s n0
+    weight r hPrem hrj hiter (k - j) (by omega)
+  have hk' : j + (k - j) = k := Nat.add_sub_of_le hjk
+  have h2 : blockState weight q (j + (k - j)) = fullOrbitIter (n0 + (k - j)) := h.2
+  rw [hk'] at h2
+  exact ⟨n0 + (k - j), h2.symm⟩
+
+/-- `m2>0`, even run length: the cleared tail congruence fixes
+`u ≡ 3 (mod 8)`. -/
+lemma tail_failure_m2_even_u_mod8
+    (m1 m2 L _H_s u w : Nat)
+    (hm2even : m2 % 2 = 0)
+    (hupos : 0 < u)
+    (hcong : 3 * 5 ^ m2 * u - 1 = 2 ^ ((L + m1) + 3) * w) :
+    u % 8 = 3 := by
+  have hA : 1 ≤ 3 * 5 ^ m2 * u := by
+    have h5 : 0 < 5 ^ m2 := by positivity
+    have h3u : 0 < 3 * u := by positivity
+    nlinarith
+  have hcong' : 3 * 5 ^ m2 * u = 2 ^ ((L + m1) + 3) * w + 1 := by omega
+  have hdvd8 : 8 ∣ 2 ^ ((L + m1) + 3) := by
+    have hk : 3 ≤ (L + m1) + 3 := by omega
+    have h := pow_dvd_pow 2 hk
+    simpa using h
+  have hdvd8w : 8 ∣ 2 ^ ((L + m1) + 3) * w := dvd_mul_of_dvd_left hdvd8 w
+  have hmodpow : (2 ^ ((L + m1) + 3) * w) % 8 = 0 := Nat.dvd_iff_mod_eq_zero.mp hdvd8w
+  have hmod3u : (3 * 5 ^ m2 * u) % 8 = 1 := by
+    rw [hcong']
+    rw [Nat.add_mod, hmodpow]
+  have hm2e : m2 = 2 * (m2 / 2) := by
+    have h := Nat.div_add_mod m2 2
+    rw [hm2even] at h
+    omega
+  have h25 : (25 : Nat) % 8 = 1 := by norm_num
+  have hpow25 : (25 ^ (m2 / 2)) % 8 = 1 := by
+    induction m2 / 2 with
+    | zero => norm_num
+    | succ n ih =>
+        rw [Nat.pow_succ, Nat.mul_mod, ih, h25]
+  have hpow5 : (5 ^ m2) % 8 = 1 := by
+    rw [hm2e]
+    rw [Nat.pow_mul]
+    exact hpow25
+  have h3u1 : (3 * u) % 8 = 1 := by
+    have h35 : (3 * 5 ^ m2) % 8 = 3 := by
+      rw [Nat.mul_mod, hpow5]
+    have hmod : (3 * 5 ^ m2 * u) % 8 = (3 * u) % 8 := by
+      rw [show 3 * 5 ^ m2 * u = (3 * 5 ^ m2) * u by ring]
+      rw [Nat.mul_mod, h35]
+      rw [Nat.mul_mod]
+      norm_num
+    rw [← hmod]
+    exact hmod3u
+  have hmod3 : (3 * (u % 8)) % 8 = 1 := by
+    have hmm : (3 * u) % 8 = (3 * (u % 8)) % 8 := by
+      rw [Nat.mul_mod]
+    rw [hmm] at h3u1
+    exact h3u1
+  have hlt8 : u % 8 < 8 := Nat.mod_lt u (by norm_num)
+  interval_cases u % 8
+  all_goals norm_num at hmod3
+  all_goals norm_num
+
+/-- `m2>0`, odd run length: the cleared tail congruence fixes
+`u ≡ 7 (mod 8)`. -/
+lemma tail_failure_m2_odd_u_mod8
+    (m1 m2 L _H_s u w : Nat)
+    (hm2odd : m2 % 2 = 1)
+    (hupos : 0 < u)
+    (hcong : 3 * 5 ^ m2 * u - 1 = 2 ^ ((L + m1) + 3) * w) :
+    u % 8 = 7 := by
+  have hA : 1 ≤ 3 * 5 ^ m2 * u := by
+    have h5 : 0 < 5 ^ m2 := by positivity
+    have h3u : 0 < 3 * u := by positivity
+    nlinarith
+  have hcong' : 3 * 5 ^ m2 * u = 2 ^ ((L + m1) + 3) * w + 1 := by omega
+  have hdvd8 : 8 ∣ 2 ^ ((L + m1) + 3) := by
+    have hk : 3 ≤ (L + m1) + 3 := by omega
+    have h := pow_dvd_pow 2 hk
+    simpa using h
+  have hdvd8w : 8 ∣ 2 ^ ((L + m1) + 3) * w := dvd_mul_of_dvd_left hdvd8 w
+  have hmodpow : (2 ^ ((L + m1) + 3) * w) % 8 = 0 := Nat.dvd_iff_mod_eq_zero.mp hdvd8w
+  have hmod3u : (3 * 5 ^ m2 * u) % 8 = 1 := by
+    rw [hcong']
+    rw [Nat.add_mod, hmodpow]
+  have hm2o : m2 = 2 * (m2 / 2) + 1 := by
+    have h := Nat.div_add_mod m2 2
+    rw [hm2odd] at h
+    omega
+  have h25 : (25 : Nat) % 8 = 1 := by norm_num
+  have hpow25 : (25 ^ (m2 / 2)) % 8 = 1 := by
+    induction m2 / 2 with
+    | zero => norm_num
+    | succ n ih =>
+        rw [Nat.pow_succ, Nat.mul_mod, ih, h25]
+  have hpow5 : (5 ^ m2) % 8 = 5 := by
+    rw [hm2o]
+    rw [Nat.pow_add, Nat.pow_one]
+    rw [Nat.pow_mul]
+    norm_num
+    rw [Nat.mul_mod]
+    rw [hpow25]
+  have h7u1 : (7 * u) % 8 = 1 := by
+    have h35 : (3 * 5 ^ m2) % 8 = 7 := by
+      rw [Nat.mul_mod, hpow5]
+    have hmod : (3 * 5 ^ m2 * u) % 8 = (7 * u) % 8 := by
+      rw [show 3 * 5 ^ m2 * u = (3 * 5 ^ m2) * u by ring]
+      rw [Nat.mul_mod, h35]
+      rw [Nat.mul_mod]
+      norm_num
+    rw [← hmod]
+    exact hmod3u
+  have hmod7 : (7 * (u % 8)) % 8 = 1 := by
+    have hmm : (7 * u) % 8 = (7 * (u % 8)) % 8 := by
+      rw [Nat.mul_mod]
+    rw [hmm] at h7u1
+    exact h7u1
+  have hlt8 : u % 8 < 8 := Nat.mod_lt u (by norm_num)
+  interval_cases u % 8
+  all_goals norm_num at hmod7
+  all_goals norm_num
+
 end S6Audit

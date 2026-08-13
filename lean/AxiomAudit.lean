@@ -1,5 +1,6 @@
 import S6Audit
 import SurvExAudit
+import UnifiedCoreBridge
 
 /-!
 # Axiom audit for the S6 / local-lemma final theorems
@@ -27,6 +28,26 @@ namespace S6Audit
 
 -- Axioms used by `local_lemma_final`.
 #print axioms local_lemma_final
+
+-- Statement check: full-orbit block word is a continuous suffix.
+#check blockWord_eq_orbitSegment_of_fullOrbit
+
+-- Axioms used by the word-segment continuity lemma.
+#print axioms blockWord_eq_orbitSegment_of_fullOrbit
+
+-- Statement check: every block state from a full-orbit head is full-orbit.
+#check blockState_fullOrbit_of_premises_fullOrbit
+
+-- Axioms used by the block-state full-orbit transfer.
+#print axioms blockState_fullOrbit_of_premises_fullOrbit
+
+-- Statement check: exact `m2>0` tail residue on `u`.
+#check tail_failure_m2_even_u_mod8
+#check tail_failure_m2_odd_u_mod8
+
+-- Axioms used by the `m2>0` residue lemmas.
+#print axioms tail_failure_m2_even_u_mod8
+#print axioms tail_failure_m2_odd_u_mod8
 
 end S6Audit
 
