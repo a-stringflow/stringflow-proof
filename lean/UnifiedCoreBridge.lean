@@ -5537,6 +5537,22 @@ lemma first_block_canonical_word_valid_hok
     omega
   exact ⟨hvalid, hok, hlen⟩
 
+/-- In the depth-`≤15` orbit branch, the block-tail bound `s ≤ 9` gives
+the small-step window `j-2 ≤ 14` needed by the canonical first-block
+word. -/
+theorem first_block_small_step_bound_of_premises_le15
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hOrbit : OrbitFrom7 r)
+    (hH : 2 ≤ H_s) :
+    j - 2 ≤ 14 := by
+  have hs9 : s ≤ 9 :=
+    UnifiedCoreAudit.s_le_9_of_premises_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hOrbit hH
+  have hjs : j ≤ s := hPrem.j_le_s
+  omega
+
 theorem firstBlockPrefixExact_of_premises
     (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
     (r r_prev k : Nat) (w : List Nat)
