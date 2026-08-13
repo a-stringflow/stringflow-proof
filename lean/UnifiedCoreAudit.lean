@@ -3116,6 +3116,14 @@ The premise `2 <= H_s` is a domain condition needed for `H_s - 1` to be a
 valid modulus; it is not the forbidden `H_ge` input.  This is the unique
 `sorry` in this audit file.
 
+Remaining open statement (exact scope form):
+`failure_implies_rj_mod_64` takes the same premises plus
+`hfail : ¬ twoValuation (5^(L+3)*wTerminal L r_s + 1) ≤ H_s - 2`
+and must derive `r % 64 = 33`.  The tail wiring above reduces the failure
+to the single `2^((L+m1)+H_s+2)` congruence, but the step from that
+congruence to the block-head residue still requires the full-orbit
+candidate parameterization and the `d=1/2/3/≥4` exclusions.
+
 PMI audit (2026-08-13): the prefix identity
 `sum 2^(-m_k) = 5*A_N/5^N` is covered for arbitrary words by
 `StringFlow.PMI.aTotal5_eq_five_mul_aTotal`,
