@@ -2143,6 +2143,84 @@ lemma tail_failure_congruence_of_premises
   refine ⟨r2, u, ht2, hstart, hL2, ?_⟩
   simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hcong
 
+lemma tail_failure_odd_part_congruence
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hn : n = s - j)
+    (hm : (m1, m2) = tailSplit (blockWord weight j n))
+    (hH : 2 ≤ H_s)
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1) :
+    ∃ r2 : Nat → Nat, ∃ u w : Nat,
+      (∀ i < m2, r2 (i + 1) = (5 * r2 i + 1) / 4 ∧ (5 * r2 i + 1) % 4 = 0) ∧
+      r2 0 + 1 = 2 ^ (2 * m2 + 1) * u ∧
+      (L + m1) + 4 = twoValuation (3 * (r2 m2) + 1) ∧
+      3 * 5 ^ m2 * u - 1 = 2 ^ ((L + m1) + 3) * w ∧
+      w % 2 = 1 ∧
+      2 ^ (H_s - 1) ∣ 5 ^ ((L + m1) + 3) * w + 1 := by
+  rcases tail_failure_congruence_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2
+    weight hPrem hn hm hH hfail with ⟨r2, u, ht2, hstart, hL2, hcong⟩
+  have hclosed := t2_run_closed_form r2 m2 u ht2 hstart
+  have hpos : 0 < 3 * 5 ^ m2 * u - 1 := by
+    have hupos : 0 < u := by
+      by_contra hu0
+      have hu : u = 0 := by omega
+      rw [hu] at hstart
+      simp at hstart
+    have hpowpos : 0 < 5 ^ m2 := by positivity
+    have hApos : 0 < 5 ^ m2 * u := Nat.mul_pos hpowpos hupos
+    have hA1 : 1 ≤ 5 ^ m2 * u := by omega
+    have hA3 : 3 ≤ 3 * (5 ^ m2 * u) := by nlinarith
+    have hpos' : 0 < 3 * (5 ^ m2 * u) - 1 := by omega
+    simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hpos'
+  have hrel : 3 * (r2 m2) + 1 = 2 * (3 * 5 ^ m2 * u - 1) := by
+    have hrel' : 3 * (r2 m2 + 1) - 2 = 2 * (3 * 5 ^ m2 * u - 1) := by
+      rw [hclosed]
+      ring_nf
+      have hA3 : 1 ≤ 3 * 5 ^ m2 * u := by nlinarith
+      omega
+    have hrew : 3 * (r2 m2 + 1) - 2 = 3 * (r2 m2) + 1 := by omega
+    rw [← hrew]
+    exact hrel'
+  have hv : twoValuation (3 * 5 ^ m2 * u - 1) = (L + m1) + 3 := by
+    have hleft : twoValuation (3 * (r2 m2) + 1) =
+        twoValuation (2 * (3 * 5 ^ m2 * u - 1)) := by rw [hrel]
+    have hv2 : twoValuation (2 * (3 * 5 ^ m2 * u - 1)) =
+        twoValuation (3 * 5 ^ m2 * u - 1) + 1 :=
+      StringFlow.twoValuation_mul_two (3 * 5 ^ m2 * u - 1) hpos
+    rw [← hL2, hv2] at hleft
+    omega
+  let w := StringFlow.oddPart (3 * 5 ^ m2 * u - 1)
+  have hwodd : w % 2 = 1 :=
+    StringFlow.oddPart_odd_of_pos (3 * 5 ^ m2 * u - 1) hpos
+  have hdec := StringFlow.n_eq_two_pow_mul_oddPart (3 * 5 ^ m2 * u - 1) hpos
+  have heq : 3 * 5 ^ m2 * u - 1 = 2 ^ ((L + m1) + 3) * w := by
+    dsimp [w]
+    simp [hv] at hdec
+    exact hdec
+  have hdiv : 2 ^ (H_s - 1) ∣ 5 ^ ((L + m1) + 3) * w + 1 := by
+    rcases hcong with ⟨k, hk⟩
+    have hpow : 2 ^ ((L + m1) + H_s + 2) =
+        2 ^ ((L + m1) + 3) * 2 ^ (H_s - 1) := by
+      rw [show (L + m1) + H_s + 2 = ((L + m1) + 3) + (H_s - 1) by omega,
+        Nat.pow_add]
+    have hfact : 5 ^ ((L + m1) + 3) * (3 * 5 ^ m2 * u - 1) +
+        2 ^ ((L + m1) + 3) = 2 ^ ((L + m1) + 3) *
+          (5 ^ ((L + m1) + 3) * w + 1) := by
+      rw [heq]
+      ring
+    have hk' : 2 ^ ((L + m1) + 3) * (5 ^ ((L + m1) + 3) * w + 1) =
+        2 ^ ((L + m1) + 3) * 2 ^ (H_s - 1) * k := by
+      rw [hfact] at hk
+      rw [hpow] at hk
+      exact hk
+    have hk'' : 2 ^ ((L + m1) + 3) * (5 ^ ((L + m1) + 3) * w + 1) =
+        2 ^ ((L + m1) + 3) * (2 ^ (H_s - 1) * k) := by
+      simpa [Nat.mul_assoc] using hk'
+    have hcancel := Nat.eq_of_mul_eq_mul_left
+      (by positivity : 0 < 2 ^ ((L + m1) + 3)) hk''
+    exact ⟨k, hcancel⟩
+  exact ⟨r2, u, w, ht2, hstart, hL2, heq, hwodd, hdiv⟩
+
 /-- The terminal failure congruence, cleared of the odd-part denominator:
 `2^(H_s-1) | 5^(L+3)*w+1` iff
 `2^(L+H_s+3) | 5^(L+3)*(3*r_s+1)+2^(L+4)`. -/
@@ -3180,6 +3258,7 @@ theorem unified_core_final_no_hge
 | `tail_wTerminal_full` | proved | 36.29.3 full tail: `m1` t=1 strips + `m2` t=2 run give `wTerminal L r_s = 5^m1·(3·5^m2·u−1)/2^(L+m1+3)` |
 | `block_tail_wTerminal_of_premises` | proved | from `All36_20PremisesNoHge` builds `r1/r2/u`, exact `t=1`/`t=2` run steps, `r2 0+1=2^(2m2+1)u`, and the full `wTerminal` closed form |
 | `tail_failure_congruence_of_premises` | proved | the terminal failure lifts through the tail to the single `2^((L+m1)+H_s+2)` congruence on `u` |
+| `tail_failure_odd_part_congruence` | proved | clears the odd part: `3·5^m2·u−1 = 2^((L+m1)+3)·w` with `w` odd and `2^(H_s-1) | 5^((L+m1)+3)·w+1` |
 | `block_trailing_ones_step` / `block_trailing_twos_step` | proved | a `t=1`/`t=2` run in `weight_step` advances `blockState` by the exact step equation with the divisibility witness |
 | `leadingOnes` / `leadingTwos` / `tailSplit` | proved | list primitives for `(m1,m2)` tail splitting: trailing `1`s and preceding `2`s, with `replicate` specs |
 | `leadingOnes_le_length` / `leadingTwos_le_length` / `tailSplit_sum_le_length` | proved | run lengths are bounded by the word length and `m1+m2 ≤ w.length` |
