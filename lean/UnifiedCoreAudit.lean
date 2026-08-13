@@ -3057,11 +3057,15 @@ theorem unified_core_final_no_hge
 | `rj0_ge_of_size_conditions_no_hge` | proved | (B1)+(B2)+(B3) imply `rj0 >= 5^j`; this is the sufficient half of item 7 |
 | `rj0_le_of_exact_equation` | proved | the least nonnegative 36.26 solution is no larger than any other solution with the same mod-5 block-head residue; wires `failure_rj_satisfies_exact_equation` into `rj0_le_of_failure_no_hge` |
 | `t1_strip_twoValuation` / `t1_strip_wTerminal_mul` / `t1_strip_iter_wTerminal` | proved | 36.29.1: one `t=1` strip raises `v2(3r+1)` by one and multiplies `wTerminal` by `5`; `m` strips give `wTerminal L r_m = 5^m · wTerminal (L+m) r_0` |
+| `t1_strip_iter_twoValuation` | proved | iterated `t=1` stripping: `(L+m)+4 = v2(3·(r 0)+1)` |
+| `t1_step_mod8_five` / `t1_run_mod8_five` / `twoValuation_eq_one_of_mod8_five` | proved | trailing `t=1` run preserves `mod 8 = 5` backwards and gives `v2(r+1)=1` |
 | `t2_step_plus_one_mul` / `t2_run_mul` / `t2_run_closed_form` | proved | 36.29.2: `4(r'+1)=5(r+1)`, `4^m(r_m+1)=5^m(r_0+1)`, and `r_0+1=2^(2m+1)u ⇒ r_m+1=2·5^m·u` |
 | `t2_run_wTerminal` | proved | 36.29.2 conclusion: under the `t=2` run decomposition, `wTerminal L (r_m) = (3·5^m·u−1)/2^(L+3)` |
 | `failure_congruence_lift_w` | proved | 36.29.3 clearing: `2^(H_s-1) | 5^(L+3)w+1` with `w=z/2^(L+3)` lifts to `2^(L+H_s+2) | 5^(L+3)z+2^(L+3)` |
 | `t2_run_wTerminal_mul` / `t2_run_failure_congruence` | proved | 36.29.3: `2^(L+3)wTerminal = 3·5^m·u−1`, and the failure becomes `2^(L+H_s+2) | 5^(L+3)(3·5^m·u−1)+2^(L+3)` |
 | `tail_wTerminal_full` | proved | 36.29.3 full tail: `m1` t=1 strips + `m2` t=2 run give `wTerminal L r_s = 5^m1·(3·5^m2·u−1)/2^(L+m1+3)` |
+| `block_tail_wTerminal_of_premises` | proved | from `All36_20PremisesNoHge` builds `r1/r2/u`, exact `t=1`/`t=2` run steps, `r2 0+1=2^(2m2+1)u`, and the full `wTerminal` closed form |
+| `tail_failure_congruence_of_premises` | proved | the terminal failure lifts through the tail to the single `2^((L+m1)+H_s+2)` congruence on `u` |
 | `block_trailing_ones_step` / `block_trailing_twos_step` | proved | a `t=1`/`t=2` run in `weight_step` advances `blockState` by the exact step equation with the divisibility witness |
 | `leadingOnes` / `leadingTwos` / `tailSplit` | proved | list primitives for `(m1,m2)` tail splitting: trailing `1`s and preceding `2`s, with `replicate` specs |
 | `leadingOnes_le_length` / `leadingTwos_le_length` / `tailSplit_sum_le_length` | proved | run lengths are bounded by the word length and `m1+m2 ≤ w.length` |
@@ -3091,6 +3095,8 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.d3_family_big_weight_excluded` | proved | `d=3` unique family: `z→w` has weight `6` at depth `j+4`, contradicting `FinitePrefix` |
 | `UnifiedCoreBridge.dge4_e2_a_ge1_excluded` | proved | `d≥4`, `e=2,a≥1`: `y→x` has weight `1+4a≥5`, contradicting `FinitePrefix` |
 | `UnifiedCoreBridge.dge4_e3_j17_t1_excluded` / `dge4_e3_j17_t2_delta3_excluded` | proved | `d≥4`, `e=3,j=17` branches fail the `mod 640/1280` candidate residue |
+| `UnifiedCoreBridge.d3_exclusion_of_orbit` | proved | orbit-data wrapper for the `d=3` unique family: `z→w` weight `6` at depth `j+4` |
+| `UnifiedCoreBridge.dge4_e2_exclusion_of_orbit` | proved | orbit-data wrapper for `d≥4`, `e=2,a≥1`: first big step weight `1+4a≥5` |
 | `UnifiedCoreBridge.reset_head_predecessor` | proved | 36.30.9.1: `ResetHeadEq` + `rj=(5x+1)/2^t` force `x=5^k·s0+δ·5^(j-1)-1` |
 | `UnifiedCoreBridge.candidateX_of_reset_and_terminal` | proved | 36.30.23.3+23.4: with `k=0` and `s0-1=2^(e-1)g`, the reset predecessor is `candidateX j e g δ` |
 | `UnifiedCoreBridge.first_block_terminal_eq` | proved | 36.30.23.3: `5·g_prev+1=2^e·g` and `r=(5·g_prev+1)/2` force `r=2^(e-1)·g` |

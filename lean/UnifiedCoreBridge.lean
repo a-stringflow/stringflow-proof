@@ -1285,4 +1285,26 @@ theorem d2_exclusion_of_orbit
   have hseg := d2_segment_equation j e g δ u1 (by omega) he hiter hx hstep1 hstep2
   exact d2_exclusion j e g δ u1 hj hgpos hg hδ he hu1 hseg hxmod
 
+/-- `d=3` unique family exclusion, expressed directly on the actual
+full-orbit segment `z→w`. -/
+theorem d3_exclusion_of_orbit (j z w : Nat)
+    (hjmod : j % 1728 = 924)
+    (hz : fullOrbitIter (j + 4) = z)
+    (h5z : 5 * z + 1 = 2 ^ 6 * w)
+    (hwodd : w % 2 = 1)
+    (hsmall : ∀ m : Nat, m < j + 4 → orbitStepWeight m ≤ 2) :
+    False :=
+  d3_family_big_weight_excluded j z w hjmod hz h5z hwodd hsmall
+
+/-- `d≥4`, `e=2,a≥1` branch exclusion, expressed directly on the actual
+full-orbit step `y→x`. -/
+theorem dge4_e2_exclusion_of_orbit (n a y x : Nat)
+    (ha : 1 ≤ a)
+    (hy : fullOrbitIter n = y)
+    (hxodd : x % 2 = 1)
+    (hstep : 5 * y + 1 = 2 ^ (1 + 4 * a) * x)
+    (hsmall : ∀ m : Nat, m < n → orbitStepWeight m ≤ 2) :
+    False :=
+  dge4_e2_a_ge1_excluded n a y x ha hy hxodd hstep hsmall
+
 end S6Audit
