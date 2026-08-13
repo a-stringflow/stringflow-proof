@@ -5043,7 +5043,7 @@ lemma word_take_eq_segment_of_prefix_exact
 then the step weight is exact: any smaller divisor would make the target
 even, and a legal `t=2` step already has valuation at least two. -/
 lemma exact_step_weight_of_odd_target
-    (x a : Nat) (hoddx : x % 2 = 1) (ha : a = 1 ∨ a = 2)
+    (x a : Nat) (_hoddx : x % 2 = 1) (_ha : a = 1 ∨ a = 2)
     (hdiv : 2 ^ a ∣ 5 * x + 1)
     (htarget : ((5 * x + 1) / 2 ^ a) % 2 = 1) :
     a = twoValuation (5 * x + 1) := by
@@ -5074,7 +5074,7 @@ lemma exact_step_weight_of_odd_target
 /-- A legal word state with a following step is odd; an even state has
 no legal continuation. -/
 lemma wordOrbit_take_odd_of_suffix_nonempty
-    (w : List Nat) (i : Nat) (hi : i < w.length)
+    (w : List Nat) (i : Nat) (_hi : i < w.length)
     (hvalid : StringFlow.Word.wordValid w 7)
     (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
     (hnext : i + 1 < w.length) :
@@ -5099,8 +5099,8 @@ lemma legal_word_prefix_exact_of_even_terminal
     (w : List Nat) (r : Nat)
     (hvalid : StringFlow.Word.wordValid w 7)
     (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
-    (hw : StringFlow.Word.wordOrbit w 7 = r)
-    (hr : r % 2 = 0) :
+    (_hw : StringFlow.Word.wordOrbit w 7 = r)
+    (_hr : r % 2 = 0) :
     ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i := by
   have hmain : ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i := by
     intro i
@@ -5188,7 +5188,8 @@ theorem firstBlockPrefixExact_of_premises
   have hprefix : ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i :=
     legal_word_prefix_exact_of_even_terminal w r_prev hvalid hok hw hrprev_even
   constructor
-  · sorry
+  · -- 36.30.23.2 剩余半：块首深度对齐给出 `w.length = j-1`.
+    sorry
   · exact hprefix
 
 /-- 36.30.23.3, second half: prefix exactness + final `t=1` identify the
