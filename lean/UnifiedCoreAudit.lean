@@ -1096,6 +1096,35 @@ lemma twoValuation_eq_one_of_mod8_five (n : Nat) (h : n % 8 = 5) :
     · have hv1 : twoValuation (n + 1) = 1 := by omega
       exact hv1
 
+lemma t1_run_mod8_five (r : Nat → Nat) (m : Nat)
+    (hsteps : ∀ i < m, r (i + 1) = (5 * r i + 1) / 2 ∧ (5 * r i + 1) % 2 = 0)
+    (hfinal : r m % 8 = 5) :
+    ∀ i ≤ m, r i % 8 = 5 := by
+  have hmain : ∀ n, n ≤ m → r (m - n) % 8 = 5 := by
+    intro n hn
+    induction n using Nat.strongRecOn with
+    | ind n ih =>
+        by_cases hn0 : n = 0
+        · subst n
+          simpa using hfinal
+        · have hstep := hsteps (m - n) (by omega)
+          have hk1 : m - (n - 1) = (m - n) + 1 := by omega
+          have hmod_next : r ((m - n) + 1) % 8 = 5 := by
+            have hih := ih (n - 1) (by omega) (by omega)
+            simpa [hk1] using hih
+          exact t1_step_mod8_five (r (m - n)) (r ((m - n) + 1))
+            (by simpa [hk1] using hstep.1) (by simpa [hk1] using hstep.2) hmod_next
+  intro i hi
+  have := hmain (m - i) (Nat.sub_le m i)
+  simpa [Nat.sub_sub_self hi] using this
+
+lemma t1_step_r_plus_one_valuation_one (r r' : Nat)
+    (hstep : r' = (5 * r + 1) / 2)
+    (hdiv : (5 * r + 1) % 2 = 0)
+    (hmod : r' % 8 = 5) :
+    twoValuation (r + 1) = 1 :=
+  twoValuation_eq_one_of_mod8_five r (t1_step_mod8_five r r' hstep hdiv hmod)
+
 /-- `liftToNonneg` returns the least `t` satisfying the predicate. -/
 lemma liftToNonneg_minimal (B0 R C t : Nat) (hC : 0 < C)
     (h : R ≤ B0 + C * t) :
