@@ -404,6 +404,38 @@ theorem reset_k_eq_zero_of_not_five_dvd_x1
     exact dvd_add hdivA hdivB
   exact h5 hdiv5
 
+/-- Generalized 36.30.23.3+23.4: the terminal-chain identity
+`5^k*s0 = 2^(e-1)*g+1` (valid for every `k`) makes the reset
+predecessor exactly `candidateX`. -/
+theorem candidateX_of_reset_and_terminal_general
+    (s0 j k t δ rj x e g : Nat) (hj : 1 ≤ j)
+    (hres : ResetHeadEq s0 j k t δ rj)
+    (hrj : rj = (5 * x + 1) / 2 ^ t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (hterm : 5 ^ k * s0 = 2 ^ (e - 1) * g + 1) :
+    x = candidateX j e g δ := by
+  have hx := reset_head_predecessor s0 j k t δ rj x hj hres hrj hdiv
+  have hdpos : 0 < δ * 5 ^ (j - 1) := by
+    rcases hres with h1 | h2
+    · rcases h1 with ⟨ht, hδ, _⟩
+      subst δ
+      positivity
+    · rcases h2 with ⟨ht, hδ, _⟩
+      rcases hδ with hδ1 | hδ3
+      · subst δ
+        positivity
+      · subst δ
+        positivity
+  have hge1 : 1 ≤ 5 ^ k * s0 + δ * 5 ^ (j - 1) := by omega
+  have hx1 : x + 1 = 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+    rw [hx]
+    omega
+  have hx2 : x + 1 = 2 ^ (e - 1) * g + 1 + δ * 5 ^ (j - 1) := by
+    rw [hx1, hterm]
+  have hx3 : x = 2 ^ (e - 1) * g + δ * 5 ^ (j - 1) := by omega
+  unfold candidateX
+  exact hx3
+
 /-- 36.30.23.3+23.4: with `k=0` and the first-block terminal
 `s0-1 = 2^(e-1)*g`, the reset predecessor is exactly `candidateX`. -/
 theorem candidateX_of_reset_and_terminal
@@ -948,20 +980,20 @@ block head `r` has weight `t`, and the reset terminal satisfies
 reset predecessor `x` is simultaneously the full-orbit predecessor and
 the candidate `candidateX (n0-1) e g δ`. -/
 theorem candidate_parameterization_of_reset_full_orbit
-    (n0 t δ e g s0 x r : Nat)
+    (n0 k t δ e g s0 x r : Nat)
     (hn0 : 3 ≤ n0)
     (hiter : fullOrbitIter n0 = r)
     (hiter_g : fullOrbitIter (n0 - 2) = g)
     (hstep_e : orbitStepWeight (n0 - 3) = e)
     (hstep_t : orbitStepWeight (n0 - 1) = t)
-    (hres : ResetHeadEq s0 (n0 - 1) 0 t δ r)
-    (hterm : s0 = 2 ^ (e - 1) * g + 1)
+    (hres : ResetHeadEq s0 (n0 - 1) k t δ r)
+    (hterm : 5 ^ k * s0 = 2 ^ (e - 1) * g + 1)
     (hr : r = candidateRj x t)
     (hdiv : (5 * x + 1) % 2 ^ t = 0) :
     x = candidateX (n0 - 1) e g δ ∧ x = fullOrbitIter (n0 - 1) ∧
       g = fullOrbitIter (n0 - 2) ∧ e = orbitStepWeight (n0 - 3) := by
   have hx_iter := candidateRj_eq_fullOrbitIter_of_weight n0 x t r (by omega) hiter hstep_t hr hdiv
-  have hx_cand := candidateX_of_reset_and_terminal s0 (n0 - 1) t δ r x e g
+  have hx_cand := candidateX_of_reset_and_terminal_general s0 (n0 - 1) k t δ r x e g
     (by omega) hres hr hdiv hterm
   exact ⟨hx_cand, hx_iter, hiter_g.symm, hstep_e.symm⟩
 
@@ -970,21 +1002,21 @@ steps before `x`, `e` is the weight of the step into `g`, and the reset
 head depth is `n0-d`.  This is the input shape used by the `d=2`, `d=3`
 and `d≥4` exclusions. -/
 theorem candidate_parameterization_of_reset_full_orbit_d
-    (n0 d t δ e g s0 x r : Nat)
+    (n0 d k t δ e g s0 x r : Nat)
     (_hd : 1 ≤ d)
     (hn0 : d + 3 ≤ n0)
     (hiter : fullOrbitIter n0 = r)
     (hiter_g : fullOrbitIter (n0 - (1 + d)) = g)
     (hstep_e : orbitStepWeight (n0 - (2 + d)) = e)
     (hstep_t : orbitStepWeight (n0 - 1) = t)
-    (hres : ResetHeadEq s0 (n0 - d) 0 t δ r)
-    (hterm : s0 = 2 ^ (e - 1) * g + 1)
+    (hres : ResetHeadEq s0 (n0 - d) k t δ r)
+    (hterm : 5 ^ k * s0 = 2 ^ (e - 1) * g + 1)
     (hr : r = candidateRj x t)
     (hdiv : (5 * x + 1) % 2 ^ t = 0) :
     x = candidateX (n0 - d) e g δ ∧ x = fullOrbitIter (n0 - 1) ∧
       g = fullOrbitIter (n0 - (1 + d)) ∧ e = orbitStepWeight (n0 - (2 + d)) := by
   have hx_iter := candidateRj_eq_fullOrbitIter_of_weight n0 x t r (by omega) hiter hstep_t hr hdiv
-  have hx_cand := candidateX_of_reset_and_terminal s0 (n0 - d) t δ r x e g
+  have hx_cand := candidateX_of_reset_and_terminal_general s0 (n0 - d) k t δ r x e g
     (by omega) hres hr hdiv hterm
   exact ⟨hx_cand, hx_iter, hiter_g.symm, hstep_e.symm⟩
 
@@ -2388,15 +2420,15 @@ theorem d1_exclusion_of_orbit
 reset terminal data plus the actual full-orbit weights satisfy every
 input of `d1_exclusion_of_orbit`. -/
 theorem d1_exclusion_of_reset_candidate
-    (n0 t δ e g a s0 x r : Nat)
+    (n0 k t δ e g a s0 x r : Nat)
     (hn0 : 4 ≤ n0)
     (hiter : fullOrbitIter n0 = r)
     (hiter_g : fullOrbitIter (n0 - 2) = g)
     (hstep_e : orbitStepWeight (n0 - 3) = e)
     (hstep_t : orbitStepWeight (n0 - 1) = t)
     (hstep_a : orbitStepWeight (n0 - 2) = 1 + 4 * a)
-    (hres : ResetHeadEq s0 (n0 - 1) 0 t δ r)
-    (hterm : s0 = 2 ^ (e - 1) * g + 1)
+    (hres : ResetHeadEq s0 (n0 - 1) k t δ r)
+    (hterm : 5 ^ k * s0 = 2 ^ (e - 1) * g + 1)
     (hr : r = candidateRj x t)
     (hdiv : (5 * x + 1) % 2 ^ t = 0)
     (hgpos : 0 < g)
@@ -2404,7 +2436,7 @@ theorem d1_exclusion_of_reset_candidate
     (hδ : δ = 1 ∨ δ = 3)
     (he : 2 ≤ e) :
     False := by
-  have hbridge := candidate_parameterization_of_reset_full_orbit n0 t δ e g s0 x r
+  have hbridge := candidate_parameterization_of_reset_full_orbit n0 k t δ e g s0 x r
     (by omega) hiter hiter_g hstep_e hstep_t hres hterm hr hdiv
   have hx : fullOrbitIter (n0 - 1) = candidateX (n0 - 1) e g δ := by
     rw [← hbridge.2.1, hbridge.1]
@@ -2433,7 +2465,7 @@ theorem d2_exclusion_of_orbit
 `g` is two full-orbit steps before the reset predecessor `x`, and the
 candidate depth is `n0-2`. -/
 theorem d2_exclusion_of_reset_candidate
-    (n0 t δ e g u1 s0 x r : Nat)
+    (n0 k t δ e g u1 s0 x r : Nat)
     (hn0 : 6 ≤ n0)
     (hiter : fullOrbitIter n0 = r)
     (hiter_g : fullOrbitIter (n0 - 3) = g)
@@ -2441,8 +2473,8 @@ theorem d2_exclusion_of_reset_candidate
     (hstep_t : orbitStepWeight (n0 - 1) = t)
     (hstep1 : orbitStepWeight (n0 - 3) = u1)
     (hstep2 : orbitStepWeight (n0 - 2) = 1)
-    (hres : ResetHeadEq s0 (n0 - 2) 0 t δ r)
-    (hterm : s0 = 2 ^ (e - 1) * g + 1)
+    (hres : ResetHeadEq s0 (n0 - 2) k t δ r)
+    (hterm : 5 ^ k * s0 = 2 ^ (e - 1) * g + 1)
     (hr : r = candidateRj x t)
     (hdiv : (5 * x + 1) % 2 ^ t = 0)
     (hgpos : 0 < g)
@@ -2452,7 +2484,7 @@ theorem d2_exclusion_of_reset_candidate
     (hu1 : u1 = 1 ∨ u1 = 2)
     (hxmod : candidateX (n0 - 2) e g δ % 1280 = 743) :
     False := by
-  have hbridge := candidate_parameterization_of_reset_full_orbit_d n0 2 t δ e g s0 x r
+  have hbridge := candidate_parameterization_of_reset_full_orbit_d n0 2 k t δ e g s0 x r
     (by norm_num) (by omega) hiter hiter_g hstep_e hstep_t hres hterm hr hdiv
   have hx : fullOrbitIter (n0 - 1) = candidateX (n0 - 2) e g δ := by
     rw [← hbridge.2.1, hbridge.1]
