@@ -1,5 +1,6 @@
 import FinitePrefix
 import UnifiedCoreAudit
+import Mathlib.Data.List.GetD
 
 /-!
 # Bridge definitions from document 36.30.23 to the unified core
@@ -4969,5 +4970,69 @@ lemma previous_terminal_strip_reaches_eight
   have hs0 : s0 = r_prev + 1 := by simpa using hprod
   have hstrip := reverseStripN_from_seven w.length w hvalid hok (by simp)
   rwa [hw, ← hs0] at hstrip
+
+/-- 36.30.23.3, first half: the first-block word is exact before its
+final step, so every prefix step is the corresponding full-orbit step. -/
+def FirstBlockPrefixExact (_j : Nat) (w : List Nat) : Prop :=
+  ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i
+
+/-- 36.30.23.3, second half: prefix exactness + final `t=1` identify the
+previous terminal with the even intermediate of `g_prev → g`. -/
+theorem previous_terminal_eq_even_of_first_block
+    (j r_prev : Nat) (w : List Nat)
+    (hvalid : StringFlow.Word.wordValid w 7)
+    (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
+    (hw : StringFlow.Word.wordOrbit w 7 = r_prev)
+    (hlen : w.length = j - 1)
+    (hj : 2 ≤ j)
+    (hfirst : FirstBlockPrefixExact j w)
+    (hlast : StringFlow.Word.wordLast w = 1) :
+    r_prev = (5 * fullOrbitIter (j - 2) + 1) / 2 := by
+  have hne : w ≠ [] := by
+    intro h
+    subst w
+    change 0 = j - 1 at hlen
+    omega
+  have hsplit : w = w.dropLast ++ [1] := by
+    simpa [hlast] using word_eq_dropLast_append_last w hne
+  let w' := w.dropLast
+  have hlenw' : w'.length = j - 2 := by
+    have hsplit_len : (w' ++ [1]).length = w'.length + 1 := by simp [w']
+    have hwlen : (w' ++ [1]).length = j - 1 := by
+      rw [← hsplit, hlen]
+    rw [hsplit_len] at hwlen
+    omega
+  have hw'eq : w' = orbitSegmentWord 1 (j - 2) := by
+    refine List.ext_getElem ?_ ?_
+    · rw [hlenw', orbitSegmentWord_length 1 (j - 2)]
+    · intro i hi1 hi2
+      have hget : w'.getD i 0 = orbitStepWeight i := by
+        have hwget : w'.getD i 0 = w.getD i 0 := by
+          rw [hsplit]
+          exact (UnifiedCoreAudit.getD_append_left w' [1] i 0 hi1).symm
+        have hfirst' : w.getD i 0 = orbitStepWeight i := hfirst i (by omega)
+        rw [hwget, hfirst']
+      have hgetseg : (orbitSegmentWord 1 (j - 2)).getD i 0 = orbitStepWeight i := by
+        have hi2' : i < j - 2 := by
+          simpa [orbitSegmentWord_length 1 (j - 2)] using hi2
+        have h := orbitSegmentWord_getD 1 (j - 2) i hi2'
+        simpa using h
+      have hget1 : w'.getD i 0 = w'[i] := List.getD_eq_getElem w' 0 hi1
+      have hget2 : (orbitSegmentWord 1 (j - 2)).getD i 0 =
+          (orbitSegmentWord 1 (j - 2))[i] := List.getD_eq_getElem (orbitSegmentWord 1 (j - 2)) 0 hi2
+      rw [← hget1, ← hget2, hget, hgetseg]
+  have hw'full : StringFlow.Word.wordOrbit w' 7 = fullOrbitIter (j - 2) := by
+    rw [hw'eq]
+    have hseg := orbitSegmentWord_orbit 1 (j - 2)
+    have h0 : fullOrbitIter 0 = 7 := rfl
+    have hidx : 1 - 1 + (j - 2) = j - 2 := by omega
+    rwa [h0, hidx] at hseg
+  have horbit : StringFlow.Word.wordOrbit w 7 =
+      (5 * StringFlow.Word.wordOrbit w' 7 + 1) / 2 := by
+    rw [hsplit]
+    exact wordOrbit_append_singleton w' 7 1
+  have hr : r_prev = (5 * StringFlow.Word.wordOrbit w' 7 + 1) / 2 := by
+    rw [← hw, horbit]
+  rw [hr, hw'full]
 
 end S6Audit
