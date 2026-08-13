@@ -37,6 +37,190 @@ lemma orbitStepWeight_of_mul (n k y x : Nat)
   rw [hy, hstep]
   exact StringFlow.Lte.twoValuation_mul_two_pow_eq k x hxodd
 
+/-- `5x+1` is even for odd `x`, so its exact step weight is at least 1. -/
+lemma twoValuation_five_mul_add_one_ge_one (x : Nat) (hodd : IsOdd x) :
+    1 ≤ twoValuation (5 * x + 1) := by
+  have hpos : 0 < 5 * x + 1 := by positivity
+  have heven : (5 * x + 1) % 2 = 0 := by
+    have hx : x % 2 = 1 := hodd
+    have h5x : (5 * x) % 2 = 1 := by
+      rw [Nat.mul_mod]
+      rw [show 5 % 2 = 1 by norm_num, hx]
+    rw [Nat.add_mod, h5x]
+  have hdiv : 2 ^ 1 ∣ 5 * x + 1 := by
+    have h2 : 2 ∣ 5 * x + 1 := Nat.dvd_of_mod_eq_zero heven
+    simpa using h2
+  exact (StringFlow.Lte.twoValuation_ge_iff_dvd_pow (5 * x + 1) 1 hpos).mpr hdiv
+
+/-- From an odd state, the exact accelerated step divides by at least
+`2`, so its output is no larger than the `t=1` quotient. -/
+lemma fullOrbitStep_le_div_two (x : Nat) (hodd : IsOdd x) :
+    fullOrbitStep x ≤ (5 * x + 1) / 2 := by
+  unfold fullOrbitStep
+  have hge1 : 1 ≤ twoValuation (5 * x + 1) :=
+    twoValuation_five_mul_add_one_ge_one x hodd
+  have hpow : 2 ≤ 2 ^ twoValuation (5 * x + 1) :=
+    Nat.pow_le_pow_right (by decide : 0 < 2) hge1
+  have hq2 : (5 * x + 1) / 2 ^ twoValuation (5 * x + 1) * 2 ≤
+      5 * x + 1 := by
+    have h1 : (5 * x + 1) / 2 ^ twoValuation (5 * x + 1) * 2 ≤
+        (5 * x + 1) / 2 ^ twoValuation (5 * x + 1) *
+          2 ^ twoValuation (5 * x + 1) :=
+      Nat.mul_le_mul_left
+        ((5 * x + 1) / 2 ^ twoValuation (5 * x + 1)) hpow
+    have h2 : (5 * x + 1) / 2 ^ twoValuation (5 * x + 1) *
+        2 ^ twoValuation (5 * x + 1) ≤ 5 * x + 1 :=
+      Nat.div_mul_le_self (5 * x + 1) (2 ^ twoValuation (5 * x + 1))
+    exact le_trans h1 h2
+  exact (Nat.le_div_iff_mul_le (by decide : 0 < 2)).2 hq2
+
+/-- `2^n ≤ 5^n` for every `n`. -/
+lemma pow_two_le_pow_five (n : Nat) : 2 ^ n ≤ 5 ^ n := by
+  induction n with
+  | zero => norm_num
+  | succ n ih =>
+      calc
+        2 ^ (n + 1) = 2 * 2 ^ n := by rw [pow_succ]; ring
+        _ ≤ 2 * 5 ^ n := Nat.mul_le_mul_left 2 ih
+        _ ≤ 5 * 5 ^ n := Nat.mul_le_mul_right (5 ^ n) (by norm_num)
+        _ = 5 ^ (n + 1) := by rw [pow_succ]; ring
+
+/-- Every full-orbit state satisfies the all-`t=1` upper bound
+`3 * 2^n * r_n ≤ 22 * 5^n - 2^n`. -/
+theorem fullOrbitIter_upper_bound (n : Nat) :
+    3 * 2 ^ n * fullOrbitIter n ≤ 22 * 5 ^ n - 2 ^ n := by
+  induction n with
+  | zero => norm_num [fullOrbitIter]
+  | succ n ih =>
+      have hodd : IsOdd (fullOrbitIter n) := fullOrbitIter_odd n
+      have hle := fullOrbitStep_le_div_two (fullOrbitIter n) hodd
+      have heven : (5 * fullOrbitIter n + 1) % 2 = 0 := by
+        have hx : fullOrbitIter n % 2 = 1 := hodd
+        have h5x : (5 * fullOrbitIter n) % 2 = 1 := by
+          rw [Nat.mul_mod]
+          rw [show 5 % 2 = 1 by norm_num, hx]
+        rw [Nat.add_mod, h5x]
+      have hdiv2 : 2 ∣ 5 * fullOrbitIter n + 1 := Nat.dvd_of_mod_eq_zero heven
+      let z := (5 * fullOrbitIter n + 1) / 2
+      have hz : 2 * z = 5 * fullOrbitIter n + 1 := by
+        dsimp [z]
+        exact Nat.mul_div_cancel' hdiv2
+      have hstep : fullOrbitIter (n + 1) = fullOrbitStep (fullOrbitIter n) := rfl
+      rw [hstep]
+      have hmul1 : 3 * 2 ^ (n + 1) * fullOrbitStep (fullOrbitIter n) ≤
+          3 * 2 ^ (n + 1) * z :=
+        Nat.mul_le_mul_left (3 * 2 ^ (n + 1)) (by simpa [z] using hle)
+      have hcal : 3 * 2 ^ (n + 1) * z =
+          3 * 2 ^ n * (5 * fullOrbitIter n + 1) := by
+        have hpow2 : 2 ^ (n + 1) = 2 * 2 ^ n := by
+          rw [pow_succ]
+          ring
+        calc
+          3 * 2 ^ (n + 1) * z = 3 * (2 * 2 ^ n) * z := by rw [hpow2]
+          _ = 3 * 2 ^ n * (2 * z) := by ring
+          _ = 3 * 2 ^ n * (5 * fullOrbitIter n + 1) := by rw [hz]
+      have h5 : 3 * 2 ^ n * (5 * fullOrbitIter n + 1) =
+          5 * (3 * 2 ^ n * fullOrbitIter n) + 3 * 2 ^ n := by ring
+      have hih5 : 5 * (3 * 2 ^ n * fullOrbitIter n) + 3 * 2 ^ n ≤
+          5 * (22 * 5 ^ n - 2 ^ n) + 3 * 2 ^ n := by
+        exact Nat.add_le_add_right (Nat.mul_le_mul_left 5 ih) (3 * 2 ^ n)
+      have hge : 2 ^ n ≤ 22 * 5 ^ n := by
+        have h1 : 1 ≤ 5 ^ n := Nat.one_le_pow n 5 (by norm_num)
+        have hQle : 2 ^ n ≤ 5 ^ n := pow_two_le_pow_five n
+        nlinarith
+      have hrhs : 5 * (22 * 5 ^ n - 2 ^ n) + 3 * 2 ^ n =
+          22 * 5 ^ (n + 1) - 2 ^ (n + 1) := by
+        rw [pow_succ]
+        have hsub : 5 * (22 * 5 ^ n - 2 ^ n) = 110 * 5 ^ n - 5 * 2 ^ n := by
+          rw [Nat.mul_sub_left_distrib]
+          ring_nf
+        rw [hsub]
+        have hpow2 : 2 ^ (n + 1) = 2 * 2 ^ n := by
+          rw [pow_succ]
+          ring
+        rw [hpow2]
+        omega
+      have hgoal1 : 3 * 2 ^ (n + 1) * fullOrbitStep (fullOrbitIter n) ≤
+          5 * (3 * 2 ^ n * fullOrbitIter n) + 3 * 2 ^ n := by
+        exact le_trans hmul1 (by rw [hcal, h5])
+      have hgoal2 : 5 * (3 * 2 ^ n * fullOrbitIter n) + 3 * 2 ^ n ≤
+          22 * 5 ^ (n + 1) - 2 ^ (n + 1) := by
+        exact le_trans hih5 (by rw [hrhs])
+      exact le_trans hgoal1 hgoal2
+
+/-- The corrected `d=2` survivor is too large to be a full-orbit state
+once `n ≥ 5`: `g=(4*5^n-7)/17` exceeds the all-`t=1` upper bound. -/
+theorem d2_survivor_size_contradiction (n : Nat) (hn : 5 ≤ n)
+    (hg : 17 * fullOrbitIter n = 4 * 5 ^ n - 7) : False := by
+  have hbound := fullOrbitIter_upper_bound n
+  have hle17 : 17 * (3 * 2 ^ n * fullOrbitIter n) ≤
+      17 * (22 * 5 ^ n - 2 ^ n) :=
+    Nat.mul_le_mul_left 17 hbound
+  have hleft : 17 * (3 * 2 ^ n * fullOrbitIter n) =
+      3 * 2 ^ n * (17 * fullOrbitIter n) := by ring
+  rw [hleft, hg] at hle17
+  have hP : 1 ≤ 5 ^ n := Nat.one_le_pow n 5 (by norm_num)
+  have hQle : 2 ^ n ≤ 5 ^ n := pow_two_le_pow_five n
+  have hQge : 32 ≤ 2 ^ n := by
+    have h := Nat.pow_le_pow_right (by decide : 0 < 2) hn
+    norm_num at h ⊢
+    exact h
+  have hge7 : 7 ≤ 4 * 5 ^ n := by nlinarith [hP]
+  have hge2 : 2 ^ n ≤ 22 * 5 ^ n := by nlinarith [hP, hQle]
+  have h10 : 10 ^ n = 2 ^ n * 5 ^ n := by
+    rw [show 10 = 2 * 5 by norm_num, Nat.mul_pow]
+  have hL : 3 * 2 ^ n * (4 * 5 ^ n - 7) = 12 * 2 ^ n * 5 ^ n - 21 * 2 ^ n := by
+    rw [Nat.mul_sub_left_distrib]
+    ring_nf
+  have hR : 17 * (22 * 5 ^ n - 2 ^ n) = 374 * 5 ^ n - 17 * 2 ^ n := by
+    rw [Nat.mul_sub_left_distrib]
+    ring_nf
+  have hineq : 17 * (22 * 5 ^ n - 2 ^ n) < 3 * 2 ^ n * (4 * 5 ^ n - 7) := by
+    rw [hR, hL]
+    have hmain : 374 * 5 ^ n + 4 * 2 ^ n < 12 * (2 ^ n * 5 ^ n) := by
+      have hA : 374 * 5 ^ n + 4 * 2 ^ n ≤ 378 * 5 ^ n := by
+        have h4 : 4 * 2 ^ n ≤ 4 * 5 ^ n := Nat.mul_le_mul_left 4 hQle
+        nlinarith
+      have hB : 378 * 5 ^ n < 384 * 5 ^ n := by nlinarith [hP]
+      have hC : 384 * 5 ^ n ≤ 12 * (2 ^ n * 5 ^ n) := by
+        have h32 : 32 * 5 ^ n ≤ 2 ^ n * 5 ^ n :=
+          Nat.mul_le_mul_right (5 ^ n) hQge
+        nlinarith
+      nlinarith
+    have hA : 21 * 2 ^ n ≤ 12 * 2 ^ n * 5 ^ n := by nlinarith [hQle, hP]
+    have hB : 17 * 2 ^ n ≤ 374 * 5 ^ n := by nlinarith [hQle, hP]
+    have hmain' : 374 * 5 ^ n + 4 * 2 ^ n < 12 * 2 ^ n * 5 ^ n := by
+      nlinarith [hmain]
+    omega
+  exact (not_lt_of_ge hle17) hineq
+
+/-- The corrected `d=2` survivor family is excluded for `j ≥ 6` by the
+full-orbit size bound; the only small case is `j=4`, which is already in
+the finite base. -/
+theorem d2_exclusion_of_corrected_residue (j g : Nat)
+    (hj : 6 ≤ j)
+    (hseg : 8 * g + 4 * 5 ^ (j - 1) = 7 + 25 * g)
+    (_hxmod : candidateX j 2 g 1 % 320 = 183)
+    (hiter : fullOrbitIter (j - 1) = g) : False := by
+  let n := j - 1
+  let P := 5 ^ n
+  have hn : 5 ≤ n := by dsimp [n]; omega
+  have h17g : 4 * P = 7 + 17 * g := by
+    dsimp [P, n]
+    nlinarith [hseg]
+  have hge7 : 7 ≤ 4 * P := by
+    have h1 : 1 ≤ P := by
+      dsimp [P]
+      exact Nat.one_le_pow n 5 (by norm_num)
+    nlinarith
+  have hg17 : 17 * g = 4 * P - 7 := by
+    omega
+  have hgh : 17 * fullOrbitIter n = 4 * P - 7 := by
+    dsimp [n]
+    rw [hiter]
+    exact hg17
+  exact d2_survivor_size_contradiction n hn (by simpa [P] using hgh)
+
 /-- The depth-16 full-orbit step is small: `t_16 = 1`. -/
 lemma orbitStepWeight_16_eq_one : orbitStepWeight 16 = 1 := by
   unfold orbitStepWeight
