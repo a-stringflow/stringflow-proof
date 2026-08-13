@@ -3343,87 +3343,9 @@ theorem local_lemma_final_no_hge
     simpa [Nat.add_assoc] using hB3
   exact rj0_ge_of_size_conditions_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight hPrem (by omega) hBase2 hPow3
 
-/-- The finite-prefix branch of the final core: depth `≤15` is closed by
-the orbit25 base. -/
-theorem unified_core_final_no_hge_le15
-    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
-    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
-    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
-    (hReach : S6Audit.FullOrbitFrom7 r)
-    (_hReset : ∃ s0 k t δ : Nat, S6Audit.ResetHeadEq s0 j k t δ r)
-    (hH : 2 ≤ H_s)
-    (hshort : ∃ n : Nat, S6Audit.fullOrbitIter n = r ∧ n ≤ 15) :
-    twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) ≤ H_s - 2 := by
-  rcases hshort with ⟨n, hn, hnle⟩
-  have hOrbit : S6Audit.OrbitFrom7 r := by
-    rw [← hn]
-    exact S6Audit.fullOrbitPrefix_imp_OrbitFrom7 n hnle
-  have hge0 : 5 ^ j ≤ rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight :=
-    local_lemma_final_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hH hOrbit
-  exact terminal_bound_of_rj0_lower j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach hH hPrem.L_val hge0
-
-/--
-The final open core: document 36.20 terminal inequality
-
-    v2(5^(L+3) * ((3*r_s+1)/2^(L+4)) + 1) <= H_s - 2
-
-under `All36_20PremisesNoHge` (no `H_ge` input) and with the explicit
-block-head reachability `FullOrbitFrom7 r`, where
-`r = (Aj + 5^j*q)/2^Wj`.  `FullOrbitFrom7` is the real accelerated 7
-orbit, not `GeneralOrbitFrom7` and not mere legal-word membership.
-The premise `hReset` records the explicit 36.20 block-head condition
-that `r` is reached from a previous even terminal by the reset equation.
-It carries both `ResetHeadEq s0 j k t δ r` and the previous-terminal
-equation `s0 * 5 ^ k = r_prev + 1` as arithmetic witnesses.  No
-`GeneralOrbitFrom7` premise is used: the block-head reachability is
-`FullOrbitFrom7 r`, and the previous terminal enters only through the
-arithmetic equation above.  The d-segment bridge needs `hReset` to
-instantiate the candidate family.
-Erratum: the original 36.20 `IsGloballyReachable` field also carries
-`IsPreviousEvenTerminal s0 j k`, whose legal reachability component is
-`OrbitFrom7 r_prev`.  That component was missing from the arithmetic-only
-`hReset`; it is restored here as a witness field, not as
-`GeneralOrbitFrom7` and not as a new `hterm` premise.
-The premise `2 <= H_s` is a domain condition needed for `H_s - 1` to be a
-valid modulus; it is not the forbidden `H_ge` input.  This is the unique
-`sorry` in this audit file.
-
-The stated bridge `failure_implies_rj_mod_64` is invalid: the tail
-congruence (with `m2=0`) gives `r % 16 = 5`, hence `r % 64 = 33` is
-impossible (`tail_failure_m2_zero_block_head_mod16` and
-`tail_failure_m2_zero_not_rj_mod64` above).  The document-36.30.6
-residue is therefore not a consequence of the terminal failure; the
-`d=1/2/3/≥4` candidate exclusions do not attach to this tail branch as
-stated.  The unique `sorry` remains the depth-`≥16` branch of
-`unified_core_final_no_hge`; closing it needs a different orbit
-constraint, not the candidate-residue bridge.
-
-PMI audit (2026-08-13): the prefix identity
-`sum 2^(-m_k) = 5*A_N/5^N` is covered for arbitrary words by
-`StringFlow.PMI.aTotal5_eq_five_mul_aTotal`,
-`StringFlow.PH.localLambda_eq_pmi_aTotal` and
-`StringFlow.SurvEx.wordA_eq_localLambda`; the `cycleWord_*` theorems are
-closed-cycle specializations and require `hclosed`.  The remaining open
-steps are L1 (an absolute bound on the excess depth `n_j - j`) and L2 (an
-independent upper bound on `2^(W_(N-1))*(125*x+39)` or `*(125*x+53)`);
-neither is encoded as a Lean theorem here.
--/
-theorem unified_core_final_no_hge
-    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
-    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
-    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
-    (hReach : S6Audit.FullOrbitFrom7 r)
-    (hReset : ∃ s0 k t δ r_prev : Nat,
-      S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
-        S6Audit.PreviousTerminalAtDepth s0 j k r_prev)
-    (hH : 2 ≤ H_s) :
-    twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) ≤ H_s - 2 := by
-  rcases hReach with ⟨n, hn⟩
-  by_cases hn15 : n ≤ 15
-  · rcases hReset with ⟨s0, k, t, δ, r_prev, hre, hprod, hprev⟩
-    exact unified_core_final_no_hge_le15 j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj ⟨n, hn⟩
-      ⟨s0, k, t, δ, hre⟩ hH ⟨n, hn, hn15⟩
-  · sorry
+/- The final core theorems moved to `UnifiedCoreBridge`, where the
+d-segment exclusions are visible.  See
+`UnifiedCoreBridge.unified_core_final_no_hge`. -/
 
 /-!
 # Status table

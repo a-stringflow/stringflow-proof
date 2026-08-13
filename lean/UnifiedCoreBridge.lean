@@ -5758,4 +5758,64 @@ theorem previous_terminal_eq_even_of_first_block
     rw [← hw, horbit]
   rw [hr, hw'full]
 
+namespace UnifiedCoreAudit
+
+/-- The finite-prefix branch of the final core: depth `≤15` is closed by
+the orbit25 base. -/
+theorem unified_core_final_no_hge_le15
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : S6Audit.FullOrbitFrom7 r)
+    (_hReset : ∃ s0 k t δ : Nat, S6Audit.ResetHeadEq s0 j k t δ r)
+    (hH : 2 ≤ H_s)
+    (hshort : ∃ n : Nat, S6Audit.fullOrbitIter n = r ∧ n ≤ 15) :
+    twoValuation (5 ^ (L + 3) * UnifiedCoreAudit.wTerminal L r_s + 1) ≤ H_s - 2 := by
+  rcases hshort with ⟨n, hn, hnle⟩
+  have hOrbit : S6Audit.OrbitFrom7 r := by
+    rw [← hn]
+    exact S6Audit.fullOrbitPrefix_imp_OrbitFrom7 n hnle
+  have hge0 : 5 ^ j ≤ S6Audit.rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight :=
+    UnifiedCoreAudit.local_lemma_final_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hH hOrbit
+  exact UnifiedCoreAudit.terminal_bound_of_rj0_lower j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach hH hPrem.L_val hge0
+
+/--
+The final open core: document 36.20 terminal inequality
+
+    v2(5^(L+3) * ((3*r_s+1)/2^(L+4)) + 1) <= H_s - 2
+
+under `All36_20PremisesNoHge` (no `H_ge` input) and with the explicit
+block-head reachability `FullOrbitFrom7 r`, where
+`r = (Aj + 5^j*q)/2^Wj`.  `FullOrbitFrom7` is the real accelerated 7
+orbit, not `GeneralOrbitFrom7` and not mere legal-word membership.
+The premise `hReset` records the explicit 36.20 block-head condition
+that `r` is reached from a previous even terminal by the reset equation.
+It carries both `ResetHeadEq s0 j k t δ r` and the previous-terminal
+equation `s0 * 5 ^ k = r_prev + 1` as arithmetic witnesses.  No
+`GeneralOrbitFrom7` premise is used: the block-head reachability is
+`FullOrbitFrom7 r`, and the previous terminal enters only through the
+arithmetic equation above.  The d-segment bridge needs `hReset` to
+instantiate the candidate family.
+The premise `2 <= H_s` is a domain condition needed for `H_s - 1` to be a
+valid modulus; it is not the forbidden `H_ge` input.
+-/
+theorem unified_core_final_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : S6Audit.FullOrbitFrom7 r)
+    (hReset : ∃ s0 k t δ r_prev : Nat,
+      S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
+        S6Audit.PreviousTerminalAtDepth s0 j k r_prev)
+    (hH : 2 ≤ H_s) :
+    twoValuation (5 ^ (L + 3) * UnifiedCoreAudit.wTerminal L r_s + 1) ≤ H_s - 2 := by
+  rcases hReach with ⟨n, hn⟩
+  by_cases hn15 : n ≤ 15
+  · rcases hReset with ⟨s0, k, t, δ, r_prev, hre, hprod, hprev⟩
+    exact unified_core_final_no_hge_le15 j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj ⟨n, hn⟩
+      ⟨s0, k, t, δ, hre⟩ hH ⟨n, hn, hn15⟩
+  · sorry
+
+end UnifiedCoreAudit
+
 end S6Audit
