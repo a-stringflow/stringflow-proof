@@ -4832,4 +4832,19 @@ lemma reset_terminal_hterm_of_d_segment_and_reset
     (by omega) hres hprod hr hdiv hseg
   exact reset_terminal_hterm_of_alignment j n0 k s0 hj hjn h0
 
+/-- The restored 36.20 previous-terminal field identifies the arithmetic
+`r_prev` with the legal-orbit witness inside `IsPreviousEvenTerminal`.
+This is the `OrbitFrom7 r_prev` half of the erratum, with no
+`GeneralOrbitFrom7` assumption. -/
+lemma previous_terminal_orbit_of_reset
+    (s0 j k r_prev : Nat)
+    (hprev : IsPreviousEvenTerminal s0 j k)
+    (hprod : s0 * 5 ^ k = r_prev + 1) :
+    OrbitFrom7 r_prev := by
+  rcases hprev with ⟨r, hprod', _hodd, _hnd5, _hlt, horbit⟩
+  have hr : r_prev = r := by
+    have h1 : s0 * 5 ^ k = r + 1 := hprod'
+    omega
+  rwa [hr]
+
 end S6Audit

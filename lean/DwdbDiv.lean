@@ -28,7 +28,8 @@ def unifiedCoreClosed : Prop :=
       (_hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
       (_hReach : S6Audit.FullOrbitFrom7 r)
       (_hReset : ∃ s0 k t δ r_prev : Nat,
-        S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1)
+        S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
+          S6Audit.IsPreviousEvenTerminal s0 j k)
       (_hH : 2 ≤ H_s),
       S6Audit.twoValuation
         (5 ^ (L + 3) * UnifiedCoreAudit.wTerminal L r_s + 1) ≤ H_s - 2

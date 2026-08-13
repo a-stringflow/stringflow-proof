@@ -3379,6 +3379,11 @@ equation `s0 * 5 ^ k = r_prev + 1` as arithmetic witnesses.  No
 `FullOrbitFrom7 r`, and the previous terminal enters only through the
 arithmetic equation above.  The d-segment bridge needs `hReset` to
 instantiate the candidate family.
+Erratum: the original 36.20 `IsGloballyReachable` field also carries
+`IsPreviousEvenTerminal s0 j k`, whose legal reachability component is
+`OrbitFrom7 r_prev`.  That component was missing from the arithmetic-only
+`hReset`; it is restored here as a witness field, not as
+`GeneralOrbitFrom7` and not as a new `hterm` premise.
 The premise `2 <= H_s` is a domain condition needed for `H_s - 1` to be a
 valid modulus; it is not the forbidden `H_ge` input.  This is the unique
 `sorry` in this audit file.
@@ -3409,12 +3414,13 @@ theorem unified_core_final_no_hge
     (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
     (hReach : S6Audit.FullOrbitFrom7 r)
     (hReset : ∃ s0 k t δ r_prev : Nat,
-      S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1)
+      S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
+        S6Audit.IsPreviousEvenTerminal s0 j k)
     (hH : 2 ≤ H_s) :
     twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) ≤ H_s - 2 := by
   rcases hReach with ⟨n, hn⟩
   by_cases hn15 : n ≤ 15
-  · rcases hReset with ⟨s0, k, t, δ, r_prev, hre, hprod⟩
+  · rcases hReset with ⟨s0, k, t, δ, r_prev, hre, hprod, hprev⟩
     exact unified_core_final_no_hge_le15 j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj ⟨n, hn⟩
       ⟨s0, k, t, δ, hre⟩ hH ⟨n, hn, hn15⟩
   · sorry
