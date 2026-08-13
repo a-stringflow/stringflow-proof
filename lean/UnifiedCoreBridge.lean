@@ -4704,6 +4704,46 @@ lemma previous_terminal_even_intermediate_eq
     hd hn0 hiter_g hiter_gp hstep_e he hsplit hprev horbit
   exact hres
 
+/-- The same even-intermediate identity is a pure orbit identity, with
+no `n0` alignment premise: it only needs `j ≥ 2`. -/
+lemma previous_terminal_even_intermediate_eq_self (j : Nat) (hj : 2 ≤ j) :
+    (5 * fullOrbitIter (j - 2) + 1) / 2 =
+      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) := by
+  rcases previous_terminal_word_decomposition j with ⟨w, w', hsplit, hprev, horbit⟩
+  let n0 := j + 2
+  let d := 2
+  have hd : 1 ≤ d := by norm_num
+  have hn0 : 2 + d ≤ n0 := by dsimp [n0, d]; omega
+  have hiter_g : fullOrbitIter (n0 - (1 + d)) = fullOrbitIter (j - 1) := by
+    dsimp [n0, d]
+    congr 1
+  have hiter_gp : fullOrbitIter (n0 - (2 + d)) = fullOrbitIter (j - 2) := by
+    dsimp [n0, d]
+    congr 1
+  have hstep_e : orbitStepWeight (n0 - (2 + d)) = orbitStepWeight (j - 2) := by
+    dsimp [n0, d]
+    congr 1
+  have he : 1 ≤ orbitStepWeight (j - 2) := by
+    unfold orbitStepWeight
+    have hodd : IsOdd (fullOrbitIter (j - 2)) := fullOrbitIter_odd (j - 2)
+    exact twoValuation_five_mul_add_one_ge_one (fullOrbitIter (j - 2)) hodd
+  have hres := previous_terminal_hr_of_word_and_segment n0 d
+    (orbitStepWeight (j - 2)) (fullOrbitIter (j - 1))
+    (fullOrbitIter (j - 2)) ((5 * fullOrbitIter (j - 2) + 1) / 2) w w'
+    hd hn0 hiter_g hiter_gp hstep_e he hsplit hprev horbit
+  exact hres
+
+/-- hterm from the depth condition alone, for every `j ≥ 2`; no
+`j+2 ≤ n0` segment premise is needed. -/
+lemma reset_terminal_hterm_of_depth (s0 j k : Nat) (hj : 2 ≤ j)
+    (hterm0 : s0 * 5 ^ k = (5 * fullOrbitIter (j - 2) + 1) / 2 + 1) :
+    5 ^ k * s0 =
+      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) + 1 := by
+  have h_int := previous_terminal_even_intermediate_eq_self j hj
+  have hterm0' : 5 ^ k * s0 = (5 * fullOrbitIter (j - 2) + 1) / 2 + 1 := by
+    rwa [Nat.mul_comm] at hterm0
+  rwa [h_int] at hterm0'
+
 /-- Step 3 of the reset-terminal alignment: from the previous-terminal
 relation `s0·5^k = r_prev+1` and the word-derived identity
 `r_prev = 2^(e-1)*g`, the terminal-chain input `hterm` is derived, not
