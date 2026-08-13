@@ -2335,6 +2335,72 @@ lemma tail_failure_m2_zero_not_rj_mod64
   norm_num at hmm
   omega
 
+/-- Corrected predecessor residue, `t=1`: from `r % 16 = 5` and
+`r = (5*x+1)/2`, the real-orbit predecessor is `x ≡ 21 (mod 32)`. -/
+lemma predecessor_mod32_of_block_head_mod16_t1 (x r : Nat)
+    (hr : r = (5 * x + 1) / 2)
+    (hdiv : (5 * x + 1) % 2 = 0)
+    (hr16 : r % 16 = 5) :
+    x % 32 = 21 := by
+  have hmul : 2 * r = 5 * x + 1 := by
+    rw [hr]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have hrdec : r = 16 * (r / 16) + 5 := by
+    have h := (Nat.div_add_mod r 16).symm
+    rw [hr16] at h
+    exact h
+  have hmod : (5 * x + 1) % 32 = 10 := by
+    rw [← hmul]
+    rw [hrdec]
+    ring_nf
+    rw [Nat.add_mod, Nat.mul_mod]
+    norm_num
+  have h5x : (5 * x) % 32 = 9 := by
+    have hsum := Nat.add_mod (5 * x) 1 32
+    rw [hmod] at hsum
+    norm_num at hsum
+    have hlt : (5 * x) % 32 < 32 := Nat.mod_lt (5 * x) (by norm_num)
+    omega
+  have hx : (5 * (x % 32)) % 32 = 9 := by
+    simpa [Nat.mul_mod] using h5x
+  have hlt : x % 32 < 32 := Nat.mod_lt x (by norm_num)
+  interval_cases x % 32
+  all_goals norm_num at hx
+  all_goals norm_num
+
+/-- Corrected predecessor residue, `t=2`: from `r % 16 = 5` and
+`r = (5*x+1)/4`, the real-orbit predecessor is `x ≡ 55 (mod 64)`. -/
+lemma predecessor_mod64_of_block_head_mod16_t2 (x r : Nat)
+    (hr : r = (5 * x + 1) / 4)
+    (hdiv : (5 * x + 1) % 4 = 0)
+    (hr16 : r % 16 = 5) :
+    x % 64 = 55 := by
+  have hmul : 4 * r = 5 * x + 1 := by
+    rw [hr]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have hrdec : r = 16 * (r / 16) + 5 := by
+    have h := (Nat.div_add_mod r 16).symm
+    rw [hr16] at h
+    exact h
+  have hmod : (5 * x + 1) % 64 = 20 := by
+    rw [← hmul]
+    rw [hrdec]
+    ring_nf
+    rw [Nat.add_mod, Nat.mul_mod]
+    norm_num
+  have h5x : (5 * x) % 64 = 19 := by
+    have hsum := Nat.add_mod (5 * x) 1 64
+    rw [hmod] at hsum
+    norm_num at hsum
+    have hlt : (5 * x) % 64 < 64 := Nat.mod_lt (5 * x) (by norm_num)
+    omega
+  have hx : (5 * (x % 64)) % 64 = 19 := by
+    simpa [Nat.mul_mod] using h5x
+  have hlt : x % 64 < 64 := Nat.mod_lt x (by norm_num)
+  interval_cases x % 64
+  all_goals norm_num at hx
+  all_goals norm_num
+
 /-- The terminal failure congruence, cleared of the odd-part denominator:
 `2^(H_s-1) | 5^(L+3)*w+1` iff
 `2^(L+H_s+3) | 5^(L+3)*(3*r_s+1)+2^(L+4)`. -/
@@ -3390,6 +3456,7 @@ theorem unified_core_final_no_hge
 | `rj0_ge_iff_terminal_bound` | missing | the full iff through B2/B3 and the CRT lift; not yet formalized |
 | `tail_failure_m2_zero_block_head_mod16` | proved | exact `m2=0` tail residue: failure forces `r % 16 = 5` (i.e. `u % 8 = 3`); this is the true content of the single tail congruence |
 | `tail_failure_m2_zero_not_rj_mod64` | proved | the stated `failure_implies_rj_mod_64` bridge is false: `r % 16 = 5` excludes `r % 64 = 33` |
+| `predecessor_mod32_of_block_head_mod16_t1` / `predecessor_mod64_of_block_head_mod16_t2` | proved | corrected predecessor residues: `t=1` gives `x ≡ 21 (mod 32)`, `t=2` gives `x ≡ 55 (mod 64)`; zero `sorry`, only `propext / Classical.choice / Quot.sound` |
 | `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch; candidate-residue bridge is invalid, so 1a/1b + d-exclusions do not close it |
 | `failure_implies_rj_mod_64` | **invalid as stated** | 36.29/36.30.5 core: the tail congruence contradicts the claimed `r % 64 = 33`; the true `m2=0` residue is `r % 16 = 5` |
 | `FinitePrefix.fullOrbit_first_t_ge3_is_exactly_3` | proved | `lean/FinitePrefix.lean`: explicit 17-state expansion by `simp [StringFlow.twoValuation_succ]`, zero `native_decide`; closes 36.30.23 at math level |
