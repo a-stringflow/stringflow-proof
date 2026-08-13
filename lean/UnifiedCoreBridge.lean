@@ -5802,6 +5802,155 @@ theorem previous_terminal_eq_even_of_first_block
     rw [← hw, horbit]
   rw [hr, hw'full]
 
+/-- `2^(4q) == 1 (mod 5)` for every `q`. -/
+lemma two_pow_four_mul_mod5 (q : Nat) :
+    (2 ^ (4 * q)) % 5 = 1 := by
+  induction q with
+  | zero => norm_num
+  | succ q ih =>
+      have hpow : 2 ^ (4 * (q + 1)) = 2 ^ (4 * q) * 2 ^ 4 := by
+        rw [Nat.mul_add, Nat.pow_add]
+      rw [hpow, Nat.mul_mod, ih]
+      norm_num
+
+/-- Converse of `two_pow_one_add_four_mul_mod5`: if `2^W == 2 (mod 5)`
+then `W == 1 (mod 4)`. -/
+lemma two_pow_mod5_eq_two_imp (W : Nat) (h : (2 ^ W) % 5 = 2) : W % 4 = 1 := by
+  have hdiv := Nat.div_add_mod W 4
+  have hpow : 2 ^ W = 2 ^ (4 * (W / 4)) * 2 ^ (W % 4) := by
+    have hW : W = 4 * (W / 4) + W % 4 := hdiv.symm
+    conv_lhs => rw [hW]
+    rw [Nat.pow_add]
+  have hq := two_pow_four_mul_mod5 (W / 4)
+  have hmod : (2 ^ W) % 5 = (2 ^ (W % 4)) % 5 := by
+    rw [hpow, Nat.mul_mod, hq]
+    norm_num
+  have hlt : W % 4 < 4 := Nat.mod_lt W (by norm_num)
+  interval_cases hw : W % 4
+  · norm_num at hmod h
+    omega
+  · rfl
+  · norm_num at hmod h
+    omega
+  · norm_num at hmod h
+    omega
+
+/-- Every full-orbit state after depth 5 is below `5^n/4`. -/
+lemma fullOrbitIter_lt_five_pow_div_four (n : Nat) (hn : 5 ≤ n) :
+    fullOrbitIter n < 5 ^ n / 4 := by
+  have hb := fullOrbitIter_upper_bound n
+  have h2ge : 96 ≤ 3 * 2 ^ n := by
+    have h2 : 2 ^ 5 ≤ 2 ^ n := Nat.pow_le_pow_right (by norm_num) hn
+    nlinarith
+  have hle : 96 * fullOrbitIter n ≤ 22 * 5 ^ n := by
+    have hsub : 22 * 5 ^ n - 2 ^ n ≤ 22 * 5 ^ n := by omega
+    nlinarith [hb, h2ge, hsub]
+  have h5ge : 96 ≤ 5 ^ n := by
+    have h5 : 5 ^ 5 ≤ 5 ^ n := Nat.pow_le_pow_right (by norm_num) hn
+    exact le_trans (by norm_num : 96 ≤ 3125) h5
+  have hgoal : 4 * fullOrbitIter n + 4 ≤ 5 ^ n := by
+    nlinarith [hle, h5ge]
+  have hlt : 4 * fullOrbitIter n < 5 ^ n - 3 := by
+    have hgt3 : 3 < 5 ^ n := by
+      have h5 : 5 ^ 5 ≤ 5 ^ n := Nat.pow_le_pow_right (by norm_num) hn
+      exact lt_of_lt_of_le (by norm_num : 3 < 3125) h5
+    omega
+  exact (Nat.lt_div_iff_mul_lt (by norm_num : 0 < 4)).mpr
+    (by simpa [Nat.mul_comm] using hlt)
+
+/-- With `k=0` the previous terminal odd part satisfies `s0 == 4 (mod 5)`. -/
+lemma previous_terminal_s0_mod_five_of_k0
+    (s0 j k r_prev : Nat)
+    (hprev : IsPreviousEvenTerminal s0 j k)
+    (hprod : s0 * 5 ^ k = r_prev + 1)
+    (hk : k = 0) :
+    s0 % 5 = 4 := by
+  have hmod := previous_terminal_mod_five_of_k0 s0 j k r_prev hprev hprod hk
+  subst k
+  have hs0 : s0 = r_prev + 1 := by simpa using hprod
+  rw [hs0, Nat.add_mod, hmod]
+
+/-- Document 36.30.13.1/13.2 in the `d=1` branch: the candidate family
+pins `s0 == 4 (mod 5)`, hence `x == 3 (mod 5)`, and the actual orbit
+segment equation `5*g+1 = 2^W*x` forces the incoming step weight
+`W` to satisfy `W == 1 (mod 4)`. -/
+lemma d1_step_weight_one_add_four_mul
+    (j n e g δ s0 x : Nat)
+    (hd : n - j = 1)
+    (hj : 3 ≤ j)
+    (hg : fullOrbitIter (j - 1) = g)
+    (hx_cand : x = candidateX j e g δ)
+    (hx_iter : x = fullOrbitIter (n - 1))
+    (hterm : 5 ^ 0 * s0 = 2 ^ (e - 1) * g + 1)
+    (hs0mod : s0 % 5 = 4) :
+    orbitStepWeight (n - 2) = 1 + 4 * (orbitStepWeight (n - 2) / 4) := by
+  let W := orbitStepWeight (n - 2)
+  have hn1 : n - 1 = j := by omega
+  have hn2 : n - 2 = j - 1 := by omega
+  have hji : j - 1 + 1 = j := by omega
+  have hx_j : fullOrbitIter j = x := by
+    rw [← hn1, ← hx_iter]
+  have hx' : fullOrbitIter (j - 1 + 1) = candidateX j e g δ := by
+    rw [hji, hx_j]
+    exact hx_cand
+  have hgen := orbitSegmentWord_candidate_equation j 1 e g δ hg hx'
+  have hw : StringFlow.wordWeight (orbitSegmentWord j 1) = W := by
+    simp [orbitSegmentWord, StringFlow.wordWeight, ← hn2, W]
+  have hA : StringFlow.Word.wordA (orbitSegmentWord j 1) = 1 := by
+    simp [orbitSegmentWord, StringFlow.Word.wordA]
+  rw [hw, hA] at hgen
+  have hseg : 2 ^ W * x = 5 * g + 1 := by
+    rwa [← hx_cand] at hgen
+  have hmod : (2 ^ W * x) % 5 = 1 := by
+    rw [hseg, Nat.add_mod, Nat.mul_mod]
+    norm_num
+  have hterm' : s0 - 1 = 2 ^ (e - 1) * g := by
+    have hterm0 : s0 = 2 ^ (e - 1) * g + 1 := by simpa using hterm
+    omega
+  have hx2 : x = (s0 - 1) + δ * 5 ^ (j - 1) := by
+    unfold candidateX at hx_cand
+    rw [← hterm'] at hx_cand
+    exact hx_cand
+  have hdvd5 : 5 ∣ δ * 5 ^ (j - 1) := by
+    refine ⟨δ * 5 ^ (j - 2), ?_⟩
+    have hj' : j - 1 = (j - 2) + 1 := by omega
+    rw [hj', Nat.pow_add, Nat.pow_one]
+    ring
+  have hδ5 : (δ * 5 ^ (j - 1)) % 5 = 0 := Nat.dvd_iff_mod_eq_zero.mp hdvd5
+  have hs0dec : s0 - 1 = 5 * (s0 / 5) + 3 := by
+    have h := (Nat.div_add_mod s0 5).symm
+    rw [hs0mod] at h
+    omega
+  have hs0mod3 : (s0 - 1) % 5 = 3 := by
+    rw [hs0dec, Nat.add_mod, Nat.mul_mod]
+    norm_num
+  have hxmod : x % 5 = 3 := by
+    rw [hx2, Nat.add_mod, hδ5, hs0mod3]
+  have hmod2 : (2 ^ W * (x % 5)) % 5 = 1 := by
+    rw [Nat.mul_mod] at hmod ⊢
+    simpa [Nat.mod_mod] using hmod
+  rw [hxmod] at hmod2
+  have hpow2 : (2 ^ W) % 5 = 2 := by
+    have hmod3 : ((2 ^ W * 3) * 2) % 5 = 2 := by
+      rw [Nat.mul_mod]
+      rw [hmod2]
+    have hmod4 : (2 ^ W * 6) % 5 = 2 := by
+      have hrewrite : (2 ^ W * 3) * 2 = 2 ^ W * 6 := by ring
+      rwa [hrewrite] at hmod3
+    have h6 : 6 % 5 = 1 := by norm_num
+    have hcalc : (2 ^ W * 6) % 5 = (2 ^ W * 1) % 5 := by
+      rw [Nat.mul_mod, Nat.mul_mod, h6]
+      norm_num
+    have hmod5 : (2 ^ W * 1) % 5 = 2 := by
+      rwa [hcalc] at hmod4
+    simpa using hmod5
+  have hWmod : W % 4 = 1 := two_pow_mod5_eq_two_imp W hpow2
+  have hW : W = 1 + 4 * (W / 4) := by
+    have h := Nat.div_add_mod W 4
+    rw [hWmod] at h
+    omega
+  simpa [W] using hW
+
 namespace UnifiedCoreAudit
 
 /-- The finite-prefix branch of the final core: depth `≤15` is closed by
@@ -5931,7 +6080,66 @@ theorem n16_core_impossible
       j n 0 t δ s0 x r hj3 (by omega) hs0pos hx_iter hx_form hδ hiter hstep_t hre hterm
       (by simpa [candidateRj, ht] using hrx) hdiv_t
     by_cases hd1 : n - j = 1
-    · sorry
+    · exfalso
+      let g := fullOrbitIter (n - 2)
+      let e := orbitStepWeight (n - 3)
+      let a := orbitStepWeight (n - 2) / 4
+      have hn1 : n - 1 = j := by omega
+      have hn2 : n - 2 = j - 1 := by omega
+      have hn3 : n - 3 = j - 2 := by omega
+      have hiter_g : fullOrbitIter (n - 2) = g := rfl
+      have hstep_e : orbitStepWeight (n - 3) = e := rfl
+      have hres' : ResetHeadEq s0 (n - 1) 0 t δ r := by
+        rw [hn1]
+        exact hre
+      have hterm' : 5 ^ 0 * s0 = 2 ^ (e - 1) * g + 1 := by
+        rw [← hn2] at hterm
+        rw [← hn3] at hterm
+        simpa [e, g] using hterm
+      have hprev0 : IsPreviousEvenTerminal s0 j 0 :=
+        ⟨r0, hprod', hodd_s0, hnd5, hlt, horbit⟩
+      have hs0mod : s0 % 5 = 4 :=
+        previous_terminal_s0_mod_five_of_k0 s0 j 0 r_prev hprev0 hprod (by rfl)
+      have hx_cand : x = candidateX j e g δ := by
+        simpa [e, g, ← hn2, ← hn3] using hcand.1
+      have hg : fullOrbitIter (j - 1) = g := by
+        rw [← hn2]
+      have hWform : orbitStepWeight (n - 2) = 1 + 4 * a := by
+        simpa [a] using
+          d1_step_weight_one_add_four_mul j n e g δ s0 x hd1 hj3 hg hx_cand hx_iter hterm' hs0mod
+      have hgpos : 0 < g := by
+        have hodd : g % 2 = 1 := by
+          dsimp [g]
+          exact fullOrbitIter_odd (n - 2)
+        by_contra hnot
+        have hg0 : g = 0 := by omega
+        rw [hg0] at hodd
+        norm_num at hodd
+      have hg4 : g < 5 ^ (n - 2) / 4 := by
+        have hge5 : 5 ≤ n - 2 := by omega
+        have hlt := fullOrbitIter_lt_five_pow_div_four (n - 2) hge5
+        simpa [g] using hlt
+      have he : 2 ≤ e := by
+        by_contra hnot
+        have he1 : e ≤ 1 := by omega
+        have he0 : e - 1 = 0 := by omega
+        have hpow : 2 ^ (e - 1) = 1 := by rw [he0]; norm_num
+        have hs0e : s0 = g + 1 := by
+          have hterm0 : s0 = 2 ^ (e - 1) * g + 1 := by simpa using hterm'
+          rw [hpow] at hterm0
+          omega
+        have hgodd : g % 2 = 1 := by
+          dsimp [g]
+          exact fullOrbitIter_odd (n - 2)
+        have hmod : (g + 1) % 2 = 1 := by
+          rwa [hs0e] at hodd_s0
+        have hmod2 : (g + 1) % 2 = 0 := by
+          rw [Nat.add_mod, hgodd]
+        omega
+      exact d1_exclusion_of_reset_candidate n 0 t δ e g a s0 x r
+        (by omega) hiter hiter_g hstep_e hstep_t hWform hres' hterm'
+        (by simpa [ht] using hrx) hdiv_t
+        hgpos hg4 hδ he
     · sorry
   · sorry
 
