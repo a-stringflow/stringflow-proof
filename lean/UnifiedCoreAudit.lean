@@ -698,6 +698,49 @@ lemma leadingTwos_replicate (n : Nat) : leadingTwos (List.replicate n 2) = n := 
   | zero => simp [leadingTwos]
   | succ n ih => simp [leadingTwos, List.replicate, ih]
 
+lemma leadingOnes_le_length (w : List Nat) : leadingOnes w ≤ w.length := by
+  cases w with
+  | nil => simp [leadingOnes]
+  | cons a t =>
+      by_cases ha : a = 1
+      · subst a
+        simp [leadingOnes]
+        exact leadingOnes_le_length t
+      · simp [leadingOnes, ha]
+
+lemma leadingTwos_le_length (w : List Nat) : leadingTwos w ≤ w.length := by
+  cases w with
+  | nil => simp [leadingTwos]
+  | cons a t =>
+      by_cases ha : a = 2
+      · subst a
+        simp [leadingTwos]
+        exact leadingTwos_le_length t
+      · simp [leadingTwos, ha]
+
+lemma tailSplit_sum_le_length (w : List Nat) :
+    (tailSplit w).1 + (tailSplit w).2 ≤ w.length := by
+  unfold tailSplit
+  let rw := w.reverse
+  let m1 := leadingOnes rw
+  have hm1 : m1 ≤ rw.length := by
+    dsimp [m1]
+    exact leadingOnes_le_length rw
+  have hdrop : (rw.drop m1).length = rw.length - m1 := by simp
+  have hm2 : leadingTwos (rw.drop m1) ≤ (rw.drop m1).length :=
+    leadingTwos_le_length (rw.drop m1)
+  have hle : leadingOnes rw + leadingTwos (rw.drop m1) ≤ rw.length := by
+    rw [hdrop] at hm2
+    omega
+  have hrev : rw.length = w.length := by
+    dsimp [rw]
+    simp
+  have hle' : leadingOnes rw + leadingTwos (rw.drop m1) ≤ w.length := by
+    rw [hrev] at hle
+    exact hle
+  dsimp [tailSplit, rw, m1]
+  exact hle'
+
 /-- `liftToNonneg` returns the least `t` satisfying the predicate. -/
 lemma liftToNonneg_minimal (B0 R C t : Nat) (hC : 0 < C)
     (h : R ≤ B0 + C * t) :
@@ -2443,6 +2486,7 @@ theorem unified_core_final_no_hge
 | `tail_wTerminal_full` | proved | 36.29.3 full tail: `m1` t=1 strips + `m2` t=2 run give `wTerminal L r_s = 5^m1·(3·5^m2·u−1)/2^(L+m1+3)` |
 | `block_trailing_ones_step` / `block_trailing_twos_step` | proved | a `t=1`/`t=2` run in `weight_step` advances `blockState` by the exact step equation with the divisibility witness |
 | `leadingOnes` / `leadingTwos` / `tailSplit` | proved | list primitives for `(m1,m2)` tail splitting: trailing `1`s and preceding `2`s, with `replicate` specs |
+| `leadingOnes_le_length` / `leadingTwos_le_length` / `tailSplit_sum_le_length` | proved | run lengths are bounded by the word length and `m1+m2 ≤ w.length` |
 | `r_s_mem_orbit25_of_premises_no_hge` / `r_s_eq_229_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` force `r_s∈orbit25` and `r_s=229` |
 | `s_le_9_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` force `s<=9` |
 | `concat_word_eq_path_of_rs229_no_hge` / `bad_*_no_hge` | proved | no-`H_ge` path uniqueness and pseudo-candidate exclusions, used by the finite base |
