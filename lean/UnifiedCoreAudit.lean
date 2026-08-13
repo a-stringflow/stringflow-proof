@@ -836,6 +836,53 @@ lemma tailSplit_spec (w : List Nat) :
   · intro i hi
     exact (leadingTwos_spec (w.reverse.drop (leadingOnes w.reverse))).1 i hi
 
+lemma getD_append_left (l₁ l₂ : List Nat) (n d : Nat) (hn : n < l₁.length) :
+    (l₁ ++ l₂).getD n d = l₁.getD n d := by
+  induction l₁ generalizing n with
+  | nil =>
+      simp at hn
+  | cons a t ih =>
+      cases n with
+      | zero => simp [List.getD]
+      | succ n =>
+          have hn' : n < t.length := by
+            simp at hn
+            omega
+          have h := ih n hn'
+          simpa [List.getD] using h
+
+lemma getD_append_last (l : List Nat) (x d : Nat) :
+    (l ++ [x]).getD l.length d = x := by
+  induction l with
+  | nil => simp [List.getD]
+  | cons a t ih => simp [List.getD]
+
+lemma blockWord_getD (weight : Nat → Nat) (j n i : Nat) (hi : i < n) :
+    (blockWord weight j n).getD i 0 = weight (j + i + 1) - weight (j + i) := by
+  induction n with
+  | zero => omega
+  | succ n ih =>
+      have hdef : blockWord weight j (n + 1) =
+          blockWord weight j n ++ [weight (j + n + 1) - weight (j + n)] := rfl
+      rw [hdef]
+      by_cases hin : i < n
+      · have h := ih hin
+        have hlen : i < (blockWord weight j n).length := by
+          rw [blockWord_length]
+          exact hin
+        rw [getD_append_left (blockWord weight j n)
+          [weight (j + n + 1) - weight (j + n)] i 0 hlen]
+        exact h
+      · have hin' : i = n := by omega
+        subst i
+        have hlen : n = (blockWord weight j n).length :=
+          (blockWord_length weight j n).symm
+        conv_lhs =>
+          arg 2
+          rw [hlen]
+        rw [getD_append_last (blockWord weight j n)
+          (weight (j + n + 1) - weight (j + n)) 0]
+
 /-- `liftToNonneg` returns the least `t` satisfying the predicate. -/
 lemma liftToNonneg_minimal (B0 R C t : Nat) (hC : 0 < C)
     (h : R ≤ B0 + C * t) :
