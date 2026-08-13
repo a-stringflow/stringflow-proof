@@ -1906,6 +1906,32 @@ theorem d1_exclusion_of_orbit
   have hseg := d1_segment_equation j e g δ a (by omega) hiter hx hstep
   exact d1_exclusion j e g δ a hj hgpos hg hδ he hseg
 
+/-- `d=1` exclusion assembled from the reset-to-candidate bridge: the
+reset terminal data plus the actual full-orbit weights satisfy every
+input of `d1_exclusion_of_orbit`. -/
+theorem d1_exclusion_of_reset_candidate
+    (n0 t δ e g a s0 x r : Nat)
+    (hn0 : 4 ≤ n0)
+    (hiter : fullOrbitIter n0 = r)
+    (hiter_g : fullOrbitIter (n0 - 2) = g)
+    (hstep_e : orbitStepWeight (n0 - 3) = e)
+    (hstep_t : orbitStepWeight (n0 - 1) = t)
+    (hstep_a : orbitStepWeight (n0 - 2) = 1 + 4 * a)
+    (hres : ResetHeadEq s0 (n0 - 1) 0 t δ r)
+    (hterm : s0 = 2 ^ (e - 1) * g + 1)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (hgpos : 0 < g)
+    (hg : g < 5 ^ (n0 - 2) / 4)
+    (hδ : δ = 1 ∨ δ = 3)
+    (he : 2 ≤ e) :
+    False := by
+  have hbridge := candidate_parameterization_of_reset_full_orbit n0 t δ e g s0 x r
+    (by omega) hiter hiter_g hstep_e hstep_t hres hterm hr hdiv
+  have hx : fullOrbitIter (n0 - 1) = candidateX (n0 - 1) e g δ := by
+    rw [← hbridge.2.1, hbridge.1]
+  exact d1_exclusion_of_orbit (n0 - 1) e g δ a (by omega) hgpos hg hδ he hiter_g hx hstep_a
+
 /-- `d=2` exclusion from the actual orbit: derive the segment equation
 and the survivor modulus, then `d2_exclusion` applies. -/
 theorem d2_exclusion_of_orbit

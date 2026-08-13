@@ -3494,6 +3494,7 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.candidateRj_predecessor_odd` | proved | a `t∈{1,2}` reset predecessor of an odd state is odd |
 | `UnifiedCoreBridge.candidateRj_eq_fullOrbitIter_of_weight` | proved | exact-predecessor bridge: if the full-orbit step into `r` at depth `n0` has weight `t`, then the `t`-reset predecessor `x` equals `fullOrbitIter (n0-1)`; no injectivity needed, only quotient equality by `2^t` |
 | `UnifiedCoreBridge.candidate_parameterization_of_reset_full_orbit` | proved | packaged candidate bridge: `ResetHeadEq s0 (n0-1) 0 t δ r` + `s0=2^(e-1)*g+1` + exact full-orbit weights give `x = candidateX (n0-1) e g δ`, `x=fullOrbitIter (n0-1)`, `g=fullOrbitIter (n0-2)`, `e=orbitStepWeight (n0-3)` |
+| `UnifiedCoreBridge.d1_exclusion_of_reset_candidate` | proved | `d=1` exclusion assembled from the reset bridge: reset terminal data + exact full-orbit weights satisfy `d1_exclusion_of_orbit`; a template for `d=2/3/≥4` assembly |
 | `FinitePrefix.fullOrbitPrefix_wordValid/wordOrbit/imp_OrbitFrom7` | proved | depth `n≤15` full-orbit states are `OrbitFrom7`-reachable via `[2,1,2,1,1,2,1,1,1,2,2,2,2,1,1]` prefixes |
 | `UnifiedCoreBridge.fullOrbitFrom7_le15_imp_OrbitFrom7` | proved | `FullOrbitFrom7` with depth `≤15` reduces to `OrbitFrom7` |
 | `UnifiedCoreBridge.candidateX_mod4_of_e2/e_ge3` | proved | 36.30.23.4 branch table: `e=2⇒x≡2+δ (mod 4)`, `e≥3⇒x≡δ (mod 4)` |
