@@ -3472,7 +3472,7 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.d3_*_no_pow_mod32/64` (10 branches) | proved | 10 of the 21 no-solution `d=3` branches are excluded by the mod-`2^k` power-period set (`C mod 2^k` is not a power of `5`); zero `sorry`, only `propext / Classical.choice / Quot.sound` |
 | `UnifiedCoreBridge.d3_*_no_pow` (11 branches) | proved | the remaining 11 `d=3` branches are excluded by CRT: mod-`2^k` fixes `j % 2^(k-2)`, then the mod-`m` period table (`m∈{31,61,93,109}`) has no `s`; zero `sorry`, only `propext / Classical.choice / Quot.sound` |
 | `UnifiedCoreBridge.dge4_e3_j17_t1_corrected_excluded` / `dge4_e3_j17_t2_delta3_corrected_excluded` | proved | d≥4 `e=3,j=17` branches still excluded under corrected residues: `x≡133 (mod 160)` vs required `53`, and `x≡263 (mod 320)` vs required `183` |
-| `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + explicit reset premise `hReset : ∃ s0 k t δ, ResetHeadEq s0 j k t δ r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch; `d=1`, `d=2`, `d=3` and `d≥4` corrected exclusions are formalized (`d=2` via the full-orbit size bound), so the remaining open items are the `m2>0` tail exclusion and instantiating the `d≥2` candidate family from `hReset` |
+| `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + explicit reset premise `hReset : ∃ s0 k t δ, ResetHeadEq s0 j k t δ r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch; `d=1`, `d=2`, `d=3` and `d≥4` corrected exclusions are formalized (`d=2` via the full-orbit size bound), so the remaining open items are the `m2>0` tail exclusion and instantiating the `d≥2` candidate family from `hReset`; the bridge additionally needs a valid `k=0` lemma, which `hReset` alone does not provide |
 | `failure_implies_rj_mod_64` | **invalid as stated** | 36.29/36.30.5 core: the tail congruence contradicts the claimed `r % 64 = 33`; the true `m2=0` residue is `r % 16 = 5` |
 | `FinitePrefix.fullOrbit_first_t_ge3_is_exactly_3` | proved | `lean/FinitePrefix.lean`: explicit 17-state expansion by `simp [StringFlow.twoValuation_succ]`, zero `native_decide`; closes 36.30.23 at math level |
 | `UnifiedCoreBridge` | encoded | `lean/UnifiedCoreBridge.lean`: `candidateX`, `candidateRj`, `orbitState`, `orbitStepWeight`; step 1 of the assembly plan |
@@ -3551,11 +3551,17 @@ Minimum failing premises found so far:
     `tail_failure_m2_odd_u_mod8`.  The reset equation (`ResetHeadEq` from
     the previous even terminal) is now encoded explicitly as `hReset` in
     `unified_core_final_no_hge` and `DwdbDiv.unifiedCoreClosed`, so the
-    premises-to-candidate bridge has its missing input.  The remaining open
-    statement is the `m2>0` tail exclusion: document 36.30.24's "even
-    `s0`" exclusion for the `d=2` survivor is invalid (`s0` is odd,
-    `d2_survivor_candidate_s0_odd`), but the `d=2` family is closed by the
-    full-orbit size bound `d2_exclusion_of_corrected_residue`.  Until the
+    premises-to-candidate bridge has its missing input.  Two precise gaps
+    remain.  First, the `d≥2` bridge needs a valid `k=0` lemma: `hReset`
+    alone does not imply `k=0`, because `ResetHeadEq` carries no
+    `IsOdd s0` / `¬ 5 ∣ s0` / size premises, and the documented shortcut
+    "`x+1 ≡ 22,56 (mod 32,64)` is prime to `5`" is invalid: `x ≡ 21
+    (mod 32)` only fixes `x+1 ≡ 22 (mod 32)`, not `x+1 mod 5` (e.g.
+    `x=149` gives `x+1=150 ≡ 0 (mod 5)`).  Second, the `m2>0` tail
+    exclusion remains open: document 36.30.24's "even `s0`" exclusion is
+    invalid (`s0` is odd, `d2_survivor_candidate_s0_odd`), but the `d=2`
+    family is closed by the full-orbit size bound
+    `d2_exclusion_of_corrected_residue`.  Until the `k=0` lemma, the
     `m2>0` exclusion and the `d≥2` bridge enter the proof, no true-card or
     candidate-true-card verdict is allowed; the audit remains open.
 
@@ -3566,9 +3572,10 @@ Minimum failing premises found so far:
  `unified_core_final_no_hge` is in progress: `FinitePrefix`, the
  `d=1` exclusion, the corrected `d=2`/`d=3`/`d≥4` exclusion lemmas, and
  the 36.30.23.0/1 rigidity lemmas now compile; the remaining assembly is
- the premises-to-parameterization bridge for `d≥2` and the `m2>0` tail
- exclusion.  The theorem above remains `by sorry` and no Lean closure is
- claimed.
+  the premises-to-parameterization bridge for `d≥2`, the missing valid
+  `k=0` lemma (not implied by `hReset`; the documented mod-5 shortcut is
+  invalid), and the `m2>0` tail exclusion.  The theorem above remains
+  `by sorry` and no Lean closure is claimed.
 -/
 
 end UnifiedCoreAudit
