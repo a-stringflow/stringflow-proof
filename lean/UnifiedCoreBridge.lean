@@ -656,6 +656,79 @@ lemma fullOrbitStep_mul_eq (x : Nat) :
     exact ⟨StringFlow.oddPart (5 * x + 1), hdec⟩
   exact Nat.mul_div_cancel' hdvd
 
+/-- The exact full-orbit step into `g`: `5*g_prev+1 = 2^e*g` when
+`g_prev` is the state before `g` and `e` is the incoming step weight. -/
+lemma fullOrbit_step_into_g (n0 d e g g_prev : Nat)
+    (_hd : 1 ≤ d) (hn0 : 2 + d ≤ n0)
+    (hiter_g : fullOrbitIter (n0 - (1 + d)) = g)
+    (hiter_gp : fullOrbitIter (n0 - (2 + d)) = g_prev)
+    (hstep_e : orbitStepWeight (n0 - (2 + d)) = e) :
+    5 * g_prev + 1 = 2 ^ e * g := by
+  let m := n0 - (2 + d)
+  have hm : m + 1 = n0 - (1 + d) := by dsimp [m]; omega
+  have hstep0 := fullOrbitStep_mul_eq (fullOrbitIter m)
+  have hval : twoValuation (5 * fullOrbitIter m + 1) = e := by
+    dsimp [m] at hstep_e ⊢
+    unfold orbitStepWeight at hstep_e
+    exact hstep_e
+  have hstep' : 2 ^ e * fullOrbitStep (fullOrbitIter m) = 5 * fullOrbitIter m + 1 := by
+    rw [hval] at hstep0
+    exact hstep0
+  have hsucc : fullOrbitStep (fullOrbitIter m) = fullOrbitIter (m + 1) := by rfl
+  rw [hsucc, hm] at hstep'
+  dsimp [m] at hstep'
+  rw [hiter_g, hiter_gp] at hstep'
+  exact hstep'.symm
+
+/-- `hr` lemma: the even intermediate `(5*g_prev+1)/2` of the full-orbit
+step into `g` equals `2^(e-1)*g`.  This is provable from the full-orbit
+segment alone. -/
+theorem previous_even_terminal_of_full_orbit_segment
+    (n0 d e g g_prev : Nat) (_hd : 1 ≤ d) (hn0 : 2 + d ≤ n0)
+    (hiter_g : fullOrbitIter (n0 - (1 + d)) = g)
+    (hiter_gp : fullOrbitIter (n0 - (2 + d)) = g_prev)
+    (hstep_e : orbitStepWeight (n0 - (2 + d)) = e)
+    (he : 1 ≤ e) :
+    (5 * g_prev + 1) / 2 = 2 ^ (e - 1) * g := by
+  have hstep := fullOrbit_step_into_g n0 d e g g_prev _hd hn0 hiter_g hiter_gp hstep_e
+  let r := (5 * g_prev + 1) / 2
+  have hr : r = (5 * g_prev + 1) / 2 := rfl
+  have h := first_block_terminal_eq e g_prev g r hstep hr he
+  simpa [r] using h
+
+/-- If the previous terminal is reached by a general word whose last
+step is `t=1` from `g_prev`, then `r = (5*g_prev+1)/2`.  The relation
+is proved from the word decomposition, not assumed. -/
+theorem previous_terminal_eq_even_intermediate_of_word
+    (w w' : List Nat) (r g_prev : Nat)
+    (hsplit : w = w' ++ [1])
+    (hprev : StringFlow.Word.wordOrbit w' 7 = g_prev)
+    (horbit : StringFlow.Word.wordOrbit w 7 = r) :
+    r = (5 * g_prev + 1) / 2 := by
+  rw [hsplit, wordOrbit_append_singleton] at horbit
+  rw [hprev] at horbit
+  norm_num at horbit
+  exact horbit.symm
+
+/-- `hr`: from the general-word terminal decomposition and the
+full-orbit segment, the previous even terminal equals `2^(e-1)*g`. -/
+theorem previous_terminal_hr_of_word_and_segment
+    (n0 d e g g_prev r : Nat) (w w' : List Nat)
+    (_hd : 1 ≤ d) (hn0 : 2 + d ≤ n0)
+    (hiter_g : fullOrbitIter (n0 - (1 + d)) = g)
+    (hiter_gp : fullOrbitIter (n0 - (2 + d)) = g_prev)
+    (hstep_e : orbitStepWeight (n0 - (2 + d)) = e)
+    (he : 1 ≤ e)
+    (hsplit : w = w' ++ [1])
+    (hprev : StringFlow.Word.wordOrbit w' 7 = g_prev)
+    (horbit : StringFlow.Word.wordOrbit w 7 = r) :
+    r = 2 ^ (e - 1) * g := by
+  have hmid : r = (5 * g_prev + 1) / 2 :=
+    previous_terminal_eq_even_intermediate_of_word w w' r g_prev hsplit hprev horbit
+  have hhr := previous_even_terminal_of_full_orbit_segment n0 d e g g_prev _hd hn0
+    hiter_g hiter_gp hstep_e he
+  exact hmid.trans hhr
+
 /-- The terminal-chain identity instantiated from the exact full-orbit
 segment: `g` at depth `n0-(1+d)`, `g_prev` one step before it, and `e`
 the weight of the step into `g`. -/
@@ -670,22 +743,7 @@ theorem terminal_chain_identity_of_full_orbit_d
     (he : 1 ≤ e)
     (hr : r = (5 * g_prev + 1) / 2) :
     5 ^ k0 * s = 2 ^ (e - 1) * g + 1 := by
-  have hstep : 5 * g_prev + 1 = 2 ^ e * g := by
-    let m := n0 - (2 + d)
-    have hm : m + 1 = n0 - (1 + d) := by dsimp [m]; omega
-    have hstep0 := fullOrbitStep_mul_eq (fullOrbitIter m)
-    have hval : twoValuation (5 * fullOrbitIter m + 1) = e := by
-      dsimp [m] at hstep_e ⊢
-      unfold orbitStepWeight at hstep_e
-      exact hstep_e
-    have hstep' : 2 ^ e * fullOrbitStep (fullOrbitIter m) = 5 * fullOrbitIter m + 1 := by
-      rw [hval] at hstep0
-      exact hstep0
-    have hsucc : fullOrbitStep (fullOrbitIter m) = fullOrbitIter (m + 1) := by rfl
-    rw [hsucc, hm] at hstep'
-    dsimp [m] at hstep'
-    rw [hiter_g, hiter_gp] at hstep'
-    exact hstep'.symm
+  have hstep := fullOrbit_step_into_g n0 d e g g_prev _hd hn0 hiter_g hiter_gp hstep_e
   exact terminal_chain_identity k0 s r g e g_prev hprod hstep hr he
 
 /-- 36.30.23.0: every full-orbit step output is prime to `5`. -/
