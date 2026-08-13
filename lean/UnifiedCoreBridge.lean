@@ -5311,6 +5311,50 @@ lemma reset_k_zero_of_previous_terminal_depth
     ring
   exact hnd5_r h5
 
+/-- The depth-`j-1` previous terminal forces `j ≥ 3`: the terminal lies
+in the finite 25-state orbit table, so `s0 ≥ 19`, while `j ≤ 2` would
+give `s0 < 5`. -/
+lemma previous_terminal_at_depth_ge_three
+    (s0 j k r_prev : Nat)
+    (hk : k = 0) (hodd_s0 : IsOdd s0)
+    (hprod : s0 * 5 ^ k = r_prev + 1)
+    (hlt : s0 < 5 ^ (j - 1 - k))
+    (horbit : OrbitFrom7 r_prev) :
+    3 ≤ j := by
+  subst k
+  have hrprev_even : r_prev % 2 = 0 := by
+    have hodd_l : (s0 * 5 ^ 0) % 2 = 1 := by
+      simpa [hodd_s0]
+    rw [hprod] at hodd_l
+    have hmod : (r_prev + 1) % 2 = (r_prev % 2 + 1) % 2 := by
+      rw [Nat.add_mod]
+    rw [hmod] at hodd_l
+    have hcases : r_prev % 2 = 0 ∨ r_prev % 2 = 1 := by omega
+    rcases hcases with h0 | h1
+    · exact h0
+    · rw [h1] at hodd_l
+      norm_num at hodd_l
+  have hIn : InOrbit25 r_prev := by
+    exact OrbitFrom7_mem_orbit25 r_prev horbit
+  have hge18 : 18 ≤ r_prev := by
+    rcases orbit25_mem_cases r_prev hIn with
+      rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+      rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+      rfl | rfl | rfl | rfl | rfl
+    all_goals norm_num at *
+  have hge19 : 19 ≤ s0 := by
+    have hprod0 : s0 = r_prev + 1 := by simpa using hprod
+    rw [hprod0]
+    omega
+  by_contra h
+  have hjle : j ≤ 2 := by omega
+  have hlt0 : s0 < 5 ^ (j - 1) := by simpa using hlt
+  have h5le : 5 ^ (j - 1) ≤ 5 := by
+    have hj1 : j - 1 ≤ 1 := by omega
+    exact Nat.pow_le_pow_right (by decide : 0 < 5) hj1
+  have hs0lt : s0 < 5 := lt_of_lt_of_le hlt0 h5le
+  omega
+
 /-- A nonempty legal word has its `r+1` value in `4` or `0` modulo `5`,
 according to whether the last step is `t=1` or `t=2`. -/
 lemma s_mod_of_legal_nonempty_word
@@ -5779,6 +5823,118 @@ theorem unified_core_final_no_hge_le15
     UnifiedCoreAudit.local_lemma_final_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hH hOrbit
   exact UnifiedCoreAudit.terminal_bound_of_rj0_lower j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach hH hPrem.L_val hge0
 
+/-- The depth-`≥16` branch of the unified core: assemble the
+reset-to-candidate bridge with the d-segment exclusions. -/
+theorem n16_core_impossible
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hiter : fullOrbitIter n = r) (hn16 : 16 ≤ n)
+    (hReset : ∃ s0 k t δ r_prev : Nat,
+      S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
+        S6Audit.PreviousTerminalAtDepth s0 j k r_prev)
+    (hH : 2 ≤ H_s) :
+    False := by
+  rcases hReset with ⟨s0, k, t, δ, r_prev, hre, hprod, hprev⟩
+  have hk : k = 0 := reset_k_zero_of_previous_terminal_depth s0 j k r_prev hprev hprod
+  subst k
+  rcases hprev with ⟨hprev0, hseg⟩
+  rcases hprev0 with ⟨r0, hprod', hodd_s0, hnd5, hlt, horbit⟩
+  have hr : r_prev = r0 := by
+    have h1 : s0 * 5 ^ 0 = r0 + 1 := hprod'
+    have h2 : s0 * 5 ^ 0 = r_prev + 1 := hprod
+    omega
+  have horbit' : OrbitFrom7 r_prev := by
+    rwa [← hr] at horbit
+  have hj3 : 3 ≤ j :=
+    previous_terminal_at_depth_ge_three s0 j 0 r_prev (by rfl) hodd_s0 hprod hlt horbit'
+  have hj : 2 ≤ j := by
+    by_contra h
+    have hj1 : j ≤ 1 := by omega
+    have hprod0 : s0 = r_prev + 1 := by simpa using hprod
+    have hlt0 : s0 < 5 ^ (j - 1) := by simpa using hlt
+    have h5le : 5 ^ (j - 1) ≤ 1 := by
+      have hj1' : j - 1 = 0 := by omega
+      rw [hj1']
+      norm_num
+    have hs0lt : s0 < 1 := lt_of_lt_of_le hlt0 h5le
+    have hs0ge : 1 ≤ s0 := by
+      have hrge : 1 ≤ r_prev + 1 := by omega
+      rw [hprod0]
+      exact hrge
+    omega
+  have hterm0 : s0 * 5 ^ 0 = (5 * fullOrbitIter (j - 2) + 1) / 2 + 1 := by
+    rw [hprod, hseg]
+  have hterm : 5 ^ 0 * s0 =
+      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) + 1 :=
+    reset_terminal_hterm_of_depth s0 j 0 hj hterm0
+  rcases reset_predecessor_of_block_head_premises j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+    hPrem hrj ⟨n, hiter⟩ with ⟨t', x, ht', hrx, hdiv⟩
+  have ht : t' = t := by
+    rcases hre with h1 | h2
+    · rcases h1 with ⟨ht1, hδ1, heq1⟩
+      have hr3 : r % 5 = 3 :=
+        t1_reset_rj_mod_five s0 j 0 r (by omega : 1 ≤ j) (by simpa using heq1)
+      rcases ht' with h'1 | h'2
+      · omega
+      · exfalso
+        have hdiv4 : 2 ^ 2 ∣ 5 * x + 1 := by
+          simpa [h'2] using (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+        have hcj := candidateRj_mod_five x 2 (Or.inr rfl) hdiv4
+        have hr4 : r % 5 = 4 := by
+          rw [hrx, h'2]
+          exact hcj.2 rfl
+        omega
+    · rcases h2 with ⟨ht2, hδ2, heq2⟩
+      have hr4 : r % 5 = 4 :=
+        t2_reset_rj_mod_five s0 j 0 δ r (by omega : 1 ≤ j) (by simpa using heq2)
+      rcases ht' with h'1 | h'2
+      · exfalso
+        have hdiv2 : 2 ^ 1 ∣ 5 * x + 1 := by
+          simpa [h'1] using (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+        have hcj := candidateRj_mod_five x 1 (Or.inl rfl) hdiv2
+        have hr3 : r % 5 = 3 := by
+          rw [hrx, h'1]
+          exact hcj.1 rfl
+        omega
+      · omega
+  have ht_t : t = 1 ∨ t = 2 := by
+    rcases hre with h1 | h2
+    · rcases h1 with ⟨ht1, _hδ, _heq⟩
+      exact Or.inl ht1
+    · rcases h2 with ⟨ht2, _hδ, _heq⟩
+      exact Or.inr ht2
+  have hdiv_t : (5 * x + 1) % 2 ^ t = 0 := by simpa [ht] using hdiv
+  have hx_form : x = 5 ^ 0 * s0 + δ * 5 ^ (j - 1) - 1 :=
+    reset_head_predecessor s0 j 0 t δ r x (by omega : 1 ≤ j) hre
+      (by simpa [candidateRj, ht] using hrx) hdiv_t
+  by_cases hv2 : orbitStepWeight (n - 1) ≤ 2
+  · have hstep_t : orbitStepWeight (n - 1) = t :=
+      orbitStepWeight_of_reset_head_le_two n j Wp Wj q Aj A_s s W_s r_s L H_s weight r x t
+        (by omega) hPrem hrj hiter (by simpa [candidateRj, ht] using hrx) hdiv_t ht_t hv2
+    have hx_iter : x = fullOrbitIter (n - 1) :=
+      candidateRj_eq_fullOrbitIter_of_weight n x t r (by omega) hiter hstep_t
+        (by simpa [candidateRj, ht] using hrx) hdiv_t
+    have hs0pos : 0 < s0 := by
+      have hge : 1 ≤ s0 := by
+        have hprod0 : s0 = r_prev + 1 := by simpa using hprod
+        rw [hprod0]
+        omega
+      omega
+    have hδ : δ = 1 ∨ δ = 3 := by
+      rcases hre with h1 | h2
+      · rcases h1 with ⟨_ht, hδ, _heq⟩
+        exact Or.inl hδ
+      · rcases h2 with ⟨_ht, hδ, _heq⟩
+        exact hδ
+    have hcand := candidate_parameterization_of_reset_full_orbit_d_aligned
+      j n 0 t δ s0 x r hj3 (by omega) hs0pos hx_iter hx_form hδ hiter hstep_t hre hterm
+      (by simpa [candidateRj, ht] using hrx) hdiv_t
+    by_cases hd1 : n - j = 1
+    · sorry
+    · sorry
+  · sorry
+
 /--
 The final open core: document 36.20 terminal inequality
 
@@ -5814,7 +5970,9 @@ theorem unified_core_final_no_hge
   · rcases hReset with ⟨s0, k, t, δ, r_prev, hre, hprod, hprev⟩
     exact unified_core_final_no_hge_le15 j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj ⟨n, hn⟩
       ⟨s0, k, t, δ, hre⟩ hH ⟨n, hn, hn15⟩
-  · sorry
+  · exfalso
+    exact n16_core_impossible j Wp Wj q Aj A_s s W_s r_s L H_s n weight r hPrem hrj hn
+      (by omega) hReset hH
 
 end UnifiedCoreAudit
 
