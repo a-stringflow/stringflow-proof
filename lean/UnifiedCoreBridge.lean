@@ -5458,6 +5458,82 @@ lemma reverseStripN_first_stop_unique
     rw [h8mod] at h8
     rcases hmod with h4 | h0 <;> omega
 
+/-- The canonical first-block word is legal, has `{1,2}` entries, and
+has length `j-1`, as long as its prefix stays inside the small-step
+window `j-2 ≤ 14`. -/
+lemma first_block_canonical_word_valid_hok
+    (j : Nat) (hj : 2 ≤ j) (hsmall : j - 2 ≤ 14) :
+    StringFlow.Word.wordValid (orbitSegmentWord 1 (j - 2) ++ [1]) 7 ∧
+      (∀ t ∈ (orbitSegmentWord 1 (j - 2) ++ [1]), t = 1 ∨ t = 2) ∧
+        (orbitSegmentWord 1 (j - 2) ++ [1]).length = j - 1 := by
+  let w0 := orbitSegmentWord 1 (j - 2) ++ [1]
+  have hvalid_prefix : StringFlow.Word.wordValid (orbitSegmentWord 1 (j - 2)) 7 := by
+    have h := orbitSegmentWord_valid 1 (j - 2)
+    have h0 : fullOrbitIter 0 = 7 := rfl
+    rwa [h0] at h
+  have hdiv : (5 * fullOrbitIter (j - 2) + 1) % 2 = 0 := by
+    have hodd : IsOdd (fullOrbitIter (j - 2)) := fullOrbitIter_odd (j - 2)
+    have h5 : 5 % 2 = 1 := by norm_num
+    rw [Nat.add_mod, Nat.mul_mod, h5]
+    simp
+    rw [Nat.add_mod, hodd]
+  have hvalid : StringFlow.Word.wordValid w0 7 := by
+    dsimp [w0]
+    rw [wordValid_append_singleton]
+    constructor
+    · exact hvalid_prefix
+    · have horbit : StringFlow.Word.wordOrbit (orbitSegmentWord 1 (j - 2)) 7 =
+          fullOrbitIter (j - 2) := by
+        have h := orbitSegmentWord_orbit 1 (j - 2)
+        have h0 : fullOrbitIter 0 = 7 := rfl
+        rw [h0] at h
+        have hidx : 1 - 1 + (j - 2) = j - 2 := by omega
+        rwa [hidx] at h
+      rw [horbit]
+      exact hdiv
+  have hok : ∀ t ∈ w0, t = 1 ∨ t = 2 := by
+    intro t ht
+    rw [List.mem_append] at ht
+    rcases ht with ht1 | ht2
+    · rcases (List.mem_iff_getElem.mp ht1) with ⟨i, hi, hget⟩
+      have hsmall_i : i < j - 2 := by
+        have hlen : (orbitSegmentWord 1 (j - 2)).length = j - 2 :=
+          orbitSegmentWord_length 1 (j - 2)
+        rwa [hlen] at hi
+      have hget' : (orbitSegmentWord 1 (j - 2)).getD i 0 = orbitStepWeight i := by
+        have h := orbitSegmentWord_getD 1 (j - 2) i hsmall_i
+        simpa using h
+      have hgetD : (orbitSegmentWord 1 (j - 2)).getD i 0 = t := by
+        have hg := List.getD_eq_getElem (orbitSegmentWord 1 (j - 2)) 0 hi
+        rw [hg, hget]
+      have hle : orbitStepWeight i ≤ 2 := by
+        have hbase := fullOrbit_first_t_ge3_is_exactly_3
+        have hsmall' : i < 15 := by
+          have hle14 : j - 2 ≤ 14 := hsmall
+          omega
+        exact hbase.1 i hsmall'
+      have hge : 1 ≤ orbitStepWeight i := by
+        unfold orbitStepWeight
+        have hodd : IsOdd (fullOrbitIter i) := fullOrbitIter_odd i
+        exact twoValuation_five_mul_add_one_ge_one (fullOrbitIter i) hodd
+      have h12 : orbitStepWeight i = 1 ∨ orbitStepWeight i = 2 := by omega
+      rcases h12 with h1 | h2
+      · left
+        have ht1' : t = orbitStepWeight i := by
+          rw [← hgetD, hget']
+        rwa [h1] at ht1'
+      · right
+        have ht2' : t = orbitStepWeight i := by
+          rw [← hgetD, hget']
+        rwa [h2] at ht2'
+    · simp at ht2
+      exact Or.inl ht2
+  have hlen : w0.length = j - 1 := by
+    dsimp [w0]
+    simp [orbitSegmentWord_length]
+    omega
+  exact ⟨hvalid, hok, hlen⟩
+
 theorem firstBlockPrefixExact_of_premises
     (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
     (r r_prev k : Nat) (w : List Nat)
