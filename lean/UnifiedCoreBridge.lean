@@ -480,6 +480,20 @@ theorem first_block_terminal_eq (e g_prev g r : Nat)
     ring
   exact Nat.eq_of_mul_eq_mul_left (by norm_num : 0 < 2) h2r'
 
+/-- The terminal-chain identity: `5^k0*s = r+1` and `r = 2^(e-1)*g`
+imply `5^k0*s = 2^(e-1)*g+1`.  This is the exact bridge input for every
+`k0`, not only `k0=0`. -/
+theorem terminal_chain_identity (k0 s r g e g_prev : Nat)
+    (hprod : s * 5 ^ k0 = r + 1)
+    (hstep : 5 * g_prev + 1 = 2 ^ e * g)
+    (hr : r = (5 * g_prev + 1) / 2)
+    (he : 1 ≤ e) :
+    5 ^ k0 * s = 2 ^ (e - 1) * g + 1 := by
+  have hterm0 := first_block_terminal_eq e g_prev g r hstep hr he
+  calc
+    5 ^ k0 * s = r + 1 := by rw [Nat.mul_comm]; exact hprod
+    _ = 2 ^ (e - 1) * g + 1 := by rw [hterm0]
+
 /-- 36.30.8.2: from the exact identity `A_j + 5^j*q = 2^L*(B+δ*5^j)`
 with `0 < B < 5^j` and `A_j < 5^j`, the `q` is `m + δ*2^L` with
 `m < 2^L`. -/
@@ -641,6 +655,38 @@ lemma fullOrbitStep_mul_eq (x : Nat) :
   have hdvd : 2 ^ twoValuation (5 * x + 1) ∣ 5 * x + 1 := by
     exact ⟨StringFlow.oddPart (5 * x + 1), hdec⟩
   exact Nat.mul_div_cancel' hdvd
+
+/-- The terminal-chain identity instantiated from the exact full-orbit
+segment: `g` at depth `n0-(1+d)`, `g_prev` one step before it, and `e`
+the weight of the step into `g`. -/
+theorem terminal_chain_identity_of_full_orbit_d
+    (n0 d k0 s r g e g_prev : Nat)
+    (_hd : 1 ≤ d)
+    (hn0 : 2 + d ≤ n0)
+    (hprod : s * 5 ^ k0 = r + 1)
+    (hiter_g : fullOrbitIter (n0 - (1 + d)) = g)
+    (hiter_gp : fullOrbitIter (n0 - (2 + d)) = g_prev)
+    (hstep_e : orbitStepWeight (n0 - (2 + d)) = e)
+    (he : 1 ≤ e)
+    (hr : r = (5 * g_prev + 1) / 2) :
+    5 ^ k0 * s = 2 ^ (e - 1) * g + 1 := by
+  have hstep : 5 * g_prev + 1 = 2 ^ e * g := by
+    let m := n0 - (2 + d)
+    have hm : m + 1 = n0 - (1 + d) := by dsimp [m]; omega
+    have hstep0 := fullOrbitStep_mul_eq (fullOrbitIter m)
+    have hval : twoValuation (5 * fullOrbitIter m + 1) = e := by
+      dsimp [m] at hstep_e ⊢
+      unfold orbitStepWeight at hstep_e
+      exact hstep_e
+    have hstep' : 2 ^ e * fullOrbitStep (fullOrbitIter m) = 5 * fullOrbitIter m + 1 := by
+      rw [hval] at hstep0
+      exact hstep0
+    have hsucc : fullOrbitStep (fullOrbitIter m) = fullOrbitIter (m + 1) := by rfl
+    rw [hsucc, hm] at hstep'
+    dsimp [m] at hstep'
+    rw [hiter_g, hiter_gp] at hstep'
+    exact hstep'.symm
+  exact terminal_chain_identity k0 s r g e g_prev hprod hstep hr he
 
 /-- 36.30.23.0: every full-orbit step output is prime to `5`. -/
 lemma fullOrbitStep_not_dvd_five (x : Nat) : ¬ 5 ∣ fullOrbitStep x := by
