@@ -4855,4 +4855,119 @@ lemma div_t2 (x s : Nat) (h4s : 4 * s = 5 * x + 5) :
   rw [h]
   exact Nat.mul_div_right (x + 1) (m := 5) (by norm_num)
 
+/-- 36.30.14.3 + 36.30.23.2: with enough fuel, reverse stripping from
+`wordOrbit w 7 + 1` reaches the first block head `7` (as `s = 8`). -/
+theorem reverseStripN_from_seven (n : Nat) (w : List Nat)
+    (hvalid : StringFlow.Word.wordValid w 7)
+    (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
+    (hlen : w.length ≤ n) :
+    reverseStripN n (StringFlow.Word.wordOrbit w 7 + 1) = 8 := by
+  revert w hvalid hok hlen
+  induction n with
+  | zero =>
+      intro w hvalid hok hlen
+      have hw0 : w = [] := by
+        cases w with
+        | nil => rfl
+        | cons hd tl => simp at hlen
+      rw [hw0]
+      change reverseStripN 0 8 = 8
+      rfl
+  | succ n ih =>
+      intro w hvalid hok hlen
+      cases hw0 : w with
+      | nil =>
+          simp [StringFlow.Word.wordOrbit]
+          exact reverseStripN_eight (n + 1)
+      | cons hd tl =>
+          have hne : w ≠ [] := by
+            rw [hw0]
+            simp
+          let t := StringFlow.Word.wordLast w
+          have ht12 : t = 1 ∨ t = 2 := hok t (wordLast_mem w hne)
+          have hsplit : w = w.dropLast ++ [t] := by
+            simpa [t] using word_eq_dropLast_append_last w hne
+          let w' := w.dropLast
+          have hvalid_w : StringFlow.Word.wordValid (w' ++ [t]) 7 := by
+            rw [← hsplit]
+            exact hvalid
+          have hvalid_append := (wordValid_append_singleton w' 7 t).mp hvalid_w
+          have hvalid' : StringFlow.Word.wordValid w' 7 := hvalid_append.1
+          have hdiv : (5 * StringFlow.Word.wordOrbit w' 7 + 1) % 2 ^ t = 0 := hvalid_append.2
+          have horbit : StringFlow.Word.wordOrbit w 7 =
+              (5 * StringFlow.Word.wordOrbit w' 7 + 1) / 2 ^ t := by
+            rw [hsplit]
+            exact wordOrbit_append_singleton w' 7 t
+          have hok' : ∀ a ∈ w', a = 1 ∨ a = 2 := by
+            intro a ha
+            apply hok a
+            rw [hsplit]
+            exact List.mem_append.mpr (Or.inl ha)
+          have hlen' : w'.length ≤ n := by
+            have hlenw0 : (w' ++ [t]).length = w'.length + 1 := by simp [w']
+            have hlenw1 : w.length ≤ n + 1 := hlen
+            rw [hsplit, hlenw0] at hlenw1
+            omega
+          rcases ht12 with ht1 | ht2
+          · let x := StringFlow.Word.wordOrbit w' 7
+            let s := StringFlow.Word.wordOrbit w 7 + 1
+            rw [ht1] at hdiv horbit
+            have h2s : 2 * s = 5 * x + 3 := by
+              dsimp [x, s]
+              have hdvd : 2 ∣ 5 * StringFlow.Word.wordOrbit w' 7 + 1 :=
+                Nat.dvd_iff_mod_eq_zero.mpr hdiv
+              have h2r : 2 * ((5 * StringFlow.Word.wordOrbit w' 7 + 1) / 2) =
+                  5 * StringFlow.Word.wordOrbit w' 7 + 1 := Nat.mul_div_cancel' hdvd
+              rw [horbit]
+              omega
+            have h4mod : s % 5 = 4 := s_mod_five_of_t1 x s h2s
+            have hq : (2 * s + 2) / 5 = x + 1 := div_t1 x s h2s
+            have hstep : reverseStripN (n + 1) s =
+                reverseStripN n (StringFlow.Word.wordOrbit w' 7 + 1) := by
+              rw [reverseStripN_t1 n s h4mod, hq]
+            have ih' := ih w' hvalid' hok' hlen'
+            rw [← hw0]
+            rw [hstep]
+            exact ih'
+          · let x := StringFlow.Word.wordOrbit w' 7
+            let s := StringFlow.Word.wordOrbit w 7 + 1
+            rw [ht2] at hdiv horbit
+            have h4s : 4 * s = 5 * x + 5 := by
+              dsimp [x, s]
+              have hdvd : 4 ∣ 5 * StringFlow.Word.wordOrbit w' 7 + 1 :=
+                Nat.dvd_iff_mod_eq_zero.mpr hdiv
+              have h4r : 4 * ((5 * StringFlow.Word.wordOrbit w' 7 + 1) / 4) =
+                  5 * StringFlow.Word.wordOrbit w' 7 + 1 := Nat.mul_div_cancel' hdvd
+              rw [horbit]
+              omega
+            have h0mod : s % 5 = 0 := s_mod_five_of_t2 x s h4s
+            have hq : (4 * s) / 5 = x + 1 := div_t2 x s h4s
+            have hstep : reverseStripN (n + 1) s =
+                reverseStripN n (StringFlow.Word.wordOrbit w' 7 + 1) := by
+              rw [reverseStripN_t2 n s h0mod, hq]
+            have ih' := ih w' hvalid' hok' hlen'
+            rw [← hw0]
+            rw [hstep]
+            exact ih'
+
+/-- 36.30.23.2: a `k=0` previous terminal strips back to the first block
+head `7`; its legal orbit word is a real witness. -/
+lemma previous_terminal_strip_reaches_eight
+    (s0 j k r_prev : Nat)
+    (hprev : IsPreviousEvenTerminal s0 j k)
+    (hprod : s0 * 5 ^ k = r_prev + 1)
+    (hk : k = 0) :
+    ∃ w : List Nat,
+      StringFlow.Word.wordValid w 7 ∧
+      (∀ t ∈ w, t = 1 ∨ t = 2) ∧
+      StringFlow.Word.wordOrbit w 7 = r_prev ∧
+      reverseStripN w.length s0 = 8 := by
+  have horbit := previous_terminal_orbit_of_reset s0 j k r_prev hprev hprod
+  rcases horbit with ⟨w, hok, hvalid, hw⟩
+  refine ⟨w, hvalid, hok, hw, ?_⟩
+  subst k
+  have hs0 : s0 = r_prev + 1 := by simpa using hprod
+  have hstrip := reverseStripN_from_seven w.length w hvalid hok (by simp)
+  rwa [hw, ← hs0] at hstrip
+
 end S6Audit
