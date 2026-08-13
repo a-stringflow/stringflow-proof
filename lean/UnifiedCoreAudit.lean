@@ -1665,6 +1665,22 @@ lemma t1_strip_iter_wTerminal (r : Nat → Nat) (m L : Nat)
       rw [hsum1, hsum2, Nat.pow_succ]
       ring
 
+lemma t1_strip_iter_twoValuation (r : Nat → Nat) (m L : Nat)
+    (hsteps : ∀ i < m, r (i + 1) = (5 * r i + 1) / 2 ∧ (5 * r i + 1) % 2 = 0)
+    (hL : L + 4 = twoValuation (3 * (r m) + 1)) :
+    (L + m) + 4 = twoValuation (3 * (r 0) + 1) := by
+  induction m generalizing L with
+  | zero => simp [hL]
+  | succ m ih =>
+      have hstep_m : r (m + 1) = (5 * r m + 1) / 2 := (hsteps m (by omega)).1
+      have hdiv_m : (5 * r m + 1) % 2 = 0 := (hsteps m (by omega)).2
+      have hval_m : (L + 1) + 4 = twoValuation (3 * (r m) + 1) :=
+        t1_strip_twoValuation (r m) (r (m + 1)) L hstep_m hdiv_m hL
+      have hih := ih (L + 1) (fun i hi => hsteps i (by omega)) hval_m
+      have hgoal : (L + (m + 1)) + 4 = twoValuation (3 * (r 0) + 1) := by
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hih
+      exact hgoal
+
 /-- 36.29.2 step: one exact `t=2` step satisfies `4*(r'+1)=5*(r+1)`. -/
 lemma t2_step_plus_one_mul (r r' : Nat)
     (hstep : r' = (5 * r + 1) / 4)
@@ -1842,6 +1858,149 @@ lemma tail_wTerminal_full
   have hw1 := t1_strip_iter_wTerminal r1 m1 L ht1 hL1
   have hw2 := t2_run_wTerminal r2 m2 (L + m1) u ht2 hstart2 hL2
   rw [hw1, hmid, hw2]
+
+lemma block_tail_wTerminal_of_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hn : n = s - j)
+    (hm : (m1, m2) = tailSplit (blockWord weight j n)) :
+    ∃ r1 r2 : Nat → Nat, ∃ u : Nat,
+      (∀ i < m1, r1 (i + 1) = (5 * r1 i + 1) / 2 ∧ (5 * r1 i + 1) % 2 = 0) ∧
+      (∀ i < m2, r2 (i + 1) = (5 * r2 i + 1) / 4 ∧ (5 * r2 i + 1) % 4 = 0) ∧
+      r1 0 = r2 m2 ∧
+      r1 m1 = r_s ∧
+      (L + m1) + 4 = twoValuation (3 * (r2 m2) + 1) ∧
+      r2 0 + 1 = 2 ^ (2 * m2 + 1) * u ∧
+      wTerminal L r_s =
+        5 ^ m1 * ((3 * 5 ^ m2 * u - 1) / 2 ^ ((L + m1) + 3)) := by
+  let a := j + (n - m1 - m2)
+  let r2 : Nat → Nat := fun i => blockState weight q (a + i)
+  let r1 : Nat → Nat := fun i => blockState weight q (a + m2 + i)
+  let u : Nat := StringFlow.oddPart (r2 0 + 1)
+  have hsum0 : m1 + m2 ≤ n := by
+    have hsum := tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum
+    rw [hlen] at hsum
+    simpa using hsum
+  have ha_end : a + m2 + m1 = s := by
+    dsimp [a]
+    have hn' : n = s - j := hn
+    have hjle : j ≤ s := hPrem.j_le_s
+    have hsum0' : m1 + m2 ≤ s - j := by
+      rwa [hn'] at hsum0
+    omega
+  have hwstep : ∀ k < n, weight (j + k + 1) = weight (j + k) + 1 ∨
+      weight (j + k + 1) = weight (j + k) + 2 := by
+    intro k hk
+    have hk' : j + k < s := by
+      have hn' : n = s - j := hn
+      omega
+    exact hPrem.weight_step (j + k) hk'
+  have ht1_weights := blockWord_tailSplit_ones_weight weight j n m1 m2 hwstep hm
+  have ht2_weights := blockWord_tailSplit_twos_weight weight j n m1 m2 hwstep hm
+  have hvalid2 : ∀ i ≤ m2, (wordMolecule weight (a + i) + 5 ^ (a + i) * q) %
+      2 ^ weight (a + i) = 0 := by
+    intro i hi
+    have hle : a + i ≤ s := by
+      dsimp [a]
+      have hn' : n = s - j := hn
+      omega
+    exact hPrem.valid_prefix (a + i) hle
+  have hvalid1 : ∀ i ≤ m1, (wordMolecule weight (a + m2 + i) + 5 ^ (a + m2 + i) * q) %
+      2 ^ weight (a + m2 + i) = 0 := by
+    intro i hi
+    have hle : a + m2 + i ≤ s := by
+      dsimp [a]
+      omega
+    exact hPrem.valid_prefix (a + m2 + i) hle
+  have ht2_steps : ∀ i < m2, weight (a + i + 1) = weight (a + i) + 2 := by
+    intro i hi
+    have h := ht2_weights i hi
+    simpa [a, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h
+  have ht1_steps : ∀ i < m1, weight (a + m2 + i + 1) = weight (a + m2 + i) + 1 := by
+    intro i hi
+    have h := ht1_weights i hi
+    have h' : j + (n - m1) = a + m2 := by
+      dsimp [a]
+      omega
+    rw [h'] at h
+    simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h
+  have hres2 := block_trailing_twos_step weight q a m2 ht2_steps hvalid2
+  have hres1 := block_trailing_ones_step weight q (a + m2) m1 ht1_steps hvalid1
+  have ht1 : ∀ i < m1, r1 (i + 1) = (5 * r1 i + 1) / 2 ∧ (5 * r1 i + 1) % 2 = 0 := by
+    intro i hi
+    have h := hres1 i hi
+    simpa [r1, Nat.add_assoc] using h
+  have ht2 : ∀ i < m2, r2 (i + 1) = (5 * r2 i + 1) / 4 ∧ (5 * r2 i + 1) % 4 = 0 := by
+    intro i hi
+    have h := hres2 i hi
+    simpa [r2, Nat.add_assoc] using h
+  have hmid : r1 0 = r2 m2 := by
+    simp [r1, r2]
+  have hend : r1 m1 = r_s := by
+    dsimp [r1]
+    have hsum : a + m2 + m1 = s := ha_end
+    rw [hsum]
+    have hbs : blockState weight q s = r_s := by
+      dsimp [blockState]
+      rw [← hPrem.A_s_mol, ← hPrem.Ws_def]
+      exact hPrem.r_s_eq.symm
+    exact hbs
+  have hL2 : (L + m1) + 4 = twoValuation (3 * (r2 m2) + 1) := by
+    have hval_s : L + 4 = twoValuation (3 * (r1 m1) + 1) := by
+      simpa [hend] using hPrem.L_val
+    have hval0 := t1_strip_iter_twoValuation r1 m1 L ht1 hval_s
+    simpa [hmid] using hval0
+  have hval_end : twoValuation (r2 m2 + 1) = 1 := by
+    have hmod : r2 m2 % 8 = 5 := by
+      have hmods : r_s % 8 = 5 := hPrem.r_s_mod8
+      have hmod_all := t1_run_mod8_five r1 m1 ht1 (by simpa [hend] using hmods)
+      have hr10 : r1 0 % 8 = 5 := hmod_all 0 (Nat.zero_le m1)
+      simpa [hmid] using hr10
+    exact twoValuation_eq_one_of_mod8_five (r2 m2) hmod
+  have hpos_end : 0 < r2 m2 + 1 := by positivity
+  have hdec_end := StringFlow.n_eq_two_pow_mul_oddPart (r2 m2 + 1) hpos_end
+  have hmul := t2_run_mul r2 m2 ht2
+  have hpow4 : 4 ^ m2 = 2 ^ (2 * m2) := by
+    rw [show 4 = 2 ^ 2 by norm_num, ← Nat.pow_mul]
+  have hleft : twoValuation (4 ^ m2 * (r2 m2 + 1)) = 2 * m2 + 1 := by
+    rw [hpow4]
+    have hdec' : r2 m2 + 1 = 2 * StringFlow.oddPart (r2 m2 + 1) := by
+      simp [hval_end] at hdec_end
+      simpa using hdec_end
+    have hpow : 2 ^ (2 * m2) * 2 = 2 ^ (2 * m2 + 1) := by
+      rw [show 2 * m2 + 1 = (2 * m2) + 1 by omega, Nat.pow_add, Nat.pow_one]
+    have hprod : 2 ^ (2 * m2) * (r2 m2 + 1) =
+        2 ^ (2 * m2 + 1) * StringFlow.oddPart (r2 m2 + 1) := by
+      conv_lhs =>
+        arg 2
+        rw [hdec']
+      calc
+        2 ^ (2 * m2) * (2 * StringFlow.oddPart (r2 m2 + 1))
+            = (2 ^ (2 * m2) * 2) * StringFlow.oddPart (r2 m2 + 1) := by ring
+        _ = 2 ^ (2 * m2 + 1) * StringFlow.oddPart (r2 m2 + 1) := by rw [hpow]
+    rw [hprod]
+    exact StringFlow.Lte.twoValuation_mul_two_pow_eq (2 * m2 + 1)
+      (StringFlow.oddPart (r2 m2 + 1))
+      (StringFlow.oddPart_odd_of_pos (r2 m2 + 1) hpos_end)
+  have hright : twoValuation (5 ^ m2 * (r2 0 + 1)) = twoValuation (r2 0 + 1) :=
+    StringFlow.Lte.twoValuation_mul_odd (5 ^ m2) (r2 0 + 1)
+      (StringFlow.Lte.five_pow_odd m2) (by positivity)
+  have hv : twoValuation (r2 0 + 1) = 2 * m2 + 1 := by
+    have hcong := congrArg twoValuation hmul
+    rw [hleft, hright] at hcong
+    exact hcong.symm
+  have hpos0 : 0 < r2 0 + 1 := by positivity
+  have hdec0 := StringFlow.n_eq_two_pow_mul_oddPart (r2 0 + 1) hpos0
+  have hstart : r2 0 + 1 = 2 ^ (2 * m2 + 1) * u := by
+    dsimp [u]
+    simp [hv] at hdec0
+    exact hdec0
+  have hw := tail_wTerminal_full r1 r2 m1 m2 L u ht1 ht2 hstart hmid
+    (by simpa [hend] using hPrem.L_val) hL2
+  refine ⟨r1, r2, u, ht1, ht2, hmid, hend, hL2, hstart, ?_⟩
+  simpa [hend] using hw
 
 /-- The terminal failure congruence, cleared of the odd-part denominator:
 `2^(H_s-1) | 5^(L+3)*w+1` iff
