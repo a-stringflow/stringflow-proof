@@ -578,6 +578,50 @@ lemma candidateRj_predecessor_odd (r x t : Nat)
   rw [hxmod] at h5xodd
   exact h5xodd
 
+/-- If the full-orbit step into `r` at depth `n0` has weight `t`, then the
+`t`-reset predecessor `x` of `r` is exactly the preceding full-orbit state.
+This is the exact-predecessor half of the premises-to-candidate bridge:
+no injectivity of `fullOrbitStep` is needed, only equality of quotients by
+the same power of two. -/
+lemma candidateRj_eq_fullOrbitIter_of_weight
+    (n0 x t r : Nat)
+    (hn0 : 1 ≤ n0)
+    (hiter : fullOrbitIter n0 = r)
+    (hstep : orbitStepWeight (n0 - 1) = t)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    x = fullOrbitIter (n0 - 1) := by
+  let x0 := fullOrbitIter (n0 - 1)
+  have htv : twoValuation (5 * x0 + 1) = t := by
+    unfold orbitStepWeight at hstep
+    change twoValuation (5 * x0 + 1) = t at hstep
+    exact hstep
+  have hx0_step : (5 * x0 + 1) / 2 ^ t = r := by
+    have hsucc : n0 = (n0 - 1) + 1 := by omega
+    rw [hsucc, fullOrbitIter] at hiter
+    unfold fullOrbitStep at hiter
+    rw [htv] at hiter
+    exact hiter
+  have hdiv0 : 2 ^ t ∣ 5 * x0 + 1 := by
+    have hpos : 0 < 5 * x0 + 1 := by positivity
+    have hge : t ≤ twoValuation (5 * x0 + 1) := by omega
+    exact (StringFlow.Lte.twoValuation_ge_iff_dvd_pow (5 * x0 + 1) t hpos).mp hge
+  have hnum0 : 2 ^ t * ((5 * x0 + 1) / 2 ^ t) = 5 * x0 + 1 := Nat.mul_div_cancel' hdiv0
+  have hnumx : 2 ^ t * ((5 * x + 1) / 2 ^ t) = 5 * x + 1 :=
+    Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have hq : (5 * x0 + 1) / 2 ^ t = (5 * x + 1) / 2 ^ t := by
+    rw [hx0_step]
+    unfold candidateRj at hr
+    exact hr
+  have hnum : 5 * x0 + 1 = 5 * x + 1 := by
+    rw [← hnum0, ← hnumx]
+    congr 1
+  have hx0x : x0 = x := by
+    have h5 : 5 * x0 = 5 * x := by omega
+    exact Nat.eq_of_mul_eq_mul_left (by norm_num : 0 < 5) h5
+  dsimp [x0] at hx0x
+  exact hx0x.symm
+
 /-- 36.30.23.4 branch table, `e=2`: `candidateX ≡ 2+δ (mod 4)`
 when the full-orbit state `g` is odd. -/
 lemma two_mul_odd_mod4 (g : Nat) (hgodd : g % 2 = 1) : (2 * g) % 4 = 2 := by

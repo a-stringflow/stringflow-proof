@@ -55,6 +55,12 @@ namespace S6Audit
 -- Axioms used by the `m2>0` tail audit.
 #print axioms tail_failure_m2_pos_audit
 
+-- Statement check: exact full-orbit predecessor identification.
+#check candidateRj_eq_fullOrbitIter_of_weight
+
+-- Axioms used by the exact-predecessor bridge lemma.
+#print axioms candidateRj_eq_fullOrbitIter_of_weight
+
 end S6Audit
 
 namespace StringFlow
