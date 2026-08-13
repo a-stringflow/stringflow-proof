@@ -884,6 +884,98 @@ theorem d2_survivor_mod_contradicts (m : Nat)
     rw [← hmod64, hm64]
   omega
 
+/-- Corrected `d=2` survivor family: for `j ≡ 4 (mod 16)`, the reset
+predecessor `x = (25·5^(j-1)-14)/17` has `x+1 ≡ 4 (mod 5)` and is even.
+With `k=0` this gives an even terminal odd part `s0`, violating the
+`ResetHeadEq` condition `s0` odd. -/
+lemma d2_survivor_terminal_even (j x : Nat)
+    (hj : j % 16 = 4)
+    (hint : 17 ∣ 25 * 5 ^ (j - 1) - 14)
+    (hx : x = (25 * 5 ^ (j - 1) - 14) / 17) :
+    (x + 1) % 2 = 0 ∧ (x + 1) % 5 = 4 := by
+  have hjpos : 1 ≤ j := by
+    have hle : j % 16 ≤ j := Nat.mod_le j 16
+    omega
+  have hdiv := Nat.div_add_mod j 16
+  rw [hj] at hdiv
+  have hjsub : j - 1 = 16 * (j / 16) + 3 := by omega
+  have h5_17 : 5 ^ (j - 1) % 17 = 6 := by
+    rw [hjsub]
+    have hred := five_pow_mod17_reduce (j / 16) 3
+    simpa [Nat.mul_comm, Nat.add_comm] using hred
+  have hge : 14 ≤ 25 * 5 ^ (j - 1) := by
+    have h1 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+    nlinarith
+  have h17x : 17 * x = 25 * 5 ^ (j - 1) - 14 := by
+    have hcancel := Nat.mul_div_cancel' hint
+    rw [← hx] at hcancel
+    exact hcancel
+  have hnum3 : 17 ∣ 25 * 5 ^ (j - 1) + 3 := by
+    rcases hint with ⟨k, hk⟩
+    refine ⟨k + 1, ?_⟩
+    omega
+  have hx1 : x + 1 = (25 * 5 ^ (j - 1) + 3) / 17 := by
+    have hmul : 17 * (x + 1) = 25 * 5 ^ (j - 1) + 3 := by
+      omega
+    rw [← hmul]
+    exact (Nat.mul_div_right (x + 1) (by decide : 0 < 17)).symm
+  have h5_34 : 5 ^ (j - 1) % 34 = 23 := by
+    rw [hjsub]
+    have hred : 5 ^ ((j / 16) * 16 + 3) % 34 = 5 ^ 3 % 34 := by
+      have hperiod : ∀ q, 5 ^ (q * 16 + 3) % 34 = 5 ^ 3 % 34 := by
+        intro q
+        calc
+          5 ^ (q * 16 + 3) % 34 = ((5 ^ 16) ^ q * 5 ^ 3) % 34 := by
+            rw [show q * 16 + 3 = 16 * q + 3 by omega]
+            rw [← Nat.pow_mul, ← Nat.pow_add]
+          _ = ((5 ^ 16) ^ q % 34 * (5 ^ 3 % 34)) % 34 := by
+            rw [Nat.mul_mod]
+          _ = (1 * (5 ^ 3 % 34)) % 34 := by
+            have hpow : (5 ^ 16) ^ q % 34 = 1 := by
+              induction q with
+              | zero => norm_num
+              | succ q ih =>
+                  rw [pow_succ]
+                  rw [Nat.mul_mod, ih]
+                  norm_num
+            rw [hpow]
+          _ = 5 ^ 3 % 34 := by
+            norm_num
+      exact hperiod (j / 16)
+    simpa [Nat.mul_comm, Nat.add_comm] using hred
+  have h34 : (25 * 5 ^ (j - 1) + 3) % 34 = 0 := by
+    rw [Nat.add_mod, Nat.mul_mod, h5_34]
+    try norm_num
+  have hx1_even : (x + 1) % 2 = 0 := by
+    have hdvd : 34 ∣ 25 * 5 ^ (j - 1) + 3 := Nat.dvd_iff_mod_eq_zero.mpr h34
+    rcases hdvd with ⟨k, hk⟩
+    have hquot : (25 * 5 ^ (j - 1) + 3) / 17 = 2 * k := by
+      have hk' : 25 * 5 ^ (j - 1) + 3 = 17 * (2 * k) := by
+        rw [hk]
+        ring
+      rw [hk']
+      exact Nat.mul_div_right (2 * k) (by decide : 0 < 17)
+    rw [hx1, hquot]
+    try norm_num
+  have hx1_mod5 : (x + 1) % 5 = 4 := by
+    have hmul : 17 * (x + 1) = 25 * 5 ^ (j - 1) + 3 := by
+      rw [hx1]
+      exact Nat.mul_div_cancel' hnum3
+    have hN5 : (25 * 5 ^ (j - 1) + 3) % 5 = 3 := by
+      rw [Nat.add_mod, Nat.mul_mod]
+      norm_num
+    have h17x5 : (17 * (x + 1)) % 5 = 3 := by
+      rw [hmul, hN5]
+    have hmod : (17 * (x + 1)) % 5 = (2 * ((x + 1) % 5)) % 5 := by
+      rw [Nat.mul_mod]
+      try norm_num
+    rw [hmod] at h17x5
+    have hlt : (x + 1) % 5 < 5 := Nat.mod_lt (x + 1) (by norm_num)
+    interval_cases (x + 1) % 5
+    all_goals norm_num at h17x5
+    all_goals norm_num
+  exact ⟨hx1_even, hx1_mod5⟩
+
 /-- If `25*p ≡ 101 (mod 256)`, then `p ≡ 45 (mod 256)`. -/
 lemma mod_inv_25_256 (p : Nat) (h : (25 * p) % 256 = 101) :
     p % 256 = 45 := by

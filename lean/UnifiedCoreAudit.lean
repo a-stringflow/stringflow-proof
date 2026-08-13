@@ -3457,6 +3457,7 @@ theorem unified_core_final_no_hge
 | `tail_failure_m2_zero_block_head_mod16` | proved | exact `m2=0` tail residue: failure forces `r % 16 = 5` (i.e. `u % 8 = 3`); this is the true content of the single tail congruence |
 | `tail_failure_m2_zero_not_rj_mod64` | proved | the stated `failure_implies_rj_mod_64` bridge is false: `r % 16 = 5` excludes `r % 64 = 33` |
 | `predecessor_mod32_of_block_head_mod16_t1` / `predecessor_mod64_of_block_head_mod16_t2` | proved | corrected predecessor residues: `t=1` gives `x ≡ 21 (mod 32)`, `t=2` gives `x ≡ 55 (mod 64)`; zero `sorry`, only `propext / Classical.choice / Quot.sound` |
+| `UnifiedCoreBridge.d2_survivor_terminal_even` | proved | corrected `d=2` family: `x+1 ≡ 4 (mod 5)` and even for all `j ≡ 4 (mod 16)`; violates `ResetHeadEq` `s0` odd, so the `d=2` survivor is a pseudo-candidate, not a counterexample |
 | `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch; candidate-residue bridge is invalid, so 1a/1b + d-exclusions do not close it |
 | `failure_implies_rj_mod_64` | **invalid as stated** | 36.29/36.30.5 core: the tail congruence contradicts the claimed `r % 64 = 33`; the true `m2=0` residue is `r % 16 = 5` |
 | `FinitePrefix.fullOrbit_first_t_ge3_is_exactly_3` | proved | `lean/FinitePrefix.lean`: explicit 17-state expansion by `simp [StringFlow.twoValuation_succ]`, zero `native_decide`; closes 36.30.23 at math level |
