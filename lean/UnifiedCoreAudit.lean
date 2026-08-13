@@ -883,6 +883,155 @@ lemma blockWord_getD (weight : Nat → Nat) (j n i : Nat) (hi : i < n) :
         rw [getD_append_last (blockWord weight j n)
           (weight (j + n + 1) - weight (j + n)) 0]
 
+lemma getD_drop_add (l : List Nat) (i n d : Nat) :
+    (l.drop n).getD i d = l.getD (n + i) d := by
+  rw [List.getD, List.getD]
+  rw [List.getElem?_drop]
+
+lemma getD_reverse (w : List Nat) (i d : Nat) (hi : i < w.length) :
+    w.reverse.getD i d = w.getD (w.length - 1 - i) d := by
+  rw [List.getD, List.getD]
+  rw [List.getElem?_reverse hi]
+
+lemma blockWord_tailSplit_twos_weight
+    (weight : Nat → Nat) (j n m1 m2 : Nat)
+    (hw : ∀ k < n, weight (j + k + 1) = weight (j + k) + 1 ∨
+                   weight (j + k + 1) = weight (j + k) + 2)
+    (hm : (m1, m2) = tailSplit (blockWord weight j n)) :
+    ∀ k < m2,
+      weight (j + (n - m1 - m2) + k + 1) =
+        weight (j + (n - m1 - m2) + k) + 2 := by
+  intro k hk
+  let w := blockWord weight j n
+  have hm1 : m1 = (tailSplit w).1 := by
+    simpa [w] using congrArg Prod.fst hm
+  have hm2 : m2 = (tailSplit w).2 := by
+    simpa [w] using congrArg Prod.snd hm
+  have hs : (∀ i, i < m1 → w.reverse.getD i 0 = 1) ∧
+      (∀ i, i < m2 → (w.reverse.drop m1).getD i 0 = 2) := by
+    have hs0 := tailSplit_spec w
+    have hs0' : (∀ i, i < (tailSplit w).1 → w.reverse.getD i 0 = 1) ∧
+        (∀ i, i < (tailSplit w).2 →
+          (w.reverse.drop (tailSplit w).1).getD i 0 = 2) := by
+      simpa [tailSplit] using hs0
+    rwa [← hm1, ← hm2] at hs0'
+  let i := m2 - 1 - k
+  have hi : i < m2 := by omega
+  have htw : (w.reverse.drop m1).getD i 0 = 2 := hs.2 i hi
+  have hdrop : (w.reverse.drop m1).getD i 0 =
+      w.reverse.getD (m1 + i) 0 := getD_drop_add w.reverse i m1 0
+  have hlen : m1 + i < w.length := by
+    have hsum := tailSplit_sum_le_length w
+    have hsum' : m1 + m2 ≤ w.length := by
+      rwa [← hm1, ← hm2] at hsum
+    omega
+  have hrev : w.reverse.getD (m1 + i) 0 =
+      w.getD (w.length - 1 - (m1 + i)) 0 := getD_reverse w (m1 + i) 0 hlen
+  have hspec' : w.getD (w.length - 1 - (m1 + i)) 0 = 2 := by
+    rw [hdrop] at htw
+    rw [hrev] at htw
+    exact htw
+  have hindex : w.length - 1 - (m1 + i) = n - m1 - m2 + k := by
+    have hlen : w.length = n := blockWord_length weight j n
+    have hsum := tailSplit_sum_le_length w
+    have hsum' : m1 + m2 ≤ w.length := by
+      rwa [← hm1, ← hm2] at hsum
+    omega
+  have hget : w.getD (n - m1 - m2 + k) 0 = 2 := by
+    rwa [hindex] at hspec'
+  have hbd : n - m1 - m2 + k < n := by
+    have hlen : w.length = n := blockWord_length weight j n
+    have hsum := tailSplit_sum_le_length w
+    have hsum' : m1 + m2 ≤ n := by
+      rwa [hlen, ← hm1, ← hm2] at hsum
+    have hpos : 0 < m2 - k := by omega
+    have hA : 0 < n - m1 := by omega
+    have hsub : n - m1 - m2 + k = (n - m1) - (m2 - k) := by omega
+    rw [hsub]
+    exact Nat.lt_of_lt_of_le (Nat.sub_lt hA hpos) (Nat.sub_le n m1)
+  have hwd := blockWord_getD weight j n (n - m1 - m2 + k) hbd
+  have hcase := hw (n - m1 - m2 + k) hbd
+  rcases hcase with h1 | h2
+  · have hwd' : weight (j + (n - m1 - m2 + k) + 1) -
+        weight (j + (n - m1 - m2 + k)) = 1 := by
+      simp [h1]
+    have htwo : weight (j + (n - m1 - m2 + k) + 1) -
+        weight (j + (n - m1 - m2 + k)) = 2 := by
+      have hwd' : w.getD (n - m1 - m2 + k) 0 =
+          weight (j + (n - m1 - m2 + k) + 1) -
+            weight (j + (n - m1 - m2 + k)) := by
+        simpa [w] using hwd
+      rw [← hwd']
+      simpa [hindex] using hget
+    omega
+  · simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h2
+
+lemma blockWord_tailSplit_ones_weight
+    (weight : Nat → Nat) (j n m1 m2 : Nat)
+    (hw : ∀ k < n, weight (j + k + 1) = weight (j + k) + 1 ∨
+                   weight (j + k + 1) = weight (j + k) + 2)
+    (hm : (m1, m2) = tailSplit (blockWord weight j n)) :
+    ∀ k < m1,
+      weight (j + (n - m1) + k + 1) =
+        weight (j + (n - m1) + k) + 1 := by
+  intro k hk
+  let w := blockWord weight j n
+  have hm1 : m1 = (tailSplit w).1 := by
+    simpa [w] using congrArg Prod.fst hm
+  have hm2 : m2 = (tailSplit w).2 := by
+    simpa [w] using congrArg Prod.snd hm
+  have hs : (∀ i, i < m1 → w.reverse.getD i 0 = 1) ∧
+      (∀ i, i < m2 → (w.reverse.drop m1).getD i 0 = 2) := by
+    have hs0 := tailSplit_spec w
+    have hs0' : (∀ i, i < (tailSplit w).1 → w.reverse.getD i 0 = 1) ∧
+        (∀ i, i < (tailSplit w).2 →
+          (w.reverse.drop (tailSplit w).1).getD i 0 = 2) := by
+      simpa [tailSplit] using hs0
+    rwa [← hm1, ← hm2] at hs0'
+  let i := m1 - 1 - k
+  have hi : i < m1 := by omega
+  have hone : w.reverse.getD i 0 = 1 := hs.1 i hi
+  have hlen : i < w.length := by
+    have hsum := tailSplit_sum_le_length w
+    have hsum' : m1 + m2 ≤ w.length := by
+      rwa [← hm1, ← hm2] at hsum
+    omega
+  have hrev : w.reverse.getD i 0 = w.getD (w.length - 1 - i) 0 :=
+    getD_reverse w i 0 hlen
+  have hspec' : w.getD (w.length - 1 - i) 0 = 1 := by
+    rw [hrev] at hone
+    exact hone
+  have hlen : w.length = n := blockWord_length weight j n
+  have hindex : w.length - 1 - i = n - m1 + k := by
+    have hsum := tailSplit_sum_le_length w
+    have hsum' : m1 + m2 ≤ w.length := by
+      rwa [← hm1, ← hm2] at hsum
+    omega
+  have hget : w.getD (n - m1 + k) 0 = 1 := by
+    rwa [hindex] at hspec'
+  have hbd : n - m1 + k < n := by
+    have hklt : k < m1 := hk
+    have hsum := tailSplit_sum_le_length w
+    have hsum' : m1 + m2 ≤ w.length := by
+      rwa [← hm1, ← hm2] at hsum
+    omega
+  have hwd := blockWord_getD weight j n (n - m1 + k) hbd
+  have hcase := hw (n - m1 + k) hbd
+  rcases hcase with h1 | h2
+  · simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h1
+  · have hwd' : weight (j + (n - m1 + k) + 1) -
+        weight (j + (n - m1 + k)) = 2 := by
+      simp [h2]
+    have hone : weight (j + (n - m1 + k) + 1) -
+        weight (j + (n - m1 + k)) = 1 := by
+      have hwd' : w.getD (n - m1 + k) 0 =
+          weight (j + (n - m1 + k) + 1) -
+            weight (j + (n - m1 + k)) := by
+        simpa [w] using hwd
+      rw [← hwd']
+      simpa [hindex] using hget
+    omega
+
 /-- `liftToNonneg` returns the least `t` satisfying the predicate. -/
 lemma liftToNonneg_minimal (B0 R C t : Nat) (hC : 0 < C)
     (h : R ≤ B0 + C * t) :
