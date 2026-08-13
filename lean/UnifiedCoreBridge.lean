@@ -976,6 +976,87 @@ lemma d2_survivor_terminal_even (j x : Nat)
     all_goals norm_num
   exact ⟨hx1_even, hx1_mod5⟩
 
+/-- Corrected `d=3` survivor family (`t=2, δ=1, e=2, u1=u2=1`): with
+`X = 5^(j-1) ≡ 73 (mod 109)` and `x = (125X-78)/109`, the reset
+predecessor has `x+1 ≡ 4 (mod 5)` and is even, violating `ResetHeadEq`
+`s0` odd. -/
+lemma d3_survivor_terminal_even (j x : Nat)
+    (hX : 5 ^ (j - 1) % 109 = 73)
+    (hint : 109 ∣ 125 * 5 ^ (j - 1) - 78)
+    (hx : x = (125 * 5 ^ (j - 1) - 78) / 109) :
+    (x + 1) % 2 = 0 ∧ (x + 1) % 5 = 4 := by
+  have h109x : 109 * x = 125 * 5 ^ (j - 1) - 78 := by
+    have hc := Nat.mul_div_cancel' hint
+    rw [← hx] at hc
+    exact hc
+  have hge : 78 ≤ 125 * 5 ^ (j - 1) := by
+    have h1 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+    nlinarith [Nat.mul_le_mul_left 125 h1]
+  have hnum3 : 109 ∣ 125 * 5 ^ (j - 1) + 31 := by
+    refine ⟨x + 1, ?_⟩
+    omega
+  have hx1 : x + 1 = (125 * 5 ^ (j - 1) + 31) / 109 := by
+    have hmul : 109 * (x + 1) = 125 * 5 ^ (j - 1) + 31 := by
+      omega
+    rw [← hmul]
+    exact (Nat.mul_div_right (x + 1) (by decide : 0 < 109)).symm
+  have hN2 : (125 * 5 ^ (j - 1) + 31) % 2 = 0 := by
+    have hodd : (125 * 5 ^ (j - 1)) % 2 = 1 := by
+      rw [Nat.mul_mod]
+      have h5 : 5 ^ (j - 1) % 2 = 1 := StringFlow.Lte.five_pow_odd (j - 1)
+      norm_num [h5]
+    rw [Nat.add_mod, hodd]
+    try norm_num
+  have h218 : 218 ∣ 125 * 5 ^ (j - 1) + 31 := by
+    rcases hnum3 with ⟨a, ha⟩
+    have ha2 : a % 2 = 0 := by
+      have hmod : (109 * a) % 2 = a % 2 := by
+        rw [Nat.mul_mod]
+        norm_num
+      have hN2' : (109 * a) % 2 = 0 := by
+        rw [← ha]
+        exact hN2
+      rw [← hmod]
+      exact hN2'
+    have ha_eq : a = 2 * (a / 2) := by
+      have hdiv := (Nat.div_add_mod a 2).symm
+      rw [ha2] at hdiv
+      simpa using hdiv
+    refine ⟨a / 2, ?_⟩
+    calc
+      125 * 5 ^ (j - 1) + 31 = 109 * a := ha
+      _ = 218 * (a / 2) := by
+        conv_lhs => rw [ha_eq]
+        ring
+  have hx1_even : (x + 1) % 2 = 0 := by
+    rcases h218 with ⟨k, hk⟩
+    have hquot : (125 * 5 ^ (j - 1) + 31) / 109 = 2 * k := by
+      have hk' : 125 * 5 ^ (j - 1) + 31 = 109 * (2 * k) := by
+        rw [hk]
+        ring_nf
+      rw [hk']
+      exact Nat.mul_div_right (2 * k) (by decide : 0 < 109)
+    rw [hx1, hquot]
+    try norm_num
+  have hx1_mod5 : (x + 1) % 5 = 4 := by
+    have hmul : 109 * (x + 1) = 125 * 5 ^ (j - 1) + 31 := by
+      rw [hx1]
+      exact Nat.mul_div_cancel' hnum3
+    have hN5 : (125 * 5 ^ (j - 1) + 31) % 5 = 1 := by
+      rw [Nat.add_mod, Nat.mul_mod]
+      norm_num
+    have h109x5 : (109 * (x + 1)) % 5 = 1 := by
+      rw [hmul, hN5]
+    have hmod : (109 * (x + 1)) % 5 = (4 * ((x + 1) % 5)) % 5 := by
+      rw [Nat.mul_mod]
+      try norm_num
+    rw [hmod] at h109x5
+    have hlt : (x + 1) % 5 < 5 := Nat.mod_lt (x + 1) (by norm_num)
+    interval_cases (x + 1) % 5
+    all_goals norm_num at h109x5
+    all_goals norm_num
+  exact ⟨hx1_even, hx1_mod5⟩
+
 /-- If `25*p ≡ 101 (mod 256)`, then `p ≡ 45 (mod 256)`. -/
 lemma mod_inv_25_256 (p : Nat) (h : (25 * p) % 256 = 101) :
     p % 256 = 45 := by
