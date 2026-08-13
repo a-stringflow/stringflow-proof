@@ -950,6 +950,248 @@ lemma d3_t2_d3_e2_u22_no_pow_mod64 : ¬ ∃ m, 5 ^ m % 64 = 19 := by
   intro r hr
   interval_cases r <;> norm_num
 
+/-- One-step periodicity of the `m`-component: if
+`5^(P2*ord) ≡ 1 (mod m)`, then `5^(r0+P2*(s+ord)) ≡ 5^(r0+P2*s) (mod m)`. -/
+lemma d3_period_pow (P2 m ord r0 s : Nat)
+    (hperpow : 5 ^ (P2 * ord) % m = 1) :
+    5 ^ (r0 + P2 * (s + ord)) % m = 5 ^ (r0 + P2 * s) % m := by
+  have harg : r0 + P2 * (s + ord) = (r0 + P2 * s) + P2 * ord := by ring
+  rw [harg, Nat.pow_add, Nat.mul_mod, hperpow]
+  simp
+
+/-- Period reduction of the `m`-component: the exponent `s` can be
+replaced by `s % ord`. -/
+lemma d3_period_reduce (P2 m ord r0 s : Nat)
+    (hper : ∀ s, 5 ^ (r0 + P2 * (s + ord)) % m = 5 ^ (r0 + P2 * s) % m) :
+    5 ^ (r0 + P2 * s) % m = 5 ^ (r0 + P2 * (s % ord)) % m := by
+  have hq := Nat.div_add_mod s ord
+  have hs : s = ord * (s / ord) + s % ord := by
+    exact hq.symm
+  have hred_q : ∀ q, 5 ^ (r0 + P2 * (ord * q + s % ord)) % m =
+      5 ^ (r0 + P2 * (s % ord)) % m := by
+    intro q
+    induction q with
+    | zero =>
+        have hz : r0 + P2 * (ord * 0 + s % ord) = r0 + P2 * (s % ord) := by ring
+        rw [hz]
+    | succ q ih =>
+        have harg : r0 + P2 * (ord * (q + 1) + s % ord) =
+            (r0 + P2 * (ord * q + s % ord)) + P2 * ord := by ring
+        have harg' : (r0 + P2 * (ord * q + s % ord)) + P2 * ord =
+            r0 + P2 * ((ord * q + s % ord) + ord) := by ring
+        rw [harg, harg', hper, ih]
+  conv_lhs => rw [hs]
+  exact hred_q (s / ord)
+
+/-- CRT exclusion for `L = 32*m`: after the mod-32 part fixes
+`j % 8 = r0`, the mod-`m` part contradicts the period-`ord` table. -/
+lemma d3_no_pow_mod32_m (m C r0 ord : Nat)
+    (hr0lt : r0 < 8) (_hmpos : 0 < m) (hordpos : 0 < ord)
+    (hr0 : 5 ^ r0 % 32 = C % 32)
+    (hnot : ∀ s, s < ord → 5 ^ (r0 + 8 * s) % m ≠ C % m)
+    (hper : ∀ s, 5 ^ (r0 + 8 * (s + ord)) % m = 5 ^ (r0 + 8 * s) % m) :
+    ¬ ∃ j, 5 ^ j % (32 * m) = C % (32 * m) := by
+  rintro ⟨j, hj⟩
+  have h32 : 5 ^ j % 32 = C % 32 := by
+    have h1 : (5 ^ j % (32 * m)) % 32 = 5 ^ j % 32 :=
+      Nat.mod_mod_of_dvd (5 ^ j) (c := 32) (b := 32 * m)
+        (by simp [Nat.mul_comm])
+    have h2 : (C % (32 * m)) % 32 = C % 32 :=
+      Nat.mod_mod_of_dvd C (c := 32) (b := 32 * m)
+        (by simp [Nat.mul_comm])
+    have hjmod := congrArg (fun x => x % 32) hj
+    rw [h1, h2] at hjmod
+    exact hjmod
+  have hred_j : 5 ^ j % 32 = 5 ^ (j % 8) % 32 := by
+    have hq := Nat.div_add_mod j 8
+    have hred := five_pow_mod32_reduce (j / 8) (j % 8)
+    have hred' : 5 ^ (8 * (j / 8) + j % 8) % 32 = 5 ^ (j % 8) % 32 := by
+      simpa [Nat.mul_comm] using hred
+    conv_lhs => rw [← hq]
+    exact hred'
+  have hjr : j % 8 = r0 := by
+    rw [hred_j] at h32
+    rw [← hr0] at h32
+    have hltj : j % 8 < 8 := Nat.mod_lt j (by norm_num)
+    interval_cases j % 8
+    all_goals interval_cases r0
+    all_goals norm_num at h32
+    all_goals norm_num
+  have hj8 : j = 8 * (j / 8) + r0 := by
+    have hdiv := Nat.div_add_mod j 8
+    rw [hjr] at hdiv
+    exact hdiv.symm
+  have hm : 5 ^ j % m = C % m := by
+    have h1 : (5 ^ j % (32 * m)) % m = 5 ^ j % m :=
+      Nat.mod_mod_of_dvd (5 ^ j) (c := m) (b := 32 * m)
+        (by simp [Nat.mul_comm])
+    have h2 : (C % (32 * m)) % m = C % m :=
+      Nat.mod_mod_of_dvd C (c := m) (b := 32 * m)
+        (by simp [Nat.mul_comm])
+    have hjmod := congrArg (fun x => x % m) hj
+    rw [h1, h2] at hjmod
+    exact hjmod
+  have hm' : 5 ^ (r0 + 8 * (j / 8)) % m = C % m := by
+    rw [hj8] at hm
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hm
+  have hred_per := d3_period_reduce 8 m ord r0 (j / 8) hper
+  rw [hred_per] at hm'
+  exact hnot ((j / 8) % ord) (Nat.mod_lt (j / 8) hordpos) hm'
+
+/-- CRT exclusion for `L = 64*m`: after the mod-64 part fixes
+`j % 16 = r0`, the mod-`m` part contradicts the period-`ord` table. -/
+lemma d3_no_pow_mod64_m (m C r0 ord : Nat)
+    (hr0lt : r0 < 16) (_hmpos : 0 < m) (hordpos : 0 < ord)
+    (hr0 : 5 ^ r0 % 64 = C % 64)
+    (hnot : ∀ s, s < ord → 5 ^ (r0 + 16 * s) % m ≠ C % m)
+    (hper : ∀ s, 5 ^ (r0 + 16 * (s + ord)) % m = 5 ^ (r0 + 16 * s) % m) :
+    ¬ ∃ j, 5 ^ j % (64 * m) = C % (64 * m) := by
+  rintro ⟨j, hj⟩
+  have h64 : 5 ^ j % 64 = C % 64 := by
+    have h1 : (5 ^ j % (64 * m)) % 64 = 5 ^ j % 64 :=
+      Nat.mod_mod_of_dvd (5 ^ j) (c := 64) (b := 64 * m)
+        (by simp [Nat.mul_comm])
+    have h2 : (C % (64 * m)) % 64 = C % 64 :=
+      Nat.mod_mod_of_dvd C (c := 64) (b := 64 * m)
+        (by simp [Nat.mul_comm])
+    have hjmod := congrArg (fun x => x % 64) hj
+    rw [h1, h2] at hjmod
+    exact hjmod
+  have hred_j : 5 ^ j % 64 = 5 ^ (j % 16) % 64 := by
+    have hq := Nat.div_add_mod j 16
+    have hred := five_pow_mod64_reduce (j / 16) (j % 16)
+    have hred' : 5 ^ (16 * (j / 16) + j % 16) % 64 = 5 ^ (j % 16) % 64 := by
+      simpa [Nat.mul_comm] using hred
+    conv_lhs => rw [← hq]
+    exact hred'
+  have hjr : j % 16 = r0 := by
+    rw [hred_j] at h64
+    rw [← hr0] at h64
+    have hltj : j % 16 < 16 := Nat.mod_lt j (by norm_num)
+    interval_cases j % 16
+    all_goals interval_cases r0
+    all_goals norm_num at h64
+    all_goals norm_num
+  have hj16 : j = 16 * (j / 16) + r0 := by
+    have hdiv := Nat.div_add_mod j 16
+    rw [hjr] at hdiv
+    exact hdiv.symm
+  have hm : 5 ^ j % m = C % m := by
+    have h1 : (5 ^ j % (64 * m)) % m = 5 ^ j % m :=
+      Nat.mod_mod_of_dvd (5 ^ j) (c := m) (b := 64 * m)
+        (by simp [Nat.mul_comm])
+    have h2 : (C % (64 * m)) % m = C % m :=
+      Nat.mod_mod_of_dvd C (c := m) (b := 64 * m)
+        (by simp [Nat.mul_comm])
+    have hjmod := congrArg (fun x => x % m) hj
+    rw [h1, h2] at hjmod
+    exact hjmod
+  have hm' : 5 ^ (r0 + 16 * (j / 16)) % m = C % m := by
+    rw [hj16] at hm
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hm
+  have hred_per := d3_period_reduce 16 m ord r0 (j / 16) hper
+  rw [hred_per] at hm'
+  exact hnot ((j / 16) % ord) (Nat.mod_lt (j / 16) hordpos) hm'
+
+/-- d=3 branch `(t=1,δ=1,e=3,u1=1,u2=1)`: no `5^(j-1)` solves
+`X ≡ 993 (mod 2976)`. -/
+lemma d3_t1_e3_u11_no_pow : ¬ ∃ j, 5 ^ j % (32 * 93) = 993 % (32 * 93) := by
+  apply d3_no_pow_mod32_m 93 993 0 3 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 8 93 3 0 s (by norm_num)
+
+/-- d=3 branch `(t=1,δ=1,e=3,u1=1,u2=2)`: no `5^(j-1)` solves
+`X ≡ 1745 (mod 1952)`. -/
+lemma d3_t1_e3_u12_no_pow : ¬ ∃ j, 5 ^ j % (32 * 61) = 1745 % (32 * 61) := by
+  apply d3_no_pow_mod32_m 61 1745 4 15 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 8 61 15 4 s (by norm_num)
+
+/-- d=3 branch `(t=1,δ=1,e=3,u1=2,u2=1)`: no `5^(j-1)` solves
+`X ≡ 1433 (mod 1952)`. -/
+lemma d3_t1_e3_u21_no_pow : ¬ ∃ j, 5 ^ j % (32 * 61) = 1433 % (32 * 61) := by
+  apply d3_no_pow_mod32_m 61 1433 2 15 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 8 61 15 2 s (by norm_num)
+
+/-- d=3 branch `(t=1,δ=1,e=4,u1=1,u2=1)`: no `5^(j-1)` solves
+`X ≡ 653 (mod 1952)`. -/
+lemma d3_t1_e4_u11_no_pow : ¬ ∃ j, 5 ^ j % (32 * 61) = 653 % (32 * 61) := by
+  apply d3_no_pow_mod32_m 61 653 7 15 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 8 61 15 7 s (by norm_num)
+
+/-- d=3 branch `(t=2,δ=1,e=2,u1=1,u2=2)`: no `5^(j-1)` solves
+`X ≡ 613 (mod 5952)`. -/
+lemma d3_t2_d1_e2_u12_no_pow : ¬ ∃ j, 5 ^ j % (64 * 93) = 613 % (64 * 93) := by
+  apply d3_no_pow_mod64_m 93 613 9 3 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 16 93 3 9 s (by norm_num)
+
+/-- d=3 branch `(t=2,δ=1,e=2,u1=2,u2=1)`: no `5^(j-1)` solves
+`X ≡ 137 (mod 5952)`. -/
+lemma d3_t2_d1_e2_u21_no_pow : ¬ ∃ j, 5 ^ j % (64 * 93) = 137 % (64 * 93) := by
+  apply d3_no_pow_mod64_m 93 137 6 3 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 16 93 3 6 s (by norm_num)
+
+/-- d=3 branch `(t=2,δ=1,e=2,u1=2,u2=2)`: no `5^(j-1)` solves
+`X ≡ 2745 (mod 3904)`. -/
+lemma d3_t2_d1_e2_u22_no_pow : ¬ ∃ j, 5 ^ j % (64 * 61) = 2745 % (64 * 61) := by
+  apply d3_no_pow_mod64_m 61 2745 10 15 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 16 61 15 10 s (by norm_num)
+
+/-- d=3 branch `(t=2,δ=3,e=3,u1=1,u2=1)`: no `5^(j-1)` solves
+`X ≡ 1633 (mod 1984)`. -/
+lemma d3_t2_d3_e3_u11_no_pow : ¬ ∃ j, 5 ^ j % (64 * 31) = 1633 % (64 * 31) := by
+  apply d3_no_pow_mod64_m 31 1633 8 3 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 16 31 3 8 s (by norm_num)
+
+/-- d=3 branch `(t=2,δ=3,e=3,u1=1,u2=2)`: no `5^(j-1)` solves
+`X ≡ 2737 (mod 3904)`. -/
+lemma d3_t2_d3_e3_u12_no_pow : ¬ ∃ j, 5 ^ j % (64 * 61) = 2737 % (64 * 61) := by
+  apply d3_no_pow_mod64_m 61 2737 4 15 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 16 61 15 4 s (by norm_num)
+
+/-- d=3 branch `(t=2,δ=3,e=3,u1=2,u2=1)`: no `5^(j-1)` solves
+`X ≡ 2633 (mod 3904)`. -/
+lemma d3_t2_d3_e3_u21_no_pow : ¬ ∃ j, 5 ^ j % (64 * 61) = 2633 % (64 * 61) := by
+  apply d3_no_pow_mod64_m 61 2633 6 15 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 16 61 15 6 s (by norm_num)
+
+/-- d=3 branch `(t=2,δ=3,e=4,u1=1,u2=1)`: no `5^(j-1)` solves
+`X ≡ 2373 (mod 3904)`. -/
+lemma d3_t2_d3_e4_u11_no_pow : ¬ ∃ j, 5 ^ j % (64 * 61) = 2373 % (64 * 61) := by
+  apply d3_no_pow_mod64_m 61 2373 1 15 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  · intro s hs
+    interval_cases s <;> norm_num
+  · intro s
+    exact d3_period_pow 16 61 15 1 s (by norm_num)
+
 /-- Discrete logarithm of `6` base `5` modulo `17`. -/
 lemma five_pow_mod17_eq (m : Nat) :
     5 ^ m % 17 = 6 ↔ m % 16 = 3 := by
