@@ -352,6 +352,58 @@ theorem reset_head_predecessor (s0 j k t δ rj x : Nat)
       exact Nat.eq_of_mul_eq_mul_left (by norm_num : 0 < 5) h5
     omega
 
+/-- The reset exponent is `k=0` exactly when the predecessor satisfies
+`5 ∤ x+1`: for `j ≥ 2`, `k ≥ 1` forces `5 | x+1`.  This is the precise
+premise the `d≥2` bridge needs; the residue classes `x ≡ 21 (mod 32)` /
+`x ≡ 55 (mod 64)` alone do NOT imply `5 ∤ x+1`. -/
+theorem reset_k_eq_zero_of_not_five_dvd_x1
+    (s0 j k t δ rj x : Nat) (hj : 2 ≤ j)
+    (hres : ResetHeadEq s0 j k t δ rj)
+    (hrj : rj = (5 * x + 1) / 2 ^ t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (h5 : ¬ 5 ∣ x + 1) :
+    k = 0 := by
+  have hx1 := reset_head_predecessor s0 j k t δ rj x (by omega) hres hrj hdiv
+  have hdpos : 0 < δ * 5 ^ (j - 1) := by
+    rcases hres with h1 | h2
+    · rcases h1 with ⟨ht, hδ, _⟩
+      subst δ
+      positivity
+    · rcases h2 with ⟨ht, hδ, _⟩
+      rcases hδ with hδ1 | hδ3
+      · subst δ
+        positivity
+      · subst δ
+        positivity
+  have hge1 : 1 ≤ 5 ^ k * s0 + δ * 5 ^ (j - 1) := by omega
+  have hx1' : x + 1 = 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+    rw [hx1]
+    omega
+  by_contra hk
+  have hk1 : 1 ≤ k := by omega
+  have hdivA : 5 ∣ 5 ^ k * s0 := by
+    refine ⟨5 ^ (k - 1) * s0, ?_⟩
+    have hpow : 5 ^ k = 5 * 5 ^ (k - 1) := by
+      have hk : k = (k - 1) + 1 := by omega
+      calc
+        5 ^ k = 5 ^ ((k - 1) + 1) := by conv_lhs => rw [hk]
+        _ = 5 * 5 ^ (k - 1) := by rw [Nat.pow_add, Nat.pow_one]; ring
+    rw [hpow]
+    ring
+  have hdivB : 5 ∣ δ * 5 ^ (j - 1) := by
+    refine ⟨δ * 5 ^ (j - 2), ?_⟩
+    have hpow : 5 ^ (j - 1) = 5 * 5 ^ (j - 2) := by
+      have hj' : j - 1 = (j - 2) + 1 := by omega
+      calc
+        5 ^ (j - 1) = 5 ^ ((j - 2) + 1) := by conv_lhs => rw [hj']
+        _ = 5 * 5 ^ (j - 2) := by rw [Nat.pow_add, Nat.pow_one]; ring
+    rw [hpow]
+    ring
+  have hdiv5 : 5 ∣ x + 1 := by
+    rw [hx1']
+    exact dvd_add hdivA hdivB
+  exact h5 hdiv5
+
 /-- 36.30.23.3+23.4: with `k=0` and the first-block terminal
 `s0-1 = 2^(e-1)*g`, the reset predecessor is exactly `candidateX`. -/
 theorem candidateX_of_reset_and_terminal

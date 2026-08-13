@@ -3492,6 +3492,7 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.d3_exclusion_of_orbit` | proved | orbit-data wrapper for the `d=3` unique family: `z→w` weight `6` at depth `j+4` |
 | `UnifiedCoreBridge.dge4_e2_exclusion_of_orbit` | proved | orbit-data wrapper for `d≥4`, `e=2,a≥1`: first big step weight `1+4a≥5` |
 | `UnifiedCoreBridge.reset_head_predecessor` | proved | 36.30.9.1: `ResetHeadEq` + `rj=(5x+1)/2^t` force `x=5^k·s0+δ·5^(j-1)-1` |
+| `UnifiedCoreBridge.reset_k_eq_zero_of_not_five_dvd_x1` | proved | conditional `k=0`: from `ResetHeadEq`, `j≥2` and `¬5∣x+1` we get `k=0`; the missing real-orbit premise is `¬5∣x+1` (or a `k≥1` branch) |
 | `UnifiedCoreBridge.candidateX_of_reset_and_terminal` | proved | 36.30.23.3+23.4: with `k=0` and `s0-1=2^(e-1)g`, the reset predecessor is `candidateX j e g δ` |
 | `UnifiedCoreBridge.first_block_terminal_eq` | proved | 36.30.23.3: `5·g_prev+1=2^e·g` and `r=(5·g_prev+1)/2` force `r=2^(e-1)·g` |
 | `UnifiedCoreBridge.reset_q0_form` | proved | 36.30.8.2: exact identity `A_j+5^j·q=2^L·(B+δ·5^j)` gives `q=m+δ·2^L` with `m<2^L` |
@@ -3551,9 +3552,11 @@ Minimum failing premises found so far:
     `tail_failure_m2_odd_u_mod8`.  The reset equation (`ResetHeadEq` from
     the previous even terminal) is now encoded explicitly as `hReset` in
     `unified_core_final_no_hge` and `DwdbDiv.unifiedCoreClosed`, so the
-    premises-to-candidate bridge has its missing input.  Two precise gaps
-    remain.  First, the `d≥2` bridge needs a valid `k=0` lemma: `hReset`
-    alone does not imply `k=0`, because `ResetHeadEq` carries no
+    premises-to-candidate bridge has its missing input.  The conditional
+    `k=0` lemma `reset_k_eq_zero_of_not_five_dvd_x1` is now formalized:
+    from `ResetHeadEq` and `j ≥ 2`, `¬ 5 ∣ x+1` implies `k=0`.  The
+    remaining missing premise is `¬ 5 ∣ x+1` (or a separate `k≥1` branch):
+    `hReset` alone does not imply it, `ResetHeadEq` carries no
     `IsOdd s0` / `¬ 5 ∣ s0` / size premises, and the documented shortcut
     "`x+1 ≡ 22,56 (mod 32,64)` is prime to `5`" is invalid: `x ≡ 21
     (mod 32)` only fixes `x+1 ≡ 22 (mod 32)`, not `x+1 mod 5` (e.g.
@@ -3561,9 +3564,10 @@ Minimum failing premises found so far:
     exclusion remains open: document 36.30.24's "even `s0`" exclusion is
     invalid (`s0` is odd, `d2_survivor_candidate_s0_odd`), but the `d=2`
     family is closed by the full-orbit size bound
-    `d2_exclusion_of_corrected_residue`.  Until the `k=0` lemma, the
-    `m2>0` exclusion and the `d≥2` bridge enter the proof, no true-card or
-    candidate-true-card verdict is allowed; the audit remains open.
+    `d2_exclusion_of_corrected_residue`.  Until `¬ 5 ∣ x+1` (or the
+    `k≥1` branch), the `m2>0` exclusion and the `d≥2` bridge enter the
+    proof, no true-card or candidate-true-card verdict is allowed; the
+    audit remains open.
 
  Math-level status (2026-08-13): `d=1`, `d=2`, `d=3` and `d≥4` exclusions
  in document 36.30.23.5/36.30.24 are closed, with corrected residues
@@ -3572,10 +3576,10 @@ Minimum failing premises found so far:
  `unified_core_final_no_hge` is in progress: `FinitePrefix`, the
  `d=1` exclusion, the corrected `d=2`/`d=3`/`d≥4` exclusion lemmas, and
  the 36.30.23.0/1 rigidity lemmas now compile; the remaining assembly is
-  the premises-to-parameterization bridge for `d≥2`, the missing valid
-  `k=0` lemma (not implied by `hReset`; the documented mod-5 shortcut is
-  invalid), and the `m2>0` tail exclusion.  The theorem above remains
-  `by sorry` and no Lean closure is claimed.
+  the premises-to-parameterization bridge for `d≥2`, the missing
+  `¬ 5 ∣ x+1` premise for `k=0` (or a separate `k≥1` branch; the
+  documented mod-5 shortcut is invalid), and the `m2>0` tail exclusion.
+  The theorem above remains `by sorry` and no Lean closure is claimed.
 -/
 
 end UnifiedCoreAudit
