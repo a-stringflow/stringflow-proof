@@ -4196,4 +4196,41 @@ lemma m2_pos_block_head_depth_ge_18
     hPrem.weight_step (j + (17 - n0)) hk'
   rcases hcase with h1 | h2 <;> omega
 
+/-- The `m2>0` block head is at full-orbit depth at least 19: if it
+were at depth 18, the reset step into it would have to be the depth-17
+step of weight 4, contradicting the reset weight `t∈{1,2}`.  The
+premise `hstep_t` is supplied by the reset-to-orbit bridge. -/
+lemma m2_pos_block_head_depth_ge_19
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 n0 s0 k t δ : Nat)
+    (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hiter : fullOrbitIter n0 = r)
+    (hres : ResetHeadEq s0 j k t δ r)
+    (hstep_t : orbitStepWeight (n0 - 1) = t)
+    (hn : n = s - j)
+    (hm : (m1, m2) = UnifiedCoreAudit.tailSplit (blockWord weight j n))
+    (hm2 : 1 ≤ m2)
+    (hn_a : 18 ≤ n0 + (n - m1 - m2)) :
+    19 ≤ n0 := by
+  have h18 := m2_pos_block_head_depth_ge_18 j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 n0
+    weight r hPrem hrj hiter hn hm hm2 hn_a
+  by_contra h19
+  have hn0eq : n0 = 18 := by omega
+  rw [hn0eq] at hstep_t
+  have h17 : orbitStepWeight 17 = t := by
+    simpa using hstep_t
+  have h17eq : orbitStepWeight 17 = 4 := by
+    unfold orbitStepWeight
+    rw [fullOrbit_prefix_step_weights_17.2]
+  have ht4 : t = 4 := by
+    rw [← h17, h17eq]
+  have ht12 : t = 1 ∨ t = 2 := by
+    rcases hres with h1 | h2
+    · rcases h1 with ⟨ht, hδ, _⟩
+      exact Or.inl ht
+    · rcases h2 with ⟨ht, hδ, _⟩
+      exact Or.inr ht
+  rcases ht12 with ht1 | ht2 <;> omega
+
 end S6Audit
