@@ -5222,7 +5222,10 @@ candidate-level `k≥1` exclusion, then the strip endpoint is pinned to
 `8`, and the prefix word is the exact full-orbit segment.  The depth
 condition `r_prev = (5*fullOrbitIter(j-2)+1)/2` is the faithful
 translation of the document's "深度 `j-1` 的真实偶数终端"; it is carried
-by `PreviousTerminalAtDepth`, not as a separate arithmetic input. -/
+by `PreviousTerminalAtDepth`, not as a separate arithmetic input.  The
+small-step bound `j-2 ≤ 14` is the d-segment wiring input supplied by
+the real orbit block chain (task 2); with it, the whole local lemma is
+proved without `sorry`. -/
 def PreviousTerminalAtDepth (s0 j k r_prev : Nat) : Prop :=
   IsPreviousEvenTerminal s0 j k ∧
     r_prev = (5 * fullOrbitIter (j - 2) + 1) / 2
@@ -5545,13 +5548,14 @@ theorem firstBlockPrefixExact_of_premises
         PreviousTerminalAtDepth s0 j k r_prev)
     (hvalid : StringFlow.Word.wordValid w 7)
     (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
-    (hw : StringFlow.Word.wordOrbit w 7 = r_prev) :
+    (hw : StringFlow.Word.wordOrbit w 7 = r_prev)
+    (hsmall : j - 2 ≤ 14) :
     FirstBlockPrefixExact j w := by
   rcases hReset with ⟨s0, t, δ, hre, hprod, hprev⟩
   rcases hprev with ⟨hprev_terminal, hr_prev_depth⟩
   have hk : k = 0 :=
     reset_k_zero_of_previous_terminal_depth s0 j k r_prev ⟨hprev_terminal, hr_prev_depth⟩ hprod
-  rcases hprev_terminal with ⟨r0, hprod', hodd_s0, hnd5, _hlt, _horbit⟩
+  rcases hprev_terminal with ⟨r0, hprod', hodd_s0, hnd5, hlt, _horbit⟩
   have hrprev_even : r_prev % 2 = 0 := by
     have hodd_l : (s0 * 5 ^ k) % 2 = 1 :=
       StringFlow.Lte.odd_mul_odd_mod_two s0 (5 ^ k) hodd_s0
@@ -5579,10 +5583,66 @@ theorem firstBlockPrefixExact_of_premises
   have hlast : StringFlow.Word.wordLast w = 1 :=
     previous_terminal_word_last_one_of_k0 w s0 0 hvalid hok hne (by simpa using hs0)
       (by rfl) hnd5
+  have hj : 2 ≤ j := by
+    by_contra h
+    have hj1 : j ≤ 1 := by omega
+    have hprod0 : s0 = r_prev + 1 := by simpa using hprod
+    have hlt0 : s0 < 5 ^ (j - 1) := by
+      simpa using hlt
+    have h5le : 5 ^ (j - 1) ≤ 1 := by
+      have hj1' : j - 1 = 0 := by omega
+      rw [hj1']
+      norm_num
+    have hs0lt : s0 < 1 := lt_of_lt_of_le hlt0 h5le
+    have hs0ge : 1 ≤ s0 := by
+      have hrge : 1 ≤ r_prev + 1 := by omega
+      rw [hprod0]
+      exact hrge
+    omega
+  let w0 : List Nat := orbitSegmentWord 1 (j - 2) ++ [1]
+  have hw0 := first_block_canonical_word_valid_hok j hj hsmall
+  have hw0valid : StringFlow.Word.wordValid w0 7 := hw0.1
+  have hw0ok : ∀ t ∈ w0, t = 1 ∨ t = 2 := hw0.2.1
+  have hw0len : w0.length = j - 1 := hw0.2.2
+  have hw0orbit : StringFlow.Word.wordOrbit w0 7 = r_prev := by
+    dsimp [w0]
+    have h1 : StringFlow.Word.wordOrbit (orbitSegmentWord 1 (j - 2)) 7 =
+        fullOrbitIter (j - 2) := by
+      have h := orbitSegmentWord_orbit 1 (j - 2)
+      have h0 : fullOrbitIter 0 = 7 := rfl
+      rw [h0] at h
+      have hidx : 1 - 1 + (j - 2) = j - 2 := by omega
+      rwa [hidx] at h
+    rw [wordOrbit_append_singleton, h1]
+    simpa using hr_prev_depth.symm
+  have hs0' : s0 = StringFlow.Word.wordOrbit w0 7 + 1 := by
+    rw [hw0orbit]
+    have hprod0 : s0 = r_prev + 1 := by simpa using hprod
+    rw [hprod0]
+  have hstrip_w : reverseStripN w.length s0 = 8 := by
+    have h := reverseStripN_from_seven w.length w hvalid hok (by simp)
+    simpa [hs0] using h
+  have hstop_w : ∀ i : Nat, i < w.length →
+      (reverseStripN i s0) % 5 = 4 ∨ (reverseStripN i s0) % 5 = 0 := by
+    intro i hi
+    have hs0eq : s0 = StringFlow.Word.wordOrbit w 7 + 1 := by simpa [hw] using hprod
+    rw [hs0eq]
+    exact reverseStripN_before_end_not_stop w i hi hvalid hok
+  have hstrip0 : reverseStripN (j - 1) s0 = 8 := by
+    have h := reverseStripN_from_seven w0.length w0 hw0valid hw0ok (by simp)
+    simpa [hw0len, hs0'] using h
+  have hstop0 : ∀ i : Nat, i < j - 1 →
+      (reverseStripN i s0) % 5 = 4 ∨ (reverseStripN i s0) % 5 = 0 := by
+    intro i hi
+    have hs0eq : s0 = StringFlow.Word.wordOrbit w0 7 + 1 := hs0'
+    rw [hs0eq]
+    have hi0 : i < w0.length := by
+      rwa [hw0len]
+    exact reverseStripN_before_end_not_stop w0 i hi0 hw0valid hw0ok
+  have hlen : w.length = j - 1 :=
+    reverseStripN_first_stop_unique w.length (j - 1) s0 hstrip_w hstrip0 hstop_w hstop0
   constructor
-  · -- 36.30.23.2 剩余半：由 `hr_prev_depth` 与反向剥离确定性重建
-    -- 首块词，得到 `w.length = j-1`.
-    sorry
+  · exact hlen
   · exact hprefix
 
 /-- 36.30.23.3, second half: prefix exactness + final `t=1` identify the
