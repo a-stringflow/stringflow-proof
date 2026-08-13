@@ -119,6 +119,20 @@ namespace S6Audit
 -- Axioms used by the combined `m2>0` audit.
 #print axioms tail_failure_m2_pos_audit_mod5
 
+-- Statement checks: generalized reset bridge and `hr` lemmas.
+#check candidateX_of_reset_and_terminal_general
+#check terminal_chain_identity
+#check terminal_chain_identity_of_full_orbit_d
+#check previous_terminal_hr_of_word_and_segment
+#check d2_exclusion_of_corrected_residue
+
+-- Axioms used by the generalized reset bridge and `hr` lemmas.
+#print axioms candidateX_of_reset_and_terminal_general
+#print axioms terminal_chain_identity
+#print axioms terminal_chain_identity_of_full_orbit_d
+#print axioms previous_terminal_hr_of_word_and_segment
+#print axioms d2_exclusion_of_corrected_residue
+
 end S6Audit
 
 namespace StringFlow
