@@ -5151,6 +5151,54 @@ lemma legal_word_prefix_exact_of_even_terminal
         rwa [hval] at hexact
   exact hmain
 
+/-- A nonempty legal word whose endpoint is prime to `5` in the
+`r+1 = s0` sense must end with `t=1`: a `t=2` last step would force
+`5 | s0`. -/
+lemma previous_terminal_word_last_one
+    (w : List Nat) (s0 : Nat)
+    (hvalid : StringFlow.Word.wordValid w 7)
+    (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
+    (hne : w ≠ [])
+    (hs0 : s0 = StringFlow.Word.wordOrbit w 7 + 1)
+    (hnd5 : ¬ 5 ∣ s0) :
+    StringFlow.Word.wordLast w = 1 := by
+  have hlast12 : StringFlow.Word.wordLast w = 1 ∨ StringFlow.Word.wordLast w = 2 :=
+    hok (StringFlow.Word.wordLast w) (wordLast_mem w hne)
+  rcases hlast12 with h1 | h2
+  · exact h1
+  · exfalso
+    let x := StringFlow.Word.wordOrbit (w.dropLast) 7
+    have hsplit : w = w.dropLast ++ [StringFlow.Word.wordLast w] :=
+      word_eq_dropLast_append_last w hne
+    have hvalid' : StringFlow.Word.wordValid
+        (w.dropLast ++ [StringFlow.Word.wordLast w]) 7 := by
+      rwa [← hsplit]
+    have hv := (wordValid_append_singleton (w.dropLast) 7
+      (StringFlow.Word.wordLast w)).mp hvalid'
+    have hdiv : (5 * x + 1) % 2 ^ StringFlow.Word.wordLast w = 0 := by
+      dsimp [x]
+      exact hv.2
+    have horbit : StringFlow.Word.wordOrbit w 7 =
+        (5 * x + 1) / 2 ^ StringFlow.Word.wordLast w := by
+      have h1 := wordOrbit_append_singleton (w.dropLast) 7
+        (StringFlow.Word.wordLast w)
+      rwa [← hsplit] at h1
+    have hdvd : 2 ^ 2 ∣ 5 * x + 1 := by
+      simpa [h2, Nat.pow_two] using Nat.dvd_iff_mod_eq_zero.mpr hdiv
+    have hmul : 2 ^ 2 * ((5 * x + 1) / 2 ^ 2) = 5 * x + 1 := Nat.mul_div_cancel' hdvd
+    have h4 : 4 * StringFlow.Word.wordOrbit w 7 = 5 * x + 1 := by
+      have horbit2 : StringFlow.Word.wordOrbit w 7 = (5 * x + 1) / 2 ^ 2 := by
+        rw [horbit, h2]
+      rw [← horbit2] at hmul
+      exact hmul
+    have h5 : 5 ∣ s0 := by
+      rw [hs0]
+      have hmain : 4 * (StringFlow.Word.wordOrbit w 7 + 1) = 5 * (x + 1) := by omega
+      have hdvd5 : 5 ∣ 4 * (StringFlow.Word.wordOrbit w 7 + 1) := ⟨x + 1, by omega⟩
+      have hcop : Nat.Coprime 4 5 := by decide
+      exact hcop.symm.dvd_of_dvd_mul_left hdvd5
+    exact hnd5 h5
+
 /-- 36.30.23.2: the `k=0` previous even terminal is the first-block
 terminal `7→...→r_prev`, so its legal orbit word has length exactly
 `j-1` and every prefix step is the corresponding full-orbit step.  The
