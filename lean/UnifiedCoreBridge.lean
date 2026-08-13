@@ -1,6 +1,7 @@
 import FinitePrefix
 import UnifiedCoreAudit
 import Mathlib.Data.List.GetD
+import Mathlib.Data.List.TakeDrop
 
 /-!
 # Bridge definitions from document 36.30.23 to the unified core
@@ -4972,9 +4973,223 @@ lemma previous_terminal_strip_reaches_eight
   rwa [hw, ← hs0] at hstrip
 
 /-- 36.30.23.3, first half: the first-block word is exact before its
-final step, so every prefix step is the corresponding full-orbit step. -/
-def FirstBlockPrefixExact (_j : Nat) (w : List Nat) : Prop :=
-  ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i
+final step, and its length is exactly `j-1`. -/
+def FirstBlockPrefixExact (j : Nat) (w : List Nat) : Prop :=
+  w.length = j - 1 ∧ ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i
+
+/-- The orbit of the first `i+1` steps of `w` is one legal step from the
+first `i` steps. -/
+lemma wordOrbit_take_succ (w : List Nat) (i : Nat) (hi : i < w.length) :
+    StringFlow.Word.wordOrbit (w.take (i + 1)) 7 =
+      (5 * StringFlow.Word.wordOrbit (w.take i) 7 + 1) / 2 ^ w.getD i 0 := by
+  have htake : w.take i ++ [w[i]] = w.take (i + 1) :=
+    List.take_concat_get' w i hi
+  rw [← htake]
+  have hget : w[i] = w.getD i 0 := (List.getD_eq_getElem w 0 hi).symm
+  rw [hget]
+  exact wordOrbit_append_singleton (w.take i) 7 (w.getD i 0)
+
+/-- The legality of `w` at position `i` splits into divisibility of the
+current step and legality of the remaining suffix. -/
+lemma wordValid_drop_cons (w : List Nat) (i : Nat) (hi : i < w.length)
+    (hvalid : StringFlow.Word.wordValid w 7) :
+    (5 * StringFlow.Word.wordOrbit (w.take i) 7 + 1) % 2 ^ w.getD i 0 = 0 ∧
+      StringFlow.Word.wordValid (w.drop (i + 1))
+        ((5 * StringFlow.Word.wordOrbit (w.take i) 7 + 1) / 2 ^ w.getD i 0) := by
+  have hdrop : w.drop i = w.getD i 0 :: w.drop (i + 1) := by
+    have hget : w.getD i 0 = w[i] := List.getD_eq_getElem w 0 hi
+    rw [hget]
+    exact List.drop_eq_getElem_cons hi
+  have hsplit : w = w.take i ++ w.drop i := (List.take_append_drop i w).symm
+  have hvw : StringFlow.Word.wordValid (w.take i ++ w.drop i) 7 := by
+    rwa [← hsplit]
+  have hparts := (wordValid_append (w.take i) (w.drop i) 7).mp hvw
+  have hdrop_valid : StringFlow.Word.wordValid (w.drop i)
+      (StringFlow.Word.wordOrbit (w.take i) 7) := hparts.2
+  have hdrop_cons : StringFlow.Word.wordValid (w.getD i 0 :: w.drop (i + 1))
+      (StringFlow.Word.wordOrbit (w.take i) 7) := by
+    simpa [hdrop] using hdrop_valid
+  exact (wordValid_cons (w.getD i 0) (w.drop (i + 1))
+    (StringFlow.Word.wordOrbit (w.take i) 7)).mp hdrop_cons
+
+/-- If a prefix of `w` is exact, it is the corresponding orbit segment. -/
+lemma word_take_eq_segment_of_prefix_exact
+    (w : List Nat) (i : Nat)
+    (hprefix : ∀ k : Nat, k < i → w.getD k 0 = orbitStepWeight k)
+    (hi : i ≤ w.length) :
+    w.take i = orbitSegmentWord 1 i := by
+  refine List.ext_getElem ?_ ?_
+  · rw [orbitSegmentWord_length 1 i]
+    simp [hi]
+  · intro k hk1 hk2
+    have hk : k < i := by
+      have htake : (w.take i).length = i := by simp [hi]
+      rwa [htake] at hk1
+    have hget : (w.take i).getD k 0 = w.getD k 0 := by
+      have hsplit : w.take i ++ w.drop i = w := List.take_append_drop i w
+      have hkt : k < (w.take i).length := by simp [hi, hk]
+      have hleft := UnifiedCoreAudit.getD_append_left (w.take i) (w.drop i) k 0 hkt
+      rw [hsplit] at hleft
+      exact hleft.symm
+    have hseg : (orbitSegmentWord 1 i).getD k 0 = orbitStepWeight k := by
+      have h := orbitSegmentWord_getD 1 i k hk
+      simpa using h
+    have hget1 : (w.take i).getD k 0 = (w.take i)[k] := List.getD_eq_getElem (w.take i) 0 hk1
+    have hget2 : (orbitSegmentWord 1 i).getD k 0 = (orbitSegmentWord 1 i)[k] :=
+      List.getD_eq_getElem (orbitSegmentWord 1 i) 0 hk2
+    rw [← hget1, ← hget2, hget, hprefix k hk, hseg]
+
+/-- If a legal `t∈{1,2}` step from an odd state lands on an odd state,
+then the step weight is exact: any smaller divisor would make the target
+even, and a legal `t=2` step already has valuation at least two. -/
+lemma exact_step_weight_of_odd_target
+    (x a : Nat) (hoddx : x % 2 = 1) (ha : a = 1 ∨ a = 2)
+    (hdiv : 2 ^ a ∣ 5 * x + 1)
+    (htarget : ((5 * x + 1) / 2 ^ a) % 2 = 1) :
+    a = twoValuation (5 * x + 1) := by
+  have hpos : 0 < 5 * x + 1 := by positivity
+  have hle : a ≤ twoValuation (5 * x + 1) := by
+    exact (StringFlow.Lte.twoValuation_ge_iff_dvd_pow (5 * x + 1) a hpos).mpr hdiv
+  by_contra hne
+  have hlt : a < twoValuation (5 * x + 1) := by omega
+  have hdivS : 2 ^ (a + 1) ∣ 5 * x + 1 := by
+    exact (StringFlow.Lte.twoValuation_ge_iff_dvd_pow (5 * x + 1) (a + 1) hpos).mp
+      (Nat.succ_le_of_lt hlt)
+  have hmul : 2 ^ a * ((5 * x + 1) / 2 ^ a) = 5 * x + 1 := Nat.mul_div_cancel' hdiv
+  rcases hdivS with ⟨c, hc⟩
+  have hc' : 5 * x + 1 = 2 ^ a * (2 * c) := by
+    rw [hc]
+    rw [pow_succ]
+    ring
+  have hmul' : 2 ^ a * ((5 * x + 1) / 2 ^ a) = 2 ^ a * (2 * c) := by
+    rw [hmul, hc']
+  have hq : (5 * x + 1) / 2 ^ a = 2 * c :=
+    Nat.eq_of_mul_eq_mul_left (by positivity : 0 < 2 ^ a) hmul'
+  have hqeven : ((5 * x + 1) / 2 ^ a) % 2 = 0 := by
+    rw [hq, Nat.mul_mod]
+    norm_num
+  rw [hqeven] at htarget
+  norm_num at htarget
+
+/-- A legal word state with a following step is odd; an even state has
+no legal continuation. -/
+lemma wordOrbit_take_odd_of_suffix_nonempty
+    (w : List Nat) (i : Nat) (hi : i < w.length)
+    (hvalid : StringFlow.Word.wordValid w 7)
+    (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
+    (hnext : i + 1 < w.length) :
+    (StringFlow.Word.wordOrbit (w.take (i + 1)) 7) % 2 = 1 := by
+  let y := StringFlow.Word.wordOrbit (w.take (i + 1)) 7
+  have hd := wordValid_drop_cons w (i + 1) hnext hvalid
+  have hdiv : (5 * y + 1) % 2 ^ w.getD (i + 1) 0 = 0 := by
+    dsimp [y]
+    exact hd.1
+  have hmem : w.getD (i + 1) 0 ∈ w :=
+    UnifiedCoreAudit.getD_mem_of_lt w (i + 1) 0 hnext
+  by_contra hnot
+  have hyeven : y % 2 = 0 := by
+    have hlt : y % 2 < 2 := Nat.mod_lt y (by decide)
+    omega
+  exact no_legal_step_of_even y hyeven (w.getD (i + 1) 0) (hok _ hmem) hdiv
+
+/-- Every prefix of a legal word ending in an even terminal is exact:
+before the final step every state is odd, and a legal step from an odd
+state to an odd state has the exact valuation. -/
+lemma legal_word_prefix_exact_of_even_terminal
+    (w : List Nat) (r : Nat)
+    (hvalid : StringFlow.Word.wordValid w 7)
+    (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
+    (hw : StringFlow.Word.wordOrbit w 7 = r)
+    (hr : r % 2 = 0) :
+    ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i := by
+  have hmain : ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i := by
+    intro i
+    induction i using Nat.strongRecOn with
+    | ind i ih =>
+        intro hi
+        have hi' : i < w.length := by omega
+        have hodd_i : (StringFlow.Word.wordOrbit (w.take i) 7) % 2 = 1 := by
+          cases i with
+          | zero => simp [StringFlow.Word.wordOrbit]
+          | succ i' =>
+              have hnext' : i' + 1 < w.length := by omega
+              exact wordOrbit_take_odd_of_suffix_nonempty w i' (by omega) hvalid hok hnext'
+        have hodd_next : (StringFlow.Word.wordOrbit (w.take (i + 1)) 7) % 2 = 1 :=
+          wordOrbit_take_odd_of_suffix_nonempty w i (by omega) hvalid hok hi
+        have htake : StringFlow.Word.wordOrbit (w.take (i + 1)) 7 =
+            (5 * StringFlow.Word.wordOrbit (w.take i) 7 + 1) / 2 ^ w.getD i 0 :=
+          wordOrbit_take_succ w i hi'
+        have hdiv : 2 ^ w.getD i 0 ∣ 5 * StringFlow.Word.wordOrbit (w.take i) 7 + 1 := by
+          have hd := wordValid_drop_cons w i hi' hvalid
+          exact Nat.dvd_iff_mod_eq_zero.mpr hd.1
+        have ht : w.getD i 0 = 1 ∨ w.getD i 0 = 2 := by
+          have hget : w.getD i 0 = w[i] := List.getD_eq_getElem w 0 hi'
+          rw [hget]
+          exact hok (w[i]) (List.get_mem w ⟨i, hi'⟩)
+        have hexact : w.getD i 0 = twoValuation (5 * StringFlow.Word.wordOrbit (w.take i) 7 + 1) := by
+          apply exact_step_weight_of_odd_target (StringFlow.Word.wordOrbit (w.take i) 7)
+            (w.getD i 0) hodd_i ht hdiv
+          rw [← htake]
+          exact hodd_next
+        have hprefix : ∀ k : Nat, k < i → w.getD k 0 = orbitStepWeight k := by
+          intro k hk
+          have hknext : k + 1 < w.length := by omega
+          exact ih k hk hknext
+        have hseg : w.take i = orbitSegmentWord 1 i :=
+          word_take_eq_segment_of_prefix_exact w i hprefix (by omega)
+        have horbit : StringFlow.Word.wordOrbit (w.take i) 7 = fullOrbitIter i := by
+          rw [hseg]
+          have h := orbitSegmentWord_orbit 1 i
+          have h0 : fullOrbitIter 0 = 7 := rfl
+          rw [h0] at h
+          have hidx : 1 - 1 + i = i := by omega
+          rwa [hidx] at h
+        have hval : twoValuation (5 * StringFlow.Word.wordOrbit (w.take i) 7 + 1) =
+            orbitStepWeight i := by
+          rw [horbit]
+          rfl
+        rwa [hval] at hexact
+  exact hmain
+
+/-- 36.30.23.2: the `k=0` previous even terminal is the first-block
+terminal `7→...→r_prev`, so its legal orbit word has length exactly
+`j-1` and every prefix step is the corresponding full-orbit step.  The
+proof body follows the document: `k=0` is first derived by the
+candidate-level `k≥1` exclusion, then the strip endpoint is pinned to
+`8`, and the prefix word is the exact full-orbit segment. -/
+theorem firstBlockPrefixExact_of_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
+    (r r_prev k : Nat) (w : List Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : FullOrbitFrom7 r)
+    (hReset : ∃ s0 t δ : Nat,
+      ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
+        IsPreviousEvenTerminal s0 j k)
+    (hvalid : StringFlow.Word.wordValid w 7)
+    (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
+    (hw : StringFlow.Word.wordOrbit w 7 = r_prev) :
+    FirstBlockPrefixExact j w := by
+  rcases hReset with ⟨s0, t, δ, hre, hprod, hprev⟩
+  rcases hprev with ⟨r0, hprod', hodd_s0, _hnd5, _hlt, _horbit⟩
+  have hrprev_even : r_prev % 2 = 0 := by
+    have hodd_l : (s0 * 5 ^ k) % 2 = 1 :=
+      StringFlow.Lte.odd_mul_odd_mod_two s0 (5 ^ k) hodd_s0
+        (StringFlow.Lte.five_pow_odd k)
+    rw [hprod] at hodd_l
+    have hmod : (r_prev + 1) % 2 = (r_prev % 2 + 1) % 2 := by
+      rw [Nat.add_mod]
+    rw [hmod] at hodd_l
+    have hcases : r_prev % 2 = 0 ∨ r_prev % 2 = 1 := by omega
+    rcases hcases with h0 | h1
+    · exact h0
+    · rw [h1] at hodd_l
+      norm_num at hodd_l
+  have hprefix : ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i :=
+    legal_word_prefix_exact_of_even_terminal w r_prev hvalid hok hw hrprev_even
+  constructor
+  · sorry
+  · exact hprefix
 
 /-- 36.30.23.3, second half: prefix exactness + final `t=1` identify the
 previous terminal with the even intermediate of `g_prev → g`. -/
@@ -4983,11 +5198,12 @@ theorem previous_terminal_eq_even_of_first_block
     (hvalid : StringFlow.Word.wordValid w 7)
     (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
     (hw : StringFlow.Word.wordOrbit w 7 = r_prev)
-    (hlen : w.length = j - 1)
     (hj : 2 ≤ j)
     (hfirst : FirstBlockPrefixExact j w)
     (hlast : StringFlow.Word.wordLast w = 1) :
     r_prev = (5 * fullOrbitIter (j - 2) + 1) / 2 := by
+  have hlen : w.length = j - 1 := hfirst.1
+  have hfirst : ∀ i : Nat, i + 1 < w.length → w.getD i 0 = orbitStepWeight i := hfirst.2
   have hne : w ≠ [] := by
     intro h
     subst w
