@@ -741,6 +741,101 @@ lemma tailSplit_sum_le_length (w : List Nat) :
   dsimp [tailSplit, rw, m1]
   exact hle'
 
+lemma leadingOnes_spec (w : List Nat) :
+    (∀ i, i < leadingOnes w → w.getD i 0 = 1) ∧
+    (∀ i, i = leadingOnes w → i < w.length → w.getD i 0 ≠ 1) := by
+  induction w with
+  | nil => simp [leadingOnes]
+  | cons a t ih =>
+      by_cases ha : a = 1
+      · subst a
+        have hred : leadingOnes (1 :: t) = leadingOnes t + 1 := by rfl
+        constructor
+        · intro i hi
+          rw [hred] at hi
+          cases i with
+          | zero => simp [List.getD]
+          | succ i =>
+              have hi' : i < leadingOnes t := by omega
+              have h := ih.1 i hi'
+              simpa [List.getD] using h
+        · intro i hi hlen
+          rw [hred] at hi
+          cases i with
+          | zero => omega
+          | succ i =>
+              have hi' : i = leadingOnes t := by omega
+              have hlen' : i < t.length := by
+                simp at hlen
+                omega
+              have h := ih.2 i hi' hlen'
+              simpa [List.getD] using h
+      · constructor
+        · intro i hi
+          have hred : leadingOnes (a :: t) = 0 := by simp [leadingOnes, ha]
+          rw [hred] at hi
+          omega
+        · intro i hi hlen
+          have hred : leadingOnes (a :: t) = 0 := by simp [leadingOnes, ha]
+          rw [hred] at hi
+          cases i with
+          | zero => simpa [List.getD] using ha
+          | succ i => omega
+
+lemma leadingTwos_spec (w : List Nat) :
+    (∀ i, i < leadingTwos w → w.getD i 0 = 2) ∧
+    (∀ i, i = leadingTwos w → i < w.length → w.getD i 0 ≠ 2) := by
+  induction w with
+  | nil => simp [leadingTwos]
+  | cons a t ih =>
+      by_cases ha : a = 2
+      · subst a
+        have hred : leadingTwos (2 :: t) = leadingTwos t + 1 := by rfl
+        constructor
+        · intro i hi
+          rw [hred] at hi
+          cases i with
+          | zero => simp [List.getD]
+          | succ i =>
+              have hi' : i < leadingTwos t := by omega
+              have h := ih.1 i hi'
+              simpa [List.getD] using h
+        · intro i hi hlen
+          rw [hred] at hi
+          cases i with
+          | zero => omega
+          | succ i =>
+              have hi' : i = leadingTwos t := by omega
+              have hlen' : i < t.length := by
+                simp at hlen
+                omega
+              have h := ih.2 i hi' hlen'
+              simpa [List.getD] using h
+      · constructor
+        · intro i hi
+          have hred : leadingTwos (a :: t) = 0 := by simp [leadingTwos, ha]
+          rw [hred] at hi
+          omega
+        · intro i hi hlen
+          have hred : leadingTwos (a :: t) = 0 := by simp [leadingTwos, ha]
+          rw [hred] at hi
+          cases i with
+          | zero => simpa [List.getD] using ha
+          | succ i => omega
+
+lemma tailSplit_spec (w : List Nat) :
+    let rw := w.reverse
+    let m1 := leadingOnes rw
+    let m2 := leadingTwos (rw.drop m1)
+    (∀ i, i < m1 → rw.getD i 0 = 1) ∧
+    (∀ i, i < m2 → (rw.drop m1).getD i 0 = 2) := by
+  dsimp
+  constructor
+  · intro i hi
+    exact (leadingOnes_spec w.reverse).1 i hi
+  · intro i hi
+    exact (leadingTwos_spec (w.reverse.drop (leadingOnes w.reverse))).1 i hi
+
 /-- `liftToNonneg` returns the least `t` satisfying the predicate. -/
 lemma liftToNonneg_minimal (B0 R C t : Nat) (hC : 0 < C)
     (h : R ≤ B0 + C * t) :
@@ -2487,6 +2582,7 @@ theorem unified_core_final_no_hge
 | `block_trailing_ones_step` / `block_trailing_twos_step` | proved | a `t=1`/`t=2` run in `weight_step` advances `blockState` by the exact step equation with the divisibility witness |
 | `leadingOnes` / `leadingTwos` / `tailSplit` | proved | list primitives for `(m1,m2)` tail splitting: trailing `1`s and preceding `2`s, with `replicate` specs |
 | `leadingOnes_le_length` / `leadingTwos_le_length` / `tailSplit_sum_le_length` | proved | run lengths are bounded by the word length and `m1+m2 ≤ w.length` |
+| `leadingOnes_spec` / `leadingTwos_spec` / `tailSplit_spec` | proved | the split is exact: reversed word begins with `m1` ones then `m2` twos, with the next entry excluded from the run |
 | `r_s_mem_orbit25_of_premises_no_hge` / `r_s_eq_229_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` force `r_s∈orbit25` and `r_s=229` |
 | `s_le_9_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` force `s<=9` |
 | `concat_word_eq_path_of_rs229_no_hge` / `bad_*_no_hge` | proved | no-`H_ge` path uniqueness and pseudo-candidate exclusions, used by the finite base |
