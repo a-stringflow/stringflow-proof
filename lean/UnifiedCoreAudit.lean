@@ -2002,6 +2002,41 @@ lemma block_tail_wTerminal_of_premises
   refine ⟨r1, r2, u, ht1, ht2, hmid, hend, hL2, hstart, ?_⟩
   simpa [hend] using hw
 
+lemma tail_failure_congruence_of_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hn : n = s - j)
+    (hm : (m1, m2) = tailSplit (blockWord weight j n))
+    (hH : 2 ≤ H_s)
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1) :
+    ∃ r2 : Nat → Nat, ∃ u : Nat,
+      (∀ i < m2, r2 (i + 1) = (5 * r2 i + 1) / 4 ∧ (5 * r2 i + 1) % 4 = 0) ∧
+      r2 0 + 1 = 2 ^ (2 * m2 + 1) * u ∧
+      (L + m1) + 4 = twoValuation (3 * (r2 m2) + 1) ∧
+      2 ^ ((L + m1) + H_s + 2) ∣
+        5 ^ ((L + m1) + 3) * (3 * 5 ^ m2 * u - 1) + 2 ^ ((L + m1) + 3) := by
+  rcases block_tail_wTerminal_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2
+    weight hPrem hn hm with ⟨r1, r2, u, ht1, ht2, hmid, hend, hL2, hstart, hwterm⟩
+  have hval_s : L + 4 = twoValuation (3 * (r1 m1) + 1) := by
+    simpa [hend] using hPrem.L_val
+  have hw1 := t1_strip_iter_wTerminal r1 m1 L ht1 hval_s
+  have hw2 : wTerminal L r_s = 5 ^ m1 * wTerminal (L + m1) (r2 m2) := by
+    simpa [hend, hmid] using hw1
+  have hpow : 5 ^ (L + m1 + 3) = 5 ^ (L + 3) * 5 ^ m1 := by
+    rw [show L + m1 + 3 = (L + 3) + m1 by omega, Nat.pow_add]
+  have hfail' : 2 ^ (H_s - 1) ∣
+      5 ^ (L + m1 + 3) * wTerminal (L + m1) (r2 m2) + 1 := by
+    rcases hfail with ⟨k, hk⟩
+    rw [hw2] at hk
+    refine ⟨k, ?_⟩
+    rw [hpow]
+    ring_nf at hk ⊢
+    exact hk
+  have hcong := t2_run_failure_congruence r2 m2 (L + m1) H_s u
+    ht2 hstart hL2 hH hfail'
+  refine ⟨r2, u, ht2, hstart, hL2, ?_⟩
+  simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hcong
+
 /-- The terminal failure congruence, cleared of the odd-part denominator:
 `2^(H_s-1) | 5^(L+3)*w+1` iff
 `2^(L+H_s+3) | 5^(L+3)*(3*r_s+1)+2^(L+4)`. -/
