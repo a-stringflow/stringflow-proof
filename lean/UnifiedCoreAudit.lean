@@ -1032,6 +1032,70 @@ lemma blockWord_tailSplit_ones_weight
       simpa [hindex] using hget
     omega
 
+lemma t1_step_mod8_five (r r' : Nat)
+    (hstep : r' = (5 * r + 1) / 2)
+    (hdiv : (5 * r + 1) % 2 = 0)
+    (hmod : r' % 8 = 5) :
+    r % 8 = 5 := by
+  have hmul : 2 * r' = 5 * r + 1 := by
+    rw [hstep]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have hmod5r : (5 * r + 1) % 8 = 2 := by
+    rw [← hmul]
+    rw [Nat.mul_mod]
+    rw [hmod]
+  have h5rmod : (5 * r) % 8 = 1 := by
+    have hsum := Nat.add_mod (5 * r) 1 8
+    rw [hmod5r] at hsum
+    norm_num at hsum ⊢
+    have hlt : (5 * r) % 8 < 8 := Nat.mod_lt _ (by norm_num)
+    omega
+  have h5 : (5 * (r % 8)) % 8 = 1 := by
+    simpa [Nat.mul_mod] using h5rmod
+  have hlt : r % 8 < 8 := Nat.mod_lt _ (by norm_num)
+  interval_cases r % 8
+  all_goals norm_num at h5
+  all_goals omega
+
+lemma twoValuation_eq_one_of_mod8_five (n : Nat) (h : n % 8 = 5) :
+    twoValuation (n + 1) = 1 := by
+  have hpos : 0 < n + 1 := by positivity
+  have h8 : (n + 1) % 8 = 6 := by
+    rw [Nat.add_mod]
+    rw [h]
+  have hmod4 : (n + 1) % 4 = 2 := by
+    have hmm : (n + 1) % 8 % 4 = (n + 1) % 4 :=
+      Nat.mod_mod_of_dvd (n + 1) (c := 4) (b := 8) (by norm_num)
+    rw [← hmm, h8]
+  have hdec := StringFlow.n_eq_two_pow_mul_oddPart (n + 1) hpos
+  by_cases hv0 : twoValuation (n + 1) = 0
+  · have hodd' : (n + 1) % 2 = 1 :=
+      StringFlow.twoValuation_eq_zero_odd (n + 1) hpos hv0
+    have heven' : (n + 1) % 2 = 0 := by
+      have hmm : (n + 1) % 4 % 2 = (n + 1) % 2 :=
+        Nat.mod_mod_of_dvd (n + 1) (c := 2) (b := 4) (by norm_num)
+      rw [← hmm, hmod4]
+    omega
+  · by_cases hvge2 : 2 ≤ twoValuation (n + 1)
+    · have hpow : 2 ^ twoValuation (n + 1) =
+        4 * 2 ^ (twoValuation (n + 1) - 2) := by
+        have h : twoValuation (n + 1) = (twoValuation (n + 1) - 2) + 2 := by omega
+        rw [h, Nat.pow_add]
+        norm_num
+        ring
+      have hdvd4 : 4 ∣ n + 1 := by
+        refine ⟨2 ^ (twoValuation (n + 1) - 2) * StringFlow.oddPart (n + 1), ?_⟩
+        calc
+          n + 1 = 2 ^ twoValuation (n + 1) * StringFlow.oddPart (n + 1) := hdec
+          _ = 4 * (2 ^ (twoValuation (n + 1) - 2) *
+              StringFlow.oddPart (n + 1)) := by
+                rw [hpow]
+                ring_nf
+      have hmod4zero : (n + 1) % 4 = 0 := Nat.dvd_iff_mod_eq_zero.mp hdvd4
+      omega
+    · have hv1 : twoValuation (n + 1) = 1 := by omega
+      exact hv1
+
 /-- `liftToNonneg` returns the least `t` satisfying the predicate. -/
 lemma liftToNonneg_minimal (B0 R C t : Nat) (hC : 0 < C)
     (h : R ≤ B0 + C * t) :
