@@ -4750,4 +4750,86 @@ lemma reset_terminal_hterm_of_d_segment_aligned
   have h0 := reset_terminal_hterm_of_d_segment j n0 k δ s0 x hδ hx hseg
   exact reset_terminal_hterm_of_alignment j n0 k s0 hj hjn h0
 
+/-- The reset arithmetic pins `r_prev` as the aligned predecessor minus
+the reset jump: `r_prev = x - δ * 5^(j-1)`.  This is the arithmetic
+half of the previous-terminal identification, before any orbit word is
+used. -/
+lemma reset_prev_eq_of_predecessor_alignment
+    (s0 j k t δ rj x r_prev : Nat)
+    (hj : 1 ≤ j)
+    (hres : ResetHeadEq s0 j k t δ rj)
+    (hprod : s0 * 5 ^ k = r_prev + 1)
+    (hrj : rj = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    r_prev = x - δ * 5 ^ (j - 1) := by
+  have hpred := reset_head_predecessor s0 j k t δ rj x hj hres hrj hdiv
+  have hA : 5 ^ k * s0 = r_prev + 1 := by
+    rwa [Nat.mul_comm] at hprod
+  have hBpos : 1 ≤ δ * 5 ^ (j - 1) := by
+    rcases hres with h1 | h2
+    · rcases h1 with ⟨ht, hδ, _⟩
+      subst δ
+      have h5 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+      omega
+    · rcases h2 with ⟨ht, hδ, _⟩
+      rcases hδ with hδ1 | hδ3
+      · subst δ
+        have h5 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+        omega
+      · subst δ
+        have h5 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+        omega
+  have hpos : 1 ≤ 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+    have hA0 : 0 ≤ 5 ^ k * s0 := by positivity
+    nlinarith
+  have hx1 : x + 1 = 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+    rw [hpred]
+    exact Nat.sub_add_cancel hpos
+  rw [hA] at hx1
+  omega
+
+/-- Once the d-segment equation is available, the previous terminal is
+exactly the even intermediate: `r_prev = (5*fullOrbitIter(j-2)+1)/2`. -/
+lemma previous_terminal_eq_even_of_d_segment
+    (j δ x r_prev : Nat)
+    (hprev : r_prev = x - δ * 5 ^ (j - 1))
+    (hseg : x = (5 * fullOrbitIter (j - 2) + 1) / 2 + δ * 5 ^ (j - 1)) :
+    r_prev = (5 * fullOrbitIter (j - 2) + 1) / 2 := by
+  rw [hprev, hseg]
+  omega
+
+/-- Full `hterm0` wiring: the d-segment equation plus the reset
+arithmetic identify `r_prev` with the even intermediate, so
+`s0 * 5^k = even + 1` follows from the arithmetic `hprod`. -/
+lemma reset_terminal_hterm0_of_d_segment
+    (j _n0 k t δ s0 x r r_prev : Nat)
+    (hj : 1 ≤ j)
+    (hres : ResetHeadEq s0 j k t δ r)
+    (hprod : s0 * 5 ^ k = r_prev + 1)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (hseg : x = (5 * fullOrbitIter (j - 2) + 1) / 2 + δ * 5 ^ (j - 1)) :
+    s0 * 5 ^ k = (5 * fullOrbitIter (j - 2) + 1) / 2 + 1 := by
+  have hprev := reset_prev_eq_of_predecessor_alignment s0 j k t δ r x r_prev
+    hj hres hprod hr hdiv
+  have hev := previous_terminal_eq_even_of_d_segment j δ x r_prev hprev hseg
+  rwa [hev] at hprod
+
+/-- Final `hterm` wiring: the d-segment equation plus reset arithmetic
+give exactly the terminal-chain identity consumed by
+`candidate_parameterization_of_reset_full_orbit_d_aligned`. -/
+lemma reset_terminal_hterm_of_d_segment_and_reset
+    (j n0 k t δ s0 x r r_prev : Nat)
+    (hj : 3 ≤ j) (hjn : j + 2 ≤ n0)
+    (hres : ResetHeadEq s0 j k t δ r)
+    (hprod : s0 * 5 ^ k = r_prev + 1)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (hseg : x = (5 * fullOrbitIter (j - 2) + 1) / 2 + δ * 5 ^ (j - 1)) :
+    5 ^ k * s0 =
+      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) + 1 := by
+  have h0 := reset_terminal_hterm0_of_d_segment j n0 k t δ s0 x r r_prev
+    (by omega) hres hprod hr hdiv hseg
+  exact reset_terminal_hterm_of_alignment j n0 k s0 hj hjn h0
+
 end S6Audit
