@@ -2246,4 +2246,60 @@ lemma tail_failure_m2_odd_u_mod8
   all_goals norm_num at hmod7
   all_goals norm_num
 
+/-- Complete `m2>0` audit: the trailing `t=2` run start `r_a` is a
+full-orbit state, `r_a+1 = 2^(2*m2+1)*u`, the tail congruence fixes
+`u` modulo `8` by the parity of `m2`, and the cleared odd part `w`
+satisfies the same high 2-adic window as in the `m2=0` case. -/
+lemma tail_failure_m2_pos_audit
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : FullOrbitFrom7 r)
+    (hn : n = s - j)
+    (hm : (m1, m2) = UnifiedCoreAudit.tailSplit (blockWord weight j n))
+    (hm2 : 1 ≤ m2)
+    (hH : 2 ≤ H_s)
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * UnifiedCoreAudit.wTerminal L r_s + 1) :
+    ∃ r2 u w n0 : Nat,
+      r2 + 1 = 2 ^ (2 * m2 + 1) * u ∧
+      fullOrbitIter n0 = r2 ∧
+      ((m2 % 2 = 0 ∧ u % 8 = 3) ∨ (m2 % 2 = 1 ∧ u % 8 = 7)) ∧
+      3 * 5 ^ m2 * u - 1 = 2 ^ ((L + m1) + 3) * w ∧
+      w % 2 = 1 ∧
+      2 ^ (H_s - 1) ∣ 5 ^ ((L + m1) + 3) * w + 1 := by
+  rcases UnifiedCoreAudit.tail_failure_odd_part_congruence j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2
+    weight hPrem hn hm hH hfail with
+    ⟨_r2f, u, w, _ht2, hstart, hstart_block, _hL2, hcong, hwodd, hdiv⟩
+  let a := j + (n - m1 - m2)
+  have hja : j ≤ a := by dsimp [a]; omega
+  have has : a ≤ s := by
+    dsimp [a]
+    have hsum := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum
+    rw [hlen] at hsum
+    have hn' : n = s - j := hn
+    omega
+  have hreach_r2 : FullOrbitFrom7 (blockState weight q a) :=
+    blockState_fullOrbit_of_premises_fullOrbit j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hReach a hja has
+  rcases hreach_r2 with ⟨n0, hiter⟩
+  have hstart' : blockState weight q a + 1 = 2 ^ (2 * m2 + 1) * u := by
+    rw [← hstart_block]
+    exact hstart
+  have hupos : 0 < u := by
+    by_contra hu
+    have hu' : u = 0 := by omega
+    rw [hu'] at hstart'
+    have hpos : 0 < blockState weight q a + 1 := by positivity
+    omega
+  have hres : (m2 % 2 = 0 ∧ u % 8 = 3) ∨ (m2 % 2 = 1 ∧ u % 8 = 7) := by
+    by_cases hpar : m2 % 2 = 0
+    · left
+      exact ⟨hpar, tail_failure_m2_even_u_mod8 m1 m2 L H_s u w hpar hupos hcong⟩
+    · right
+      have hpar1 : m2 % 2 = 1 := by omega
+      exact ⟨hpar1, tail_failure_m2_odd_u_mod8 m1 m2 L H_s u w hpar1 hupos hcong⟩
+  exact ⟨blockState weight q a, u, w, n0, hstart', hiter, hres, hcong, hwodd, hdiv⟩
+
 end S6Audit

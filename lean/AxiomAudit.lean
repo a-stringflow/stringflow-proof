@@ -49,6 +49,12 @@ namespace S6Audit
 #print axioms tail_failure_m2_even_u_mod8
 #print axioms tail_failure_m2_odd_u_mod8
 
+-- Statement check: full `m2>0` tail audit.
+#check tail_failure_m2_pos_audit
+
+-- Axioms used by the `m2>0` tail audit.
+#print axioms tail_failure_m2_pos_audit
+
 end S6Audit
 
 namespace StringFlow
