@@ -143,6 +143,10 @@ namespace S6Audit
 #check m2_pos_H_s_upper
 #check m2_pos_run_start_depth
 #check m2_pos_u_size_bound
+#check fullOrbitIter_lt_five_pow
+#check m2_pos_size_bound_sharp
+#check m2_pos_W_s_Wp_lower
+#check m2_pos_word_size_wiring
 
 -- Axioms used by the `m2>0` word-weight relations.
 #print axioms weight_diff_ge_steps
@@ -150,6 +154,10 @@ namespace S6Audit
 #print axioms m2_pos_H_s_upper
 #print axioms m2_pos_run_start_depth
 #print axioms m2_pos_u_size_bound
+#print axioms fullOrbitIter_lt_five_pow
+#print axioms m2_pos_size_bound_sharp
+#print axioms m2_pos_W_s_Wp_lower
+#print axioms m2_pos_word_size_wiring
 
 end S6Audit
 

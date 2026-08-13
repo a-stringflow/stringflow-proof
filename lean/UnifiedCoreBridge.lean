@@ -3582,6 +3582,9 @@ lemma m2_pos_H_s_upper
     exact hmono_aj
   have hWp_le_Wa : Wp ≤ weight a := by
     have hWp_le_Wj : Wp ≤ Wj := by rcases hPrem.tj_mem with h1 | h2 <;> omega
+    have hWj_le_Wa : Wj ≤ weight a := by
+      rw [hPrem.Wj_def]
+      exact hmono_aj
     omega
   have hWa_le_Ws : weight a ≤ weight s := by
     have hw : ∀ k < a + (s - a), weight k ≤ weight (k + 1) := by
@@ -3709,5 +3712,178 @@ lemma m2_pos_u_size_bound (n_a m2 u : Nat) (hu : 0 < u)
   have hR : (22 * 5 ^ n_a - 2 ^ n_a) + 3 * 2 ^ n_a = 22 * 5 ^ n_a + 2 * 2 ^ n_a := by
     omega
   rwa [hR] at hsum''
+
+/-- Every exact full-orbit state after depth 3 is below `5^n`. -/
+lemma fullOrbitIter_lt_five_pow (n : Nat) (hn : 3 ≤ n) :
+    fullOrbitIter n < 5 ^ n := by
+  have hb := fullOrbitIter_upper_bound n
+  have hpos : 0 < 3 * 2 ^ n := by positivity
+  have hlt : 3 * 2 ^ n * fullOrbitIter n < 22 * 5 ^ n := by
+    have hb' : 3 * 2 ^ n * fullOrbitIter n ≤ 22 * 5 ^ n - 2 ^ n := hb
+    have hle : 22 * 5 ^ n - 2 ^ n < 22 * 5 ^ n :=
+      Nat.sub_lt (by positivity) (by positivity)
+    exact lt_of_le_of_lt hb' hle
+  have hltmul : 22 * 5 ^ n < (3 * 2 ^ n) * 5 ^ n := by
+    have h22 : 22 < 3 * 2 ^ n := by
+      have hpow : 2 ^ 3 ≤ 2 ^ n := Nat.pow_le_pow_right (by norm_num) hn
+      nlinarith
+    have h5 : 0 < 5 ^ n := by positivity
+    nlinarith
+  have hBx : (3 * 2 ^ n) * fullOrbitIter n < (3 * 2 ^ n) * 5 ^ n :=
+    lt_trans hlt hltmul
+  exact Nat.lt_of_mul_lt_mul_left hBx
+
+/-- Sharp size bound for the `m2>0` run start: the odd part `u`
+satisfies `2^(2*m2+1)*u < 5^n_a`. -/
+lemma m2_pos_size_bound_sharp (n_a m2 u : Nat) (hm2 : 1 ≤ m2) (hn : 18 ≤ n_a)
+    (hstart : fullOrbitIter n_a + 1 = 2 ^ (2 * m2 + 1) * u) :
+    2 ^ (2 * m2 + 1) * u < 5 ^ n_a := by
+  have hlt := fullOrbitIter_lt_five_pow n_a (by omega)
+  have hstart' : fullOrbitIter n_a = 2 ^ (2 * m2 + 1) * u - 1 := by omega
+  have hlt' : 2 ^ (2 * m2 + 1) * u - 1 < 5 ^ n_a := by
+    rwa [hstart'] at hlt
+  have hgt : 0 < fullOrbitIter n_a + 1 := by positivity
+  have hgt' : 0 < 2 ^ (2 * m2 + 1) * u := by
+    rwa [hstart] at hgt
+  have hpos : 0 < 2 ^ (2 * m2 + 1) * u := hgt'
+  have hu : 0 < u := by
+    by_contra hu0
+    have hu0' : u = 0 := by omega
+    rw [hu0'] at hgt'
+    norm_num at hgt'
+  have hpow2 : 2 ^ (2 * m2 + 1) % 2 = 0 := by
+    have hdvd : 2 ^ 1 ∣ 2 ^ (2 * m2 + 1) := pow_dvd_pow 2 (by omega)
+    simpa using (Nat.dvd_iff_mod_eq_zero.mp hdvd)
+  have hodd : (2 ^ (2 * m2 + 1) * u) % 2 = 0 := by
+    rw [Nat.mul_mod, hpow2]
+    norm_num
+  have hodd5 : 5 ^ n_a % 2 = 1 := by
+    simp [Nat.pow_mod]
+  have hne : 2 ^ (2 * m2 + 1) * u ≠ 5 ^ n_a := by
+    intro h
+    have hmod : (2 ^ (2 * m2 + 1) * u) % 2 = 5 ^ n_a % 2 := by rw [h]
+    rw [hodd, hodd5] at hmod
+    norm_num at hmod
+  have hle : 2 ^ (2 * m2 + 1) * u ≤ 5 ^ n_a := by omega
+  exact Nat.lt_of_le_of_ne hle hne
+
+/-- Word-weight lower bound for the `m2>0` tail: the block weight
+from `Wp` to `W_s` contains the prefix length, the full `t=2` tail, and
+the trailing `t=1` tail. -/
+lemma m2_pos_W_s_Wp_lower
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hn : n = s - j)
+    (hm : (m1, m2) = UnifiedCoreAudit.tailSplit (blockWord weight j n))
+    (hm2 : 1 ≤ m2) :
+    W_s - Wp ≥ (Wj - Wp) + (n - m1 - m2) + 2 * m2 + m1 := by
+  let a := j + (n - m1 - m2)
+  have htail := m2_pos_tail_weight_sum j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 weight
+    hPrem hn hm hm2
+  have hja : j ≤ a := by dsimp [a]; omega
+  have hsum_bound : m1 + m2 ≤ n := by
+    have hsum' := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum'
+    rw [hlen] at hsum'
+    exact hsum'
+  have has : a ≤ s := by
+    dsimp [a]
+    have hn' : n = s - j := hn
+    omega
+  have hmono_aj : weight j ≤ weight a := by
+    have hw : ∀ k < j + (a - j), weight k ≤ weight (k + 1) := by
+      intro k hk
+      have hk' : k < s := by
+        have hjle : j ≤ s := hPrem.j_le_s
+        have hks : k < j + (a - j) := hk
+        have hsum : j + (a - j) = a := Nat.add_sub_of_le hja
+        omega
+      rcases hPrem.weight_step k hk' with h1 | h2 <;> omega
+    have h := weight_mono_le weight j (a - j) hw
+    have hsum : j + (a - j) = a := Nat.add_sub_of_le hja
+    rwa [hsum] at h
+  have hWs_Wa : weight s - weight a = 2 * m2 + m1 := htail
+  have hWa_le_Ws : weight a ≤ weight s := by
+    have hw : ∀ k < a + (s - a), weight k ≤ weight (k + 1) := by
+      intro k hk
+      have hk' : k < s := by
+        have hks : k < a + (s - a) := hk
+        have hsum : a + (s - a) = s := Nat.add_sub_of_le has
+        omega
+      rcases hPrem.weight_step k hk' with h1 | h2 <;> omega
+    have h := weight_mono_le weight a (s - a) hw
+    have hsum : a + (s - a) = s := Nat.add_sub_of_le has
+    rwa [hsum] at h
+  have hWp_le_Wa : Wp ≤ weight a := by
+    have hWp_le_Wj : Wp ≤ Wj := by rcases hPrem.tj_mem with h1 | h2 <;> omega
+    have hWj_le_Wa : Wj ≤ weight a := by
+      rw [hPrem.Wj_def]
+      exact hmono_aj
+    omega
+  have hstep_a : ∀ k < j + (a - j), weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2 := by
+    intro k hk
+    have hk' : k < s := by
+      have hks : k < j + (a - j) := hk
+      have hsum : j + (a - j) = a := Nat.add_sub_of_le hja
+      omega
+    exact hPrem.weight_step k hk'
+  have hdiff_aj : weight a - weight j ≥ a - j := by
+    have h := weight_diff_ge_steps weight j (a - j) hstep_a
+    have hsum : j + (a - j) = a := Nat.add_sub_of_le hja
+    rwa [hsum] at h
+  have hWaWp_ge : weight a - Wp ≥ (Wj - Wp) + (a - j) := by
+    rw [hPrem.Wj_def]
+    have hWp_le_Wj : Wp ≤ Wj := by rcases hPrem.tj_mem with h1 | h2 <;> omega
+    have hWp_le_wj : Wp ≤ weight j := by
+      rw [← hPrem.Wj_def]
+      exact hWp_le_Wj
+    have hdec : weight a - Wp = (weight a - weight j) + (weight j - Wp) := by
+      have hWj_le_Wa' : weight j ≤ weight a := hmono_aj
+      omega
+    rw [hdec]
+    omega
+  have hWsWp : W_s - Wp = (weight s - weight a) + (weight a - Wp) := by
+    rw [hPrem.Ws_def]
+    omega
+  rw [hWsWp, hWs_Wa]
+  have ha_eq : a - j = n - m1 - m2 := by
+    dsimp [a]
+    omega
+  have hWaWp_ge' : weight a - Wp ≥ (Wj - Wp) + (n - m1 - m2) := by
+    rwa [ha_eq] at hWaWp_ge
+  omega
+
+/-- Wiring lemma for the `m2>0` branch: the word-level relations and
+the sharp size bound on `u` are all available from the same block
+parameters. -/
+lemma m2_pos_word_size_wiring
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 n0 : Nat) (weight : Nat → Nat) (r u : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hiter : fullOrbitIter n0 = r)
+    (hn : n = s - j)
+    (hm : (m1, m2) = UnifiedCoreAudit.tailSplit (blockWord weight j n))
+    (hm2 : 1 ≤ m2)
+    (hn0 : 18 ≤ n0)
+    (hstart : fullOrbitIter (n0 + (n - m1 - m2)) + 1 =
+      2 ^ (2 * m2 + 1) * u) :
+    W_s - Wp ≥ (Wj - Wp) + (n - m1 - m2) + 2 * m2 + m1 ∧
+    H_s ≤ 2 * j + 13 - 2 * (Wj - Wp) - 2 * m2 ∧
+    fullOrbitIter (n0 + (n - m1 - m2)) =
+      blockState weight q (j + (n - m1 - m2)) ∧
+    2 ^ (2 * m2 + 1) * u < 5 ^ (n0 + (n - m1 - m2)) := by
+  constructor
+  · exact m2_pos_W_s_Wp_lower j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 weight
+      hPrem hn hm hm2
+  · constructor
+    · exact m2_pos_H_s_upper j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 weight
+        hPrem hn hm hm2
+    · constructor
+      · exact m2_pos_run_start_depth j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 n0
+          weight r hPrem hrj hiter hn hm
+      · have hn' : 18 ≤ n0 + (n - m1 - m2) := by omega
+        exact m2_pos_size_bound_sharp (n0 + (n - m1 - m2)) m2 u hm2 hn' hstart
 
 end S6Audit
