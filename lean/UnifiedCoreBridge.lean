@@ -808,6 +808,148 @@ lemma five_pow_mod17_reduce (q r : Nat) :
       rw [hrewrite, five_pow_mod17_period]
       exact ih
 
+/-- `5^8 ≡ 1 (mod 32)`: the period-8 lemma for powers of five. -/
+lemma five_pow_mod32_period (m : Nat) :
+    5 ^ (m + 8) % 32 = 5 ^ m % 32 := by
+  rw [Nat.pow_add]
+  have h : 5 ^ 8 % 32 = 1 := by norm_num
+  rw [Nat.mul_mod, h]
+  simp
+
+/-- Reduce `5^(q*8+r)` modulo 32 to `5^r`. -/
+lemma five_pow_mod32_reduce (q r : Nat) :
+    5 ^ (q * 8 + r) % 32 = 5 ^ r % 32 := by
+  induction q with
+  | zero => simp
+  | succ q ih =>
+      have hrewrite : (q + 1) * 8 + r = (q * 8 + r) + 8 := by omega
+      rw [hrewrite, five_pow_mod32_period]
+      exact ih
+
+/-- `5^16 ≡ 1 (mod 64)`: the period-16 lemma for powers of five. -/
+lemma five_pow_mod64_period (m : Nat) :
+    5 ^ (m + 16) % 64 = 5 ^ m % 64 := by
+  rw [Nat.pow_add]
+  have h : 5 ^ 16 % 64 = 1 := by norm_num
+  rw [Nat.mul_mod, h]
+  simp
+
+/-- Reduce `5^(q*16+r)` modulo 64 to `5^r`. -/
+lemma five_pow_mod64_reduce (q r : Nat) :
+    5 ^ (q * 16 + r) % 64 = 5 ^ r % 64 := by
+  induction q with
+  | zero => simp
+  | succ q ih =>
+      have hrewrite : (q + 1) * 16 + r = (q * 16 + r) + 16 := by omega
+      rw [hrewrite, five_pow_mod64_period]
+      exact ih
+
+/-- If `C mod 32` is not in the period-8 power set of `5`, then
+`5^m ≢ C (mod 32)` for every `m`. -/
+lemma pow_five_mod32_not_of_not_period (C : Nat)
+    (hnot : ∀ r : Nat, r < 8 → 5 ^ r % 32 ≠ C % 32) :
+    ¬ ∃ m : Nat, 5 ^ m % 32 = C % 32 := by
+  rintro ⟨m, hm⟩
+  have hq := Nat.div_add_mod m 8
+  have hred := five_pow_mod32_reduce (m / 8) (m % 8)
+  have hred' : 5 ^ (8 * (m / 8) + m % 8) % 32 = 5 ^ (m % 8) % 32 := by
+    simpa [Nat.mul_comm] using hred
+  rw [← hq, hred'] at hm
+  exact hnot (m % 8) (Nat.mod_lt m (by norm_num)) hm
+
+/-- If `C mod 64` is not in the period-16 power set of `5`, then
+`5^m ≢ C (mod 64)` for every `m`. -/
+lemma pow_five_mod64_not_of_not_period (C : Nat)
+    (hnot : ∀ r : Nat, r < 16 → 5 ^ r % 64 ≠ C % 64) :
+    ¬ ∃ m : Nat, 5 ^ m % 64 = C % 64 := by
+  rintro ⟨m, hm⟩
+  have hq := Nat.div_add_mod m 16
+  have hred := five_pow_mod64_reduce (m / 16) (m % 16)
+  have hred' : 5 ^ (16 * (m / 16) + m % 16) % 64 = 5 ^ (m % 16) % 64 := by
+    simpa [Nat.mul_comm] using hred
+  rw [← hq, hred'] at hm
+  exact hnot (m % 16) (Nat.mod_lt m (by norm_num)) hm
+
+/-- d=3 branch `(t=1,δ=1,e=2,u1=1,u2=1)`: `C≡11 (mod 32)` is not a
+power of `5` modulo 32. -/
+lemma d3_t1_e2_u11_no_pow_mod32 : ¬ ∃ m, 5 ^ m % 32 = 11 := by
+  change ¬ ∃ m, 5 ^ m % 32 = (11 % 32)
+  apply pow_five_mod32_not_of_not_period
+  intro r hr
+  interval_cases r <;> norm_num
+
+/-- d=3 branch `(t=1,δ=1,e=2,u1=1,u2=2)`: `C≡3 (mod 32)` is not a
+power of `5` modulo 32. -/
+lemma d3_t1_e2_u12_no_pow_mod32 : ¬ ∃ m, 5 ^ m % 32 = 3 := by
+  change ¬ ∃ m, 5 ^ m % 32 = (3 % 32)
+  apply pow_five_mod32_not_of_not_period
+  intro r hr
+  interval_cases r <;> norm_num
+
+/-- d=3 branch `(t=1,δ=1,e=2,u1=2,u2=1)`: `C≡7 (mod 32)` is not a
+power of `5` modulo 32. -/
+lemma d3_t1_e2_u21_no_pow_mod32 : ¬ ∃ m, 5 ^ m % 32 = 7 := by
+  change ¬ ∃ m, 5 ^ m % 32 = (7 % 32)
+  apply pow_five_mod32_not_of_not_period
+  intro r hr
+  interval_cases r <;> norm_num
+
+/-- d=3 branch `(t=1,δ=1,e=2,u1=2,u2=2)`: `C≡23 (mod 32)` is not a
+power of `5` modulo 32. -/
+lemma d3_t1_e2_u22_no_pow_mod32 : ¬ ∃ m, 5 ^ m % 32 = 23 := by
+  change ¬ ∃ m, 5 ^ m % 32 = (23 % 32)
+  apply pow_five_mod32_not_of_not_period
+  intro r hr
+  interval_cases r <;> norm_num
+
+/-- d=3 branch `(t=2,δ=1,e=3,u1=1,u2=1)`: `C≡35 (mod 64)` is not a
+power of `5` modulo 64. -/
+lemma d3_t2_d1_e3_u11_no_pow_mod64 : ¬ ∃ m, 5 ^ m % 64 = 35 := by
+  change ¬ ∃ m, 5 ^ m % 64 = (35 % 64)
+  apply pow_five_mod64_not_of_not_period
+  intro r hr
+  interval_cases r <;> norm_num
+
+/-- d=3 branch `(t=2,δ=1,e=3,u1=1,u2=2)`: `C≡19 (mod 64)` is not a
+power of `5` modulo 64. -/
+lemma d3_t2_d1_e3_u12_no_pow_mod64 : ¬ ∃ m, 5 ^ m % 64 = 19 := by
+  change ¬ ∃ m, 5 ^ m % 64 = (19 % 64)
+  apply pow_five_mod64_not_of_not_period
+  intro r hr
+  interval_cases r <;> norm_num
+
+/-- d=3 branch `(t=2,δ=1,e=3,u1=2,u2=1)`: `C≡27 (mod 64)` is not a
+power of `5` modulo 64. -/
+lemma d3_t2_d1_e3_u21_no_pow_mod64 : ¬ ∃ m, 5 ^ m % 64 = 27 := by
+  change ¬ ∃ m, 5 ^ m % 64 = (27 % 64)
+  apply pow_five_mod64_not_of_not_period
+  intro r hr
+  interval_cases r <;> norm_num
+
+/-- d=3 branch `(t=2,δ=1,e=4,u1=1,u2=1)`: `C≡15 (mod 64)` is not a
+power of `5` modulo 64. -/
+lemma d3_t2_d1_e4_u11_no_pow_mod64 : ¬ ∃ m, 5 ^ m % 64 = 15 := by
+  change ¬ ∃ m, 5 ^ m % 64 = (15 % 64)
+  apply pow_five_mod64_not_of_not_period
+  intro r hr
+  interval_cases r <;> norm_num
+
+/-- d=3 branch `(t=2,δ=3,e=2,u1=1,u2=1)`: `C≡15 (mod 64)` is not a
+power of `5` modulo 64. -/
+lemma d3_t2_d3_e2_u11_no_pow_mod64 : ¬ ∃ m, 5 ^ m % 64 = 15 := by
+  change ¬ ∃ m, 5 ^ m % 64 = (15 % 64)
+  apply pow_five_mod64_not_of_not_period
+  intro r hr
+  interval_cases r <;> norm_num
+
+/-- d=3 branch `(t=2,δ=3,e=2,u1=2,u2=2)`: `C≡19 (mod 64)` is not a
+power of `5` modulo 64. -/
+lemma d3_t2_d3_e2_u22_no_pow_mod64 : ¬ ∃ m, 5 ^ m % 64 = 19 := by
+  change ¬ ∃ m, 5 ^ m % 64 = (19 % 64)
+  apply pow_five_mod64_not_of_not_period
+  intro r hr
+  interval_cases r <;> norm_num
+
 /-- Discrete logarithm of `6` base `5` modulo `17`. -/
 lemma five_pow_mod17_eq (m : Nat) :
     5 ^ m % 17 = 6 ↔ m % 16 = 3 := by
