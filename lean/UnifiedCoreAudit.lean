@@ -1110,6 +1110,34 @@ lemma tailSplit_m2_zero_all_ones (w : List Nat)
     omega
   simpa [hidx] using hw
 
+lemma tail_start_eq_block_head_of_m2_zero
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hn : n = s - j)
+    (hm : (m1, m2) = tailSplit (blockWord weight j n))
+    (hm2 : m2 = 0) :
+    blockState weight q (j + (n - m1 - m2)) = blockState weight q j := by
+  have hmem : ∀ t ∈ blockWord weight j n, t = 1 ∨ t = 2 := by
+    apply S6Audit.blockWord_mem weight j n
+    intro k hk
+    have hks : k < s := by
+      have hn' : n = s - j := hn
+      have hjle : j ≤ s := hPrem.j_le_s
+      omega
+    exact hPrem.weight_step k hks
+  have hm1 : m1 = n := by
+    have hzero : (tailSplit (blockWord weight j n)).2 = 0 := by
+      rw [← hm]
+      exact hm2
+    have h := tailSplit_m2_zero_m1_eq_length (blockWord weight j n) hmem hzero
+    rw [blockWord_length] at h
+    rw [← hm] at h
+    simpa using h
+  have ha : j + (n - m1 - m2) = j := by
+    rw [hm2, hm1]
+    omega
+  rw [ha]
+
 lemma t1_step_mod8_five (r r' : Nat)
     (hstep : r' = (5 * r + 1) / 2)
     (hdiv : (5 * r + 1) % 2 = 0)
@@ -3148,6 +3176,7 @@ theorem unified_core_final_no_hge
 | `leadingOnes` / `leadingTwos` / `tailSplit` | proved | list primitives for `(m1,m2)` tail splitting: trailing `1`s and preceding `2`s, with `replicate` specs |
 | `leadingOnes_le_length` / `leadingTwos_le_length` / `tailSplit_sum_le_length` | proved | run lengths are bounded by the word length and `m1+m2 ≤ w.length` |
 | `leadingOnes_spec` / `leadingTwos_spec` / `tailSplit_spec` | proved | the split is exact: reversed word begins with `m1` ones then `m2` twos, with the next entry excluded from the run |
+| `tailSplit_m2_zero_m1_eq_length` / `tailSplit_m2_zero_all_ones` / `tail_start_eq_block_head_of_m2_zero` | proved | `m2=0` forces the block word to be all `t=1` and makes the `t=2` run start equal the block head |
 | `r_s_mem_orbit25_of_premises_no_hge` / `r_s_eq_229_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` force `r_s∈orbit25` and `r_s=229` |
 | `s_le_9_of_premises_no_hge` | proved | no-`H_ge` premises + `OrbitFrom7 r` + `2<=H_s` force `s<=9` |
 | `concat_word_eq_path_of_rs229_no_hge` / `bad_*_no_hge` | proved | no-`H_ge` path uniqueness and pseudo-candidate exclusions, used by the finite base |
