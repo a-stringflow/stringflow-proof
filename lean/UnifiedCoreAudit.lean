@@ -3415,7 +3415,7 @@ theorem unified_core_final_no_hge
     (hReach : S6Audit.FullOrbitFrom7 r)
     (hReset : ∃ s0 k t δ r_prev : Nat,
       S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
-        S6Audit.IsPreviousEvenTerminal s0 j k)
+        S6Audit.PreviousTerminalAtDepth s0 j k r_prev)
     (hH : 2 ≤ H_s) :
     twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) ≤ H_s - 2 := by
   rcases hReach with ⟨n, hn⟩

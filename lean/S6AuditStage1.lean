@@ -867,6 +867,13 @@ and makes `Stage1PureT2M1Exclusion` false. -/
 def FullOrbitFrom7 (x : Nat) : Prop :=
   ∃ n : Nat, fullOrbitIter n = x
 
+/-- The document's "深度 `j-1` 的真实偶数终端": the previous even
+terminal is the even intermediate of the full-orbit step from depth
+`j-2` to depth `j-1`. -/
+def PreviousTerminalAtDepth (s0 j k r_prev : Nat) : Prop :=
+  IsPreviousEvenTerminal s0 j k ∧
+    r_prev = (5 * fullOrbitIter (j - 2) + 1) / 2
+
 /-- The corrected general reachability predicate for the stage-1 pure
 `t=2` `M=1` exclusion. -/
 def FullIsGloballyReachable (s0 N δ : Nat) : Prop :=

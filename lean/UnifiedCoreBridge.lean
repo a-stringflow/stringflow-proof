@@ -5214,7 +5214,7 @@ lemma previous_terminal_word_last_one_of_k0
     simpa using hs0
   exact previous_terminal_word_last_one w s0 hvalid hok hne hs0' hnd5
 
-/-- 36.30.23.2: the `k=0` previous even terminal is the first-block
+/- 36.30.23.2: the `k=0` previous even terminal is the first-block
 terminal `7→...→r_prev`, so its legal orbit word has length exactly
 `j-1` and every prefix step is the corresponding full-orbit step.  The
 proof body follows the document: `k=0` is first derived by the
@@ -5226,9 +5226,6 @@ by `PreviousTerminalAtDepth`, not as a separate arithmetic input.  The
 small-step bound `j-2 ≤ 14` is the d-segment wiring input supplied by
 the real orbit block chain (task 2); with it, the whole local lemma is
 proved without `sorry`. -/
-def PreviousTerminalAtDepth (s0 j k r_prev : Nat) : Prop :=
-  IsPreviousEvenTerminal s0 j k ∧
-    r_prev = (5 * fullOrbitIter (j - 2) + 1) / 2
 
 /-- The depth condition forces `5 ∤ r_prev+1`, so the terminal exponent
 `k` in `s0·5^k = r_prev+1` is zero. -/
