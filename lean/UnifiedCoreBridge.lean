@@ -4781,4 +4781,78 @@ lemma previous_terminal_pred_of_k0
   have horbit := previous_terminal_orbit_of_reset s0 j k r_prev hprev hprod
   exact OrbitFrom7_pred_of_mod_three r_prev horbit hmod
 
+/-- 36.30.14.3 reverse stripping with explicit fuel: the first argument
+is an upper bound on the remaining word length. -/
+def reverseStripN : Nat → Nat → Nat
+  | 0, S => S
+  | n + 1, S =>
+      if S % 5 = 4 then reverseStripN n ((2 * S + 2) / 5)
+      else if S % 5 = 0 then reverseStripN n (4 * S / 5)
+      else S
+
+lemma reverseStripN_t1 (n S : Nat) (h4 : S % 5 = 4) :
+    reverseStripN (n + 1) S = reverseStripN n ((2 * S + 2) / 5) := by
+  simp [reverseStripN, h4]
+
+lemma reverseStripN_t2 (n S : Nat) (h0 : S % 5 = 0) :
+    reverseStripN (n + 1) S = reverseStripN n (4 * S / 5) := by
+  have h4 : S % 5 ≠ 4 := by rw [h0]; norm_num
+  simp [reverseStripN, h0, h4]
+
+lemma reverseStripN_stop (n S : Nat) (h4 : S % 5 ≠ 4) (h0 : S % 5 ≠ 0) :
+    reverseStripN (n + 1) S = S := by
+  simp [reverseStripN, h4, h0]
+
+lemma reverseStripN_eight (n : Nat) : reverseStripN n 8 = 8 := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+  have h4 : 8 % 5 ≠ 4 := by norm_num
+  have h0 : 8 % 5 ≠ 0 := by norm_num
+  rw [reverseStripN_stop n 8 h4 h0]
+
+lemma s_mod_five_of_t1 (x s : Nat) (h2s : 2 * s = 5 * x + 3) :
+    s % 5 = 4 := by
+  have hmod : (2 * s) % 5 = 3 := by
+    rw [h2s]
+    rw [Nat.add_mod, Nat.mul_mod, Nat.mod_self]
+    norm_num
+  have hleft : (2 * s) % 5 = (2 * (s % 5)) % 5 := by
+    rw [Nat.mul_mod]
+  have hcases : s % 5 = 0 ∨ s % 5 = 1 ∨ s % 5 = 2 ∨ s % 5 = 3 ∨ s % 5 = 4 := by omega
+  rcases hcases with h0 | h1 | h2 | h3 | h4
+  · rw [h0] at hleft; norm_num at hleft hmod; omega
+  · rw [h1] at hleft; norm_num at hleft hmod; omega
+  · rw [h2] at hleft; norm_num at hleft hmod; omega
+  · rw [h3] at hleft; norm_num at hleft hmod; omega
+  · exact h4
+
+lemma s_mod_five_of_t2 (x s : Nat) (h4s : 4 * s = 5 * x + 5) :
+    s % 5 = 0 := by
+  have hmod : (4 * s) % 5 = 0 := by
+    rw [h4s]
+    rw [Nat.add_mod, Nat.mul_mod, Nat.mod_self]
+    norm_num
+  have hleft : (4 * s) % 5 = (4 * (s % 5)) % 5 := by
+    rw [Nat.mul_mod]
+  have hcases : s % 5 = 0 ∨ s % 5 = 1 ∨ s % 5 = 2 ∨ s % 5 = 3 ∨ s % 5 = 4 := by omega
+  rcases hcases with h0 | h1 | h2 | h3 | h4
+  · exact h0
+  · rw [h1] at hleft; norm_num at hleft hmod; omega
+  · rw [h2] at hleft; norm_num at hleft hmod; omega
+  · rw [h3] at hleft; norm_num at hleft hmod; omega
+  · rw [h4] at hleft; norm_num at hleft hmod; omega
+
+lemma div_t1 (x s : Nat) (h2s : 2 * s = 5 * x + 3) :
+    (2 * s + 2) / 5 = x + 1 := by
+  have h : 2 * s + 2 = 5 * (x + 1) := by omega
+  rw [h]
+  exact Nat.mul_div_right (x + 1) (m := 5) (by norm_num)
+
+lemma div_t2 (x s : Nat) (h4s : 4 * s = 5 * x + 5) :
+    (4 * s) / 5 = x + 1 := by
+  have h : 4 * s = 5 * (x + 1) := by omega
+  rw [h]
+  exact Nat.mul_div_right (x + 1) (m := 5) (by norm_num)
+
 end S6Audit
