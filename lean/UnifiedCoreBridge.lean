@@ -198,11 +198,11 @@ theorem d2_survivor_size_contradiction (n : Nat) (hn : 5 ≤ n)
 
 /-- The corrected `d=2` survivor family is excluded for `j ≥ 6` by the
 full-orbit size bound; the only small case is `j=4`, which is already in
-the finite base. -/
+the finite base.  The corrected residue `x ≡ 183 (mod 320)` is not needed
+for the size contradiction, so it is not part of the statement. -/
 theorem d2_exclusion_of_corrected_residue (j g : Nat)
     (hj : 6 ≤ j)
     (hseg : 8 * g + 4 * 5 ^ (j - 1) = 7 + 25 * g)
-    (_hxmod : candidateX j 2 g 1 % 320 = 183)
     (hiter : fullOrbitIter (j - 1) = g) : False := by
   let n := j - 1
   let P := 5 ^ n
@@ -5972,6 +5972,57 @@ theorem unified_core_final_no_hge_le15
     UnifiedCoreAudit.local_lemma_final_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hH hOrbit
   exact UnifiedCoreAudit.terminal_bound_of_rj0_lower j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach hH hPrem.L_val hge0
 
+/-- In the `n≥16` branch with `n-1 ≤ 17`, the step into the block head is
+always small: depth 15 and depth 17 give big weights, but their full-orbit
+states violate the reset mod-5 rigidity, and depth 16 has weight `1`. -/
+lemma orbitStepWeight_into_block_head_le_two_of_le17
+    (n x t r : Nat) (hn : 16 ≤ n) (hn1 : n - 1 ≤ 17)
+    (hiter : fullOrbitIter n = r)
+    (ht : t = 1 ∨ t = 2) (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    orbitStepWeight (n - 1) ≤ 2 := by
+  have hn1_ge : 15 ≤ n - 1 := by omega
+  interval_cases hn1 : n - 1
+  · have hn16 : n = 16 := by omega
+    subst n
+    have hr16 : fullOrbitIter 16 = 34177 := by
+      norm_num [fullOrbitIter, fullOrbitStep, StringFlow.twoValuation_succ]
+    have hr' : r = 34177 := by simpa [hr16] using hiter.symm
+    have hrmod : r % 5 = 2 := by simpa [hr']
+    have hmod : r % 5 = 3 ∨ r % 5 = 4 := by
+      have hcj := candidateRj_mod_five x t ht (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+      rcases ht with ht1 | ht2
+      · left
+        rw [hr]
+        exact hcj.1 ht1
+      · right
+        rw [hr]
+        exact hcj.2 ht2
+    rw [hrmod] at hmod
+    omega
+  · have hn17 : n = 17 := by omega
+    subst n
+    have hw : orbitStepWeight 16 = 1 := orbitStepWeight_16_eq_one
+    rw [hw]
+    norm_num
+  · have hn18 : n = 18 := by omega
+    subst n
+    have hr18 : fullOrbitIter 18 = 26701 := by
+      norm_num [fullOrbitIter, fullOrbitStep, StringFlow.twoValuation_succ]
+    have hr' : r = 26701 := by simpa [hr18] using hiter.symm
+    have hrmod : r % 5 = 1 := by simpa [hr']
+    have hmod : r % 5 = 3 ∨ r % 5 = 4 := by
+      have hcj := candidateRj_mod_five x t ht (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+      rcases ht with ht1 | ht2
+      · left
+        rw [hr]
+        exact hcj.1 ht1
+      · right
+        rw [hr]
+        exact hcj.2 ht2
+    rw [hrmod] at hmod
+    omega
+
 /-- The depth-`≥16` branch of the unified core: assemble the
 reset-to-candidate bridge with the d-segment exclusions. -/
 theorem n16_core_impossible
@@ -6141,7 +6192,13 @@ theorem n16_core_impossible
         (by simpa [ht] using hrx) hdiv_t
         hgpos hg4 hδ he
     · sorry
-  · sorry
+  · exfalso
+    by_cases hn1 : n - 1 ≤ 17
+    · have hle : orbitStepWeight (n - 1) ≤ 2 :=
+        orbitStepWeight_into_block_head_le_two_of_le17 n x t r (by omega) hn1 hiter ht_t
+          (by simpa [ht] using hrx) hdiv_t
+      exact hv2 hle
+    · sorry
 
 /--
 The final open core: document 36.20 terminal inequality
