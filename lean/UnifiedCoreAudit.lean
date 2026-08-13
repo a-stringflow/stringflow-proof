@@ -1032,6 +1032,84 @@ lemma blockWord_tailSplit_ones_weight
       simpa [hindex] using hget
     omega
 
+lemma getD_mem_of_lt (l : List Nat) (i d : Nat) (hi : i < l.length) :
+    l.getD i d ∈ l := by
+  have hget := List.getElem_eq_getD (l := l) (i := i) (h := hi) d
+  have hmem : l[i]'hi ∈ l := List.get_mem l ⟨i, hi⟩
+  simpa [hget] using hmem
+
+lemma tailSplit_m2_zero_m1_eq_length (w : List Nat)
+    (hmem : ∀ t ∈ w, t = 1 ∨ t = 2)
+    (hm : (tailSplit w).2 = 0) :
+    (tailSplit w).1 = w.length := by
+  let rw := w.reverse
+  let m1 := leadingOnes rw
+  let m2 := leadingTwos (rw.drop m1)
+  have hm1 : m1 = (tailSplit w).1 := by simp [tailSplit, m1, rw]
+  have hm2 : m2 = (tailSplit w).2 := by simp [tailSplit, m2, m1, rw]
+  have hm0 : m2 = 0 := by simpa [hm2] using hm
+  by_contra hne
+  have hlt : m1 < w.length := by
+    have hle := leadingOnes_le_length rw
+    have hlen : rw.length = w.length := by simp [rw]
+    have hne' : m1 ≠ w.length := by
+      intro h
+      apply hne
+      simpa [hm1, h] using h
+    omega
+  have hdrop_pos : 0 < (rw.drop m1).length := by
+    have hlen_drop : (rw.drop m1).length = w.length - m1 := by simp [rw]
+    omega
+  let x := (rw.drop m1).getD 0 0
+  have hdrop_eq : (rw.drop m1).getD 0 0 = rw.getD m1 0 := by
+    simp
+  have hxmem : x ∈ rw.drop m1 := by
+    dsimp [x]
+    exact getD_mem_of_lt (rw.drop m1) 0 0 hdrop_pos
+  have hxmem_rw : x ∈ rw := List.mem_of_mem_drop hxmem
+  have hxmem_w : x ∈ w := by
+    have hrev : x ∈ w.reverse := by simpa [rw] using hxmem_rw
+    exact List.mem_reverse.mp hrev
+  rcases hmem x hxmem_w with hx1 | hx2
+  · have hones := (leadingOnes_spec rw).2 m1 rfl (by simpa [rw] using hlt)
+    have htarget : rw.getD m1 0 = 1 := by
+      rw [← hdrop_eq]
+      simpa [x] using hx1
+    exact hones htarget
+  · have hzero : 0 = leadingTwos (rw.drop m1) := by
+      change 0 = m2
+      exact hm0.symm
+    have htwos := (leadingTwos_spec (rw.drop m1)).2 0 hzero hdrop_pos
+    have htwos' : rw.getD m1 0 ≠ 2 := by
+      simpa [← hdrop_eq] using htwos
+    exact htwos' (by
+      rw [← hdrop_eq]
+      simpa [x] using hx2)
+
+lemma tailSplit_m2_zero_all_ones (w : List Nat)
+    (hmem : ∀ t ∈ w, t = 1 ∨ t = 2)
+    (hm : (tailSplit w).2 = 0) :
+    ∀ i < w.length, w.getD i 0 = 1 := by
+  have hm1 : (tailSplit w).1 = w.length := tailSplit_m2_zero_m1_eq_length w hmem hm
+  intro i hi
+  have hs := tailSplit_spec w
+  let k := w.length - 1 - i
+  have hk : k < (tailSplit w).1 := by
+    have hlen : (tailSplit w).1 = w.length := hm1
+    omega
+  have hrev := hs.1 k hk
+  have hrev' : w.reverse.getD k 0 = w.getD (w.length - 1 - k) 0 :=
+    getD_reverse w k 0 (by
+      have hlen : (tailSplit w).1 = w.length := hm1
+      omega)
+  have hw : w.getD (w.length - 1 - k) 0 = 1 := by
+    rw [← hrev']
+    exact hrev
+  have hidx : w.length - 1 - k = i := by
+    dsimp [k]
+    omega
+  simpa [hidx] using hw
+
 lemma t1_step_mod8_five (r r' : Nat)
     (hstep : r' = (5 * r + 1) / 2)
     (hdiv : (5 * r + 1) % 2 = 0)
