@@ -31,6 +31,19 @@ theorem fullOrbitIter_prefix_expand :
     fullOrbitIter 16 = 34177 := by
   simp [fullOrbitIter, fullOrbitStep, StringFlow.twoValuation_succ]
 
+/-- Depths 17 and 18 of the full accelerated 7-orbit. -/
+theorem fullOrbitIter_prefix_expand_18 :
+    fullOrbitIter 17 = 85443 ∧
+    fullOrbitIter 18 = 26701 := by
+  simp [fullOrbitIter, fullOrbitStep, StringFlow.twoValuation_succ]
+
+/-- Step weights at depths 16 and 17: the depth-16 step is small, the
+depth-17 step is already `t=4`. -/
+theorem fullOrbit_prefix_step_weights_17 :
+    twoValuation (5 * fullOrbitIter 16 + 1) = 1 ∧
+    twoValuation (5 * fullOrbitIter 17 + 1) = 4 := by
+  simp [fullOrbitIter, fullOrbitStep, StringFlow.twoValuation_succ]
+
 /-- Step weights of the first 16 steps.  The first 15 steps have
 weight `1` or `2`; the step from depth 15 to depth 16 has weight `3`. -/
 theorem fullOrbit_prefix_step_weights :

@@ -37,6 +37,32 @@ lemma orbitStepWeight_of_mul (n k y x : Nat)
   rw [hy, hstep]
   exact StringFlow.Lte.twoValuation_mul_two_pow_eq k x hxodd
 
+/-- The depth-16 full-orbit step is small: `t_16 = 1`. -/
+lemma orbitStepWeight_16_eq_one : orbitStepWeight 16 = 1 := by
+  unfold orbitStepWeight
+  exact fullOrbit_prefix_step_weights_17.1
+
+/-- The depth-17 full-orbit step is already big: `t_17 = 4`. -/
+lemma orbitStepWeight_17_ge_three : 3 ≤ orbitStepWeight 17 := by
+  unfold orbitStepWeight
+  rw [fullOrbit_prefix_step_weights_17.2]
+  norm_num
+
+/-- A `t=2` exact step cannot occur at full-orbit depths 16 or 17: the
+depth-16 step is `t=1`, and the depth-17 step is `t=4`. -/
+lemma no_t2_step_at_depth_16_17 (n_a : Nat)
+    (hweight : orbitStepWeight n_a = 2) :
+    n_a ≠ 16 ∧ n_a ≠ 17 := by
+  constructor
+  · intro h16
+    rw [h16] at hweight
+    have h16w : orbitStepWeight 16 = 1 := orbitStepWeight_16_eq_one
+    omega
+  · intro h17
+    rw [h17] at hweight
+    have h17w : 3 ≤ orbitStepWeight 17 := orbitStepWeight_17_ge_three
+    omega
+
 /-- 36.30.9.1: from the reset equation and `rj=(5x+1)/2^t`, the full
 predecessor is `x = 5^k*s0 + δ*5^(j-1) - 1`. -/
 theorem reset_head_predecessor (s0 j k t δ rj x : Nat)
@@ -2451,5 +2477,63 @@ lemma tail_failure_m2_pos_audit
       have hpar1 : m2 % 2 = 1 := by omega
       exact ⟨hpar1, tail_failure_m2_odd_u_mod8 m1 m2 L H_s u w hpar1 hupos hcong⟩
   exact ⟨blockState weight q a, u, w, n0, hstart', hiter, hres, hcong, hwodd, hdiv⟩
+
+/-- In the `m2>0` tail, the first `t=2` step is an exact full-orbit step:
+the run start `r_a` has full-orbit depth `n_a` with `orbitStepWeight n_a = 2`. -/
+lemma m2_pos_first_step_weight_two
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : FullOrbitFrom7 r)
+    (hn : n = s - j)
+    (hm : (m1, m2) = UnifiedCoreAudit.tailSplit (blockWord weight j n))
+    (hm2 : 1 ≤ m2) :
+    ∃ n_a : Nat,
+      fullOrbitIter n_a = blockState weight q (j + (n - m1 - m2)) ∧
+      orbitStepWeight n_a = 2 := by
+  let a := j + (n - m1 - m2)
+  have hja : j ≤ a := by dsimp [a]; omega
+  have has : a ≤ s := by
+    dsimp [a]
+    have hsum := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum
+    rw [hlen] at hsum
+    have hn' : n = s - j := hn
+    omega
+  have haslt : a < s := by
+    dsimp [a]
+    have hsum := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum
+    rw [hlen] at hsum
+    have hn' : n = s - j := hn
+    omega
+  have hreach_a : FullOrbitFrom7 (blockState weight q a) :=
+    blockState_fullOrbit_of_premises_fullOrbit j Wp Wj q Aj A_s s W_s r_s L H_s weight r
+      hPrem hrj hReach a hja has
+  rcases hreach_a with ⟨n_a, hiter⟩
+  have hstep := blockState_step_exact_of_premises_fullOrbit j Wp Wj q Aj A_s s W_s r_s L H_s a
+    weight hPrem haslt
+  have hwstep : ∀ k < n, weight (j + k + 1) = weight (j + k) + 1 ∨
+      weight (j + k + 1) = weight (j + k) + 2 := by
+    intro k hk
+    have hk' : j + k < s := by
+      have hn' : n = s - j := hn
+      omega
+    exact hPrem.weight_step (j + k) hk'
+  have htwos := UnifiedCoreAudit.blockWord_tailSplit_twos_weight weight j n m1 m2 hwstep hm
+  have htwo := htwos 0 (by omega)
+  have hw : weight (a + 1) - weight a = 2 := by
+    have htwo' : weight (a + 1) = weight a + 2 := by
+      simpa [a, Nat.add_assoc] using htwo
+    omega
+  have hval : twoValuation (5 * blockState weight q a + 1) = 2 := by
+    rw [← hstep, hw]
+  have hw2 : orbitStepWeight n_a = 2 := by
+    unfold orbitStepWeight
+    rw [hiter]
+    exact hval
+  exact ⟨n_a, hiter, hw2⟩
 
 end S6Audit

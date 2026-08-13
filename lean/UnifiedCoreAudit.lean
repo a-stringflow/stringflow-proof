@@ -3509,6 +3509,9 @@ theorem unified_core_final_no_hge
 | `UnifiedCoreBridge.blockState_fullOrbit_of_premises_fullOrbit` | proved | every block state from a full-orbit block head is itself a full-orbit state |
 | `UnifiedCoreBridge.tail_failure_m2_even_u_mod8` / `tail_failure_m2_odd_u_mod8` | proved | exact `m2>0` tail residue on `u`: `m2` even gives `u≡3 (mod 8)`, `m2` odd gives `u≡7 (mod 8)`; pure arithmetic, no scan |
 | `UnifiedCoreBridge.tail_failure_m2_pos_audit` | proved | packaged `m2>0` audit: `r_a` is full-orbit, `r_a+1=2^(2*m2+1)*u`, `u mod 8` fixed by parity of `m2`, and the cleared odd part `w` satisfies the same high 2-adic window as the `m2=0` branch |
+| `UnifiedCoreBridge.m2_pos_first_step_weight_two` | proved | `m2>0` run start is an exact full-orbit step with `orbitStepWeight n_a = 2` |
+| `FinitePrefix.fullOrbitIter_prefix_expand_18` / `fullOrbit_prefix_step_weights_17` | proved | finite base extends to depths 17/18: `t_16=1`, `t_17=4` |
+| `UnifiedCoreBridge.no_t2_step_at_depth_16_17` | proved | no exact `t=2` step at depths 16 or 17; hence the `m2>0` run cannot start at those depths |
 | directed legal-word check (length <= 20) | evidence, not proof | 130,322 legal fixed-`q` blocks satisfy the no-`H_ge` premises with `2 <= H_s`; 0 violate the final inequality; 3 have real-orbit heads |
 
 Minimum failing premises found so far:

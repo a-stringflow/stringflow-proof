@@ -85,6 +85,17 @@ namespace S6Audit
 -- Axioms used by the `d=2` reset-candidate exclusion.
 #print axioms d2_exclusion_of_reset_candidate
 
+-- Statement check: depth-16/17 step weights and `m2>0` start constraint.
+#check orbitStepWeight_16_eq_one
+#check orbitStepWeight_17_ge_three
+#check no_t2_step_at_depth_16_17
+#check m2_pos_first_step_weight_two
+
+-- Axioms used by the new finite-prefix `m2>0` constraints.
+#print axioms orbitStepWeight_16_eq_one
+#print axioms no_t2_step_at_depth_16_17
+#print axioms m2_pos_first_step_weight_two
+
 end S6Audit
 
 namespace StringFlow
