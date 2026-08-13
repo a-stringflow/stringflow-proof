@@ -1975,6 +1975,7 @@ lemma block_tail_wTerminal_of_premises
       (∀ i < m2, r2 (i + 1) = (5 * r2 i + 1) / 4 ∧ (5 * r2 i + 1) % 4 = 0) ∧
       r1 0 = r2 m2 ∧
       r1 m1 = r_s ∧
+      r2 0 = blockState weight q (j + (n - m1 - m2)) ∧
       (L + m1) + 4 = twoValuation (3 * (r2 m2) + 1) ∧
       r2 0 + 1 = 2 ^ (2 * m2 + 1) * u ∧
       wTerminal L r_s =
@@ -2105,8 +2106,9 @@ lemma block_tail_wTerminal_of_premises
     exact hdec0
   have hw := tail_wTerminal_full r1 r2 m1 m2 L u ht1 ht2 hstart hmid
     (by simpa [hend] using hPrem.L_val) hL2
-  refine ⟨r1, r2, u, ht1, ht2, hmid, hend, hL2, hstart, ?_⟩
-  simpa [hend] using hw
+  refine ⟨r1, r2, u, ht1, ht2, hmid, hend, ?_, hL2, hstart, ?_⟩
+  · dsimp [r2]
+  · simpa [hend] using hw
 
 lemma tail_failure_congruence_of_premises
     (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat)
@@ -2118,11 +2120,12 @@ lemma tail_failure_congruence_of_premises
     ∃ r2 : Nat → Nat, ∃ u : Nat,
       (∀ i < m2, r2 (i + 1) = (5 * r2 i + 1) / 4 ∧ (5 * r2 i + 1) % 4 = 0) ∧
       r2 0 + 1 = 2 ^ (2 * m2 + 1) * u ∧
+      r2 0 = blockState weight q (j + (n - m1 - m2)) ∧
       (L + m1) + 4 = twoValuation (3 * (r2 m2) + 1) ∧
       2 ^ ((L + m1) + H_s + 2) ∣
         5 ^ ((L + m1) + 3) * (3 * 5 ^ m2 * u - 1) + 2 ^ ((L + m1) + 3) := by
   rcases block_tail_wTerminal_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2
-    weight hPrem hn hm with ⟨r1, r2, u, ht1, ht2, hmid, hend, hL2, hstart, hwterm⟩
+    weight hPrem hn hm with ⟨r1, r2, u, ht1, ht2, hmid, hend, hstart_block, hL2, hstart, hwterm⟩
   have hval_s : L + 4 = twoValuation (3 * (r1 m1) + 1) := by
     simpa [hend] using hPrem.L_val
   have hw1 := t1_strip_iter_wTerminal r1 m1 L ht1 hval_s
@@ -2140,7 +2143,7 @@ lemma tail_failure_congruence_of_premises
     exact hk
   have hcong := t2_run_failure_congruence r2 m2 (L + m1) H_s u
     ht2 hstart hL2 hH hfail'
-  refine ⟨r2, u, ht2, hstart, hL2, ?_⟩
+  refine ⟨r2, u, ht2, hstart, hstart_block, hL2, ?_⟩
   simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hcong
 
 lemma tail_failure_odd_part_congruence
@@ -2153,12 +2156,13 @@ lemma tail_failure_odd_part_congruence
     ∃ r2 : Nat → Nat, ∃ u w : Nat,
       (∀ i < m2, r2 (i + 1) = (5 * r2 i + 1) / 4 ∧ (5 * r2 i + 1) % 4 = 0) ∧
       r2 0 + 1 = 2 ^ (2 * m2 + 1) * u ∧
+      r2 0 = blockState weight q (j + (n - m1 - m2)) ∧
       (L + m1) + 4 = twoValuation (3 * (r2 m2) + 1) ∧
       3 * 5 ^ m2 * u - 1 = 2 ^ ((L + m1) + 3) * w ∧
       w % 2 = 1 ∧
       2 ^ (H_s - 1) ∣ 5 ^ ((L + m1) + 3) * w + 1 := by
   rcases tail_failure_congruence_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2
-    weight hPrem hn hm hH hfail with ⟨r2, u, ht2, hstart, hL2, hcong⟩
+    weight hPrem hn hm hH hfail with ⟨r2, u, ht2, hstart, hstart_block, hL2, hcong⟩
   have hclosed := t2_run_closed_form r2 m2 u ht2 hstart
   have hpos : 0 < 3 * 5 ^ m2 * u - 1 := by
     have hupos : 0 < u := by
@@ -2219,7 +2223,117 @@ lemma tail_failure_odd_part_congruence
     have hcancel := Nat.eq_of_mul_eq_mul_left
       (by positivity : 0 < 2 ^ ((L + m1) + 3)) hk''
     exact ⟨k, hcancel⟩
-  exact ⟨r2, u, w, ht2, hstart, hL2, heq, hwodd, hdiv⟩
+  exact ⟨r2, u, w, ht2, hstart, hstart_block, hL2, heq, hwodd, hdiv⟩
+
+/-- Exact `m2=0` content of the tail failure: the block head has
+`r + 1 = 2*u` with `u ≡ 3 (mod 8)`, hence `r ≡ 5 (mod 16)`.
+This is the true residue forced by the single tail congruence; it is
+incompatible with the document-36.30.6 residue `r ≡ 33 (mod 64)`. -/
+lemma tail_failure_m2_zero_block_head_mod16
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hn : n = s - j)
+    (hm : (m1, m2) = tailSplit (blockWord weight j n))
+    (hm2 : m2 = 0)
+    (hH : 2 ≤ H_s)
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1) :
+    r % 16 = 5 := by
+  rcases tail_failure_odd_part_congruence j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2
+    weight hPrem hn hm hH hfail with
+    ⟨r2, u, w, ht2, hstart, hstart_block, hL2, hcong, hwodd, hdiv⟩
+  have hstart' : blockState weight q (j + (n - m1 - m2)) + 1 = 2 * u := by
+    rw [← hstart_block]
+    simpa [hm2] using hstart
+  have hstart_j : blockState weight q j + 1 = 2 * u := by
+    rw [tail_start_eq_block_head_of_m2_zero j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2
+      weight hPrem hn hm hm2] at hstart'
+    exact hstart'
+  have hbsj : blockState weight q j = r := by
+    dsimp [blockState]
+    rw [← hPrem.Aj_mol, ← hPrem.Wj_def]
+    exact hrj.symm
+  have hr : r + 1 = 2 * u := by
+    rw [← hbsj]
+    exact hstart_j
+  have hpow5 : 5 ^ m2 = 1 := by
+    rw [hm2]
+    simp
+  have hcongu : 3 * u = 2 ^ ((L + m1) + 3) * w + 1 := by
+    have h3 : 3 * 5 ^ m2 * u = 3 * u := by
+      simp [hpow5]
+    rw [h3] at hcong
+    omega
+  have hk : 3 ≤ (L + m1) + 3 := by omega
+  have hdvd8 : 8 ∣ 2 ^ ((L + m1) + 3) := by
+    have h := pow_dvd_pow 2 hk
+    simpa using h
+  have hdvd8w : 8 ∣ 2 ^ ((L + m1) + 3) * w := dvd_mul_of_dvd_left hdvd8 w
+  have hmod3u : (3 * u) % 8 = 1 := by
+    have hmodpow : (2 ^ ((L + m1) + 3) * w) % 8 = 0 :=
+      Nat.dvd_iff_mod_eq_zero.mp hdvd8w
+    rw [hcongu]
+    rw [Nat.add_mod, hmodpow]
+    try norm_num
+  have hu8 : u % 8 = 3 := by
+    have hmod : (3 * u) % 8 = (3 * (u % 8)) % 8 := by
+      rw [Nat.mul_mod]
+      try norm_num
+    rw [hmod] at hmod3u
+    have hlt8 : u % 8 < 8 := Nat.mod_lt u (by norm_num)
+    interval_cases u % 8
+    all_goals norm_num at hmod3u
+    all_goals norm_num
+  have h2u : (2 * u) % 16 = 6 := by
+    have hmod : (2 * u) % 16 = (2 * (u % 16)) % 16 := by
+      rw [Nat.mul_mod]
+      try norm_num
+    have hu16 : u % 16 = 3 ∨ u % 16 = 11 := by
+      have hmm : u % 16 % 8 = u % 8 :=
+        Nat.mod_mod_of_dvd u (c := 8) (b := 16) (by norm_num)
+      rw [hu8] at hmm
+      have hlt16 : u % 16 < 16 := Nat.mod_lt u (by norm_num)
+      interval_cases u % 16
+      all_goals norm_num at hmm
+      all_goals norm_num
+    rcases hu16 with h3 | h11
+    · rw [hmod, h3]
+      try norm_num
+    · rw [hmod, h11]
+      try norm_num
+  have h16 : (r + 1) % 16 = 6 := by
+    rw [hr, h2u]
+  have hmod16 : r % 16 = 5 := by
+    have hmod : (r + 1) % 16 = (r % 16 + 1) % 16 := by
+      rw [Nat.add_mod]
+      try norm_num
+    rw [hmod] at h16
+    have hlt16 : r % 16 < 16 := Nat.mod_lt r (by norm_num)
+    interval_cases r % 16
+    all_goals norm_num at h16
+    all_goals norm_num
+  exact hmod16
+
+/-- The `m2=0` tail failure excludes the document-36.30.6 candidate
+residue `r ≡ 33 (mod 64)`: the true tail congruence fixes `r ≡ 5 (mod 16)`. -/
+lemma tail_failure_m2_zero_not_rj_mod64
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hn : n = s - j)
+    (hm : (m1, m2) = tailSplit (blockWord weight j n))
+    (hm2 : m2 = 0)
+    (hH : 2 ≤ H_s)
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ (L + 3) * wTerminal L r_s + 1) :
+    ¬ r % 64 = 33 := by
+  intro h33
+  have h16 := tail_failure_m2_zero_block_head_mod16 j Wp Wj q Aj A_s s W_s r_s L H_s
+    n m1 m2 weight r hPrem hrj hn hm hm2 hH hfail
+  have hmm : r % 64 % 16 = r % 16 :=
+    Nat.mod_mod_of_dvd r (c := 16) (b := 64) (by norm_num)
+  rw [h33] at hmm
+  norm_num at hmm
+  omega
 
 /-- The terminal failure congruence, cleared of the odd-part denominator:
 `2^(H_s-1) | 5^(L+3)*w+1` iff
@@ -3194,13 +3308,15 @@ The premise `2 <= H_s` is a domain condition needed for `H_s - 1` to be a
 valid modulus; it is not the forbidden `H_ge` input.  This is the unique
 `sorry` in this audit file.
 
-Remaining open statement (exact scope form):
-`failure_implies_rj_mod_64` takes the same premises plus
-`hfail : ¬ twoValuation (5^(L+3)*wTerminal L r_s + 1) ≤ H_s - 2`
-and must derive `r % 64 = 33`.  The tail wiring above reduces the failure
-to the single `2^((L+m1)+H_s+2)` congruence, but the step from that
-congruence to the block-head residue still requires the full-orbit
-candidate parameterization and the `d=1/2/3/≥4` exclusions.
+The stated bridge `failure_implies_rj_mod_64` is invalid: the tail
+congruence (with `m2=0`) gives `r % 16 = 5`, hence `r % 64 = 33` is
+impossible (`tail_failure_m2_zero_block_head_mod16` and
+`tail_failure_m2_zero_not_rj_mod64` above).  The document-36.30.6
+residue is therefore not a consequence of the terminal failure; the
+`d=1/2/3/≥4` candidate exclusions do not attach to this tail branch as
+stated.  The unique `sorry` remains the depth-`≥16` branch of
+`unified_core_final_no_hge`; closing it needs a different orbit
+constraint, not the candidate-residue bridge.
 
 PMI audit (2026-08-13): the prefix identity
 `sum 2^(-m_k) = 5*A_N/5^N` is covered for arbitrary words by
@@ -3272,8 +3388,10 @@ theorem unified_core_final_no_hge
 | `pow5Inv_correct` | proved | `5^s * pow5Inv s m ≡ 1 (mod 2^m)` |
 | `crtRep_lt` / `crtRep_unique` / `rj0_crt_candidate_unique` | proved | CRT representative is `< n*m` and unique below the product |
 | `rj0_ge_iff_terminal_bound` | missing | the full iff through B2/B3 and the CRT lift; not yet formalized |
-| `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch (1a/1b candidate parameterization + d-exclusions) |
-| `failure_implies_rj_mod_64` | **open** | 36.29/36.30.5 core: from `All36_20PremisesNoHge + FullOrbitFrom7 r + failure` derive `r % 64 = 33` (equivalently the t=1/t=2 candidate residue); the n≥16 branch reduces to this + the existing d-exclusions |
+| `tail_failure_m2_zero_block_head_mod16` | proved | exact `m2=0` tail residue: failure forces `r % 16 = 5` (i.e. `u % 8 = 3`); this is the true content of the single tail congruence |
+| `tail_failure_m2_zero_not_rj_mod64` | proved | the stated `failure_implies_rj_mod_64` bridge is false: `r % 16 = 5` excludes `r % 64 = 33` |
+| `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch; candidate-residue bridge is invalid, so 1a/1b + d-exclusions do not close it |
+| `failure_implies_rj_mod_64` | **invalid as stated** | 36.29/36.30.5 core: the tail congruence contradicts the claimed `r % 64 = 33`; the true `m2=0` residue is `r % 16 = 5` |
 | `FinitePrefix.fullOrbit_first_t_ge3_is_exactly_3` | proved | `lean/FinitePrefix.lean`: explicit 17-state expansion by `simp [StringFlow.twoValuation_succ]`, zero `native_decide`; closes 36.30.23 at math level |
 | `UnifiedCoreBridge` | encoded | `lean/UnifiedCoreBridge.lean`: `candidateX`, `candidateRj`, `orbitState`, `orbitStepWeight`; step 1 of the assembly plan |
 | `UnifiedCoreBridge.fullOrbitStep_mul_eq` | proved | exact `2^t * fullOrbitStep x = 5*x+1`; used by the full-orbit rigidity lemmas |
