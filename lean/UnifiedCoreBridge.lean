@@ -629,17 +629,17 @@ reset predecessor `x` is simultaneously the full-orbit predecessor and
 the candidate `candidateX (n0-1) e g δ`. -/
 theorem candidate_parameterization_of_reset_full_orbit
     (n0 t δ e g s0 x r : Nat)
-    (hn0 : 2 ≤ n0)
+    (hn0 : 3 ≤ n0)
     (hiter : fullOrbitIter n0 = r)
     (hiter_g : fullOrbitIter (n0 - 2) = g)
-    (hstep_e : orbitStepWeight (n0 - 2) = e)
+    (hstep_e : orbitStepWeight (n0 - 3) = e)
     (hstep_t : orbitStepWeight (n0 - 1) = t)
     (hres : ResetHeadEq s0 (n0 - 1) 0 t δ r)
     (hterm : s0 = 2 ^ (e - 1) * g + 1)
     (hr : r = candidateRj x t)
     (hdiv : (5 * x + 1) % 2 ^ t = 0) :
     x = candidateX (n0 - 1) e g δ ∧ x = fullOrbitIter (n0 - 1) ∧
-      g = fullOrbitIter (n0 - 2) ∧ e = orbitStepWeight (n0 - 2) := by
+      g = fullOrbitIter (n0 - 2) ∧ e = orbitStepWeight (n0 - 3) := by
   have hx_iter := candidateRj_eq_fullOrbitIter_of_weight n0 x t r (by omega) hiter hstep_t hr hdiv
   have hx_cand := candidateX_of_reset_and_terminal s0 (n0 - 1) t δ r x e g
     (by omega) hres hr hdiv hterm
