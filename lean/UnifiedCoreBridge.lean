@@ -1192,6 +1192,22 @@ lemma d3_t2_d3_e4_u11_no_pow : ¬ ∃ j, 5 ^ j % (64 * 61) = 2373 % (64 * 61) :=
   · intro s
     exact d3_period_pow 16 61 15 1 s (by norm_num)
 
+/-- d≥4, `e=3, j=17`, `t_j=1, δ=1`: the corrected residue `x ≡ 53
+(mod 160)` fails (`x ≡ 133 (mod 160)`), so the branch is excluded. -/
+lemma dge4_e3_j17_t1_corrected_excluded
+    (x : Nat) (hx : x = 4 * 34177 + 5 ^ 16)
+    (hmod : x % 160 = 53) : False := by
+  rw [hx] at hmod
+  norm_num at hmod
+
+/-- d≥4, `e=3, j=17`, `t_j=2, δ=3`: the corrected residue `x ≡ 183
+(mod 320)` fails (`x ≡ 263 (mod 320)`), so the branch is excluded. -/
+lemma dge4_e3_j17_t2_delta3_corrected_excluded
+    (x : Nat) (hx : x = 4 * 34177 + 3 * 5 ^ 16)
+    (hmod : x % 320 = 183) : False := by
+  rw [hx] at hmod
+  norm_num at hmod
+
 /-- Discrete logarithm of `6` base `5` modulo `17`. -/
 lemma five_pow_mod17_eq (m : Nat) :
     5 ^ m % 17 = 6 ↔ m % 16 = 3 := by
