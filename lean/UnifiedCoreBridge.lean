@@ -5199,6 +5199,21 @@ lemma previous_terminal_word_last_one
       exact hcop.symm.dvd_of_dvd_mul_left hdvd5
     exact hnd5 h5
 
+/-- In the `k=0` branch the terminal relation `s0·5^k = r_prev+1`
+reduces to `s0 = r_prev+1`, so the last step is `t=1`. -/
+lemma previous_terminal_word_last_one_of_k0
+    (w : List Nat) (s0 k : Nat)
+    (hvalid : StringFlow.Word.wordValid w 7)
+    (hok : ∀ t ∈ w, t = 1 ∨ t = 2)
+    (hne : w ≠ [])
+    (hs0 : s0 * 5 ^ k = StringFlow.Word.wordOrbit w 7 + 1)
+    (hk : k = 0) (hnd5 : ¬ 5 ∣ s0) :
+    StringFlow.Word.wordLast w = 1 := by
+  subst k
+  have hs0' : s0 = StringFlow.Word.wordOrbit w 7 + 1 := by
+    simpa using hs0
+  exact previous_terminal_word_last_one w s0 hvalid hok hne hs0' hnd5
+
 /-- 36.30.23.2: the `k=0` previous even terminal is the first-block
 terminal `7→...→r_prev`, so its legal orbit word has length exactly
 `j-1` and every prefix step is the corresponding full-orbit step.  The
