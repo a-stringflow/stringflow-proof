@@ -1074,6 +1074,218 @@ theorem reset_predecessor_of_block_head_premises
       ⟨fun h => by norm_num at h, fun _ => hc⟩ with ⟨x, hx, hdiv⟩
     exact ⟨2, x, Or.inr rfl, hx, hdiv⟩
 
+/-- The reset weight `t` agrees with the block step weight `Wj - Wp`
+at the block head: both are pinned by the mod-5 residue of `r`. -/
+lemma reset_weight_eq_of_premises
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
+    (r x t : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (_hReach : FullOrbitFrom7 r)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (ht : t = 1 ∨ t = 2) :
+    weight j - weight (j - 1) = t := by
+  have hcong := UnifiedCoreAudit.block_head_mod_five_congruence_of_premises
+    j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj _hReach
+  have hcj := candidateRj_mod_five x t ht (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  rcases hPrem.tj_mem with htj1 | htj2
+  · have hW : Wj - Wp = 1 := by omega
+    have h3 : r % 5 = 3 := by
+      have hinv : StringFlow.Lte.invMod5 2 % 5 = 3 := by
+        norm_num [StringFlow.Lte.invMod5]
+      have hc : r ≡ 3 [MOD 5] := by
+        rw [hW] at hcong
+        simpa [hinv] using hcong
+      rw [Nat.ModEq] at hc
+      norm_num at hc
+      exact hc
+    have ht1 : t = 1 := by
+      rcases ht with rfl | rfl
+      · rfl
+      · have h4 : r % 5 = 4 := by
+          rw [hr]
+          exact hcj.2 rfl
+        rw [h3] at h4
+        norm_num at h4
+    rw [ht1]
+    have hdiff : weight j - weight (j - 1) = Wj - Wp := by
+      rw [hPrem.Wj_def, hPrem.Wp_def]
+    simpa [hW] using hdiff
+  · have hW : Wj - Wp = 2 := by omega
+    have h4 : r % 5 = 4 := by
+      have hinv : StringFlow.Lte.invMod5 4 % 5 = 4 := by
+        norm_num [StringFlow.Lte.invMod5]
+      have hc : r ≡ 4 [MOD 5] := by
+        rw [hW] at hcong
+        simpa [hinv] using hcong
+      rw [Nat.ModEq] at hc
+      norm_num at hc
+      exact hc
+    have ht2 : t = 2 := by
+      rcases ht with rfl | rfl
+      · have h3 : r % 5 = 3 := by
+          rw [hr]
+          exact hcj.1 rfl
+        rw [h4] at h3
+        norm_num at h3
+      · rfl
+    rw [ht2]
+    have hdiff : weight j - weight (j - 1) = Wj - Wp := by
+      rw [hPrem.Wj_def, hPrem.Wp_def]
+    simpa [hW] using hdiff
+
+/-- The reset predecessor of the block head is exactly the block state
+one step before the head.  This is the block-word half of the
+premises-to-candidate bridge; it uses only the premises and the reset
+equation, with no orbit-reachability input beyond the mod-5 rigidity
+already encoded in the premises. -/
+lemma blockState_pred_eq_of_reset_head
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
+    (r x t : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (_hReach : FullOrbitFrom7 r)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (ht : t = 1 ∨ t = 2) :
+    blockState weight q (j - 1) = x := by
+  have htW : weight j - weight (j - 1) = t :=
+    reset_weight_eq_of_premises j Wp Wj q Aj A_s s W_s r_s L H_s weight r x t
+      hPrem hrj _hReach hr hdiv ht
+  have hbsj : blockState weight q j = r := by
+    dsimp [blockState]
+    rw [← hPrem.Aj_mol, ← hPrem.Wj_def, ← hrj]
+  have hj1 : 1 ≤ j := hPrem.j_pos
+  have hsumj : (j - 1) + 1 = j := by omega
+  have hWstep : weight ((j - 1) + 1) = weight (j - 1) + (weight j - weight (j - 1)) := by
+    rw [hsumj]
+    have hle : weight (j - 1) ≤ weight j := by
+      rcases hPrem.tj_mem with h1 | h2 <;> omega
+    omega
+  have hprevdiv : (wordMolecule weight (j - 1) + 5 ^ (j - 1) * q) %
+      2 ^ weight (j - 1) = 0 :=
+    hPrem.valid_prefix (j - 1) (by
+      have hle : j - 1 ≤ s := by
+        have h := hPrem.j_le_s
+        omega
+      exact hle)
+  have hnextdiv : (wordMolecule weight ((j - 1) + 1) + 5 ^ ((j - 1) + 1) * q) %
+      2 ^ (weight ((j - 1) + 1)) = 0 := by
+    rw [hsumj]
+    exact hPrem.valid_prefix j hPrem.j_le_s
+  have hstep := blockState_step weight q (j - 1) (weight j - weight (j - 1))
+    hWstep hprevdiv hnextdiv
+  have hq : (5 * blockState weight q (j - 1) + 1) / 2 ^ (weight j - weight (j - 1)) = r := by
+    simpa [hbsj, hsumj] using hstep.2
+  have hq' : (5 * blockState weight q (j - 1) + 1) / 2 ^ t =
+      (5 * x + 1) / 2 ^ t := by
+    rw [htW] at hq
+    have hqr : (5 * blockState weight q (j - 1) + 1) / 2 ^ t = candidateRj x t := by
+      rw [← hr]
+      exact hq
+    simpa [candidateRj] using hqr
+  have hdvd1 : 2 ^ t ∣ 5 * blockState weight q (j - 1) + 1 := by
+    rw [← htW]
+    exact Nat.dvd_iff_mod_eq_zero.mpr hstep.1
+  have hdvd2 : 2 ^ t ∣ 5 * x + 1 := Nat.dvd_iff_mod_eq_zero.mpr hdiv
+  have hnum1 : 2 ^ t * ((5 * blockState weight q (j - 1) + 1) / 2 ^ t) =
+      5 * blockState weight q (j - 1) + 1 := Nat.mul_div_cancel' hdvd1
+  have hnum2 : 2 ^ t * ((5 * x + 1) / 2 ^ t) = 5 * x + 1 := Nat.mul_div_cancel' hdvd2
+  have hnum : 5 * blockState weight q (j - 1) + 1 = 5 * x + 1 := by
+    calc
+      5 * blockState weight q (j - 1) + 1
+          = 2 ^ t * ((5 * blockState weight q (j - 1) + 1) / 2 ^ t) := hnum1.symm
+      _ = 2 ^ t * ((5 * x + 1) / 2 ^ t) := by rw [hq']
+      _ = 5 * x + 1 := hnum2
+  have h5 : 5 * blockState weight q (j - 1) = 5 * x := by omega
+  exact Nat.eq_of_mul_eq_mul_left (by decide : 0 < 5) h5
+
+/-- If the full-orbit step into the block head has weight at most two,
+then it agrees with the reset weight `t`: both weights are pinned by the
+mod-5 residue of `r`.  This is the small-step half of the
+premises-to-candidate bridge. -/
+lemma orbitStepWeight_of_reset_head_le_two
+    (n0 j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
+    (r x t : Nat)
+    (hn0 : 1 ≤ n0)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hiter : fullOrbitIter n0 = r)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (ht : t = 1 ∨ t = 2)
+    (hsmall : orbitStepWeight (n0 - 1) ≤ 2) :
+    orbitStepWeight (n0 - 1) = t := by
+  have hcj := candidateRj_mod_five x t ht (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  let y := fullOrbitIter (n0 - 1)
+  let w0 := orbitStepWeight (n0 - 1)
+  have hstep : fullOrbitStep y = r := by
+    have hsucc : n0 = (n0 - 1) + 1 := by omega
+    rw [hsucc, fullOrbitIter] at hiter
+    change fullOrbitStep (fullOrbitIter (n0 - 1)) = r
+    exact hiter
+  have hval : twoValuation (5 * y + 1) = w0 := by
+    simpa [w0, y, orbitStepWeight] using (show twoValuation (5 * fullOrbitIter (n0 - 1) + 1) = w0 from rfl)
+  have hw0le2 : w0 ≤ 2 := by simpa [w0] using hsmall
+  have hw0 : w0 = 0 ∨ w0 = 1 ∨ w0 = 2 := by
+    interval_cases w0 <;> simp
+  have hreal : (2 ^ w0 * r) % 5 = 1 := by
+    have hdvd : 2 ^ w0 ∣ 5 * y + 1 := by
+      have hge : w0 ≤ twoValuation (5 * y + 1) := by
+        rw [hval]
+      exact (StringFlow.Lte.twoValuation_ge_iff_dvd_pow (5 * y + 1) w0 (by positivity)).mp hge
+    have hq : (5 * y + 1) / 2 ^ w0 = r := by
+      have hstep' : fullOrbitStep y = r := hstep
+      unfold fullOrbitStep at hstep'
+      rw [hval] at hstep'
+      exact hstep'
+    have hmul' : 2 ^ w0 * r = 5 * y + 1 := by
+      rw [← hq]
+      exact Nat.mul_div_cancel' hdvd
+    rw [hmul']
+    rw [Nat.add_mod, Nat.mul_mod]
+    norm_num
+  have hr_of_w0 : (w0 = 1 → r % 5 = 3) ∧ (w0 = 2 → r % 5 = 4) := by
+    constructor
+    · intro h1
+      have h2r : (2 * r) % 5 = 1 := by
+        simpa [h1] using hreal
+      exact mod5_cancel_two r h2r
+    · intro h2
+      have h4r : (4 * r) % 5 = 1 := by
+        simpa [h2] using hreal
+      exact mod5_cancel_four r h4r
+  rcases hw0 with h0 | h1 | h2
+  · have hr1 : r % 5 = 1 := by
+      simpa [h0] using hreal
+    have hrmod := UnifiedCoreAudit.block_head_mod_five_of_premises
+      j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj ⟨n0, hiter⟩
+    rw [hr1] at hrmod
+    norm_num at hrmod
+  · have hr3 : r % 5 = 3 := hr_of_w0.1 h1
+    have ht1 : t = 1 := by
+      rcases ht with rfl | rfl
+      · rfl
+      · have h4 : r % 5 = 4 := by
+          rw [hr]
+          exact hcj.2 rfl
+        rw [hr3] at h4
+        norm_num at h4
+    change w0 = t
+    rw [h1, ht1]
+  · have hr4 : r % 5 = 4 := hr_of_w0.2 h2
+    have ht2 : t = 2 := by
+      rcases ht with rfl | rfl
+      · have h3 : r % 5 = 3 := by
+          rw [hr]
+          exact hcj.1 rfl
+        rw [hr4] at h3
+        norm_num at h3
+      · rfl
+    change w0 = t
+    rw [h2, ht2]
+
 /-- The reset predecessor of a block head is bounded by `2^t*5^(j-1)`. -/
 theorem reset_predecessor_bound_of_block_head_premises
     (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
@@ -1196,6 +1408,81 @@ lemma candidateRj_eq_fullOrbitIter_of_weight
     exact Nat.eq_of_mul_eq_mul_left (by norm_num : 0 < 5) h5
   dsimp [x0] at hx0x
   exact hx0x.symm
+
+/-- If the full-orbit step into the block head has weight at most two,
+the reset predecessor is exactly the preceding full-orbit state.  This
+is the real-orbit half of the premises-to-candidate bridge. -/
+lemma reset_predecessor_eq_fullOrbitIter_of_le_two
+    (n0 j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
+    (r x t : Nat)
+    (hn0 : 1 ≤ n0)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hiter : fullOrbitIter n0 = r)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (ht : t = 1 ∨ t = 2)
+    (hsmall : orbitStepWeight (n0 - 1) ≤ 2) :
+    x = fullOrbitIter (n0 - 1) := by
+  have hstep_t : orbitStepWeight (n0 - 1) = t :=
+    orbitStepWeight_of_reset_head_le_two n0 j Wp Wj q Aj A_s s W_s r_s L H_s weight r x t
+      hn0 hPrem hrj hiter hr hdiv ht hsmall
+  exact candidateRj_eq_fullOrbitIter_of_weight n0 x t r hn0 hiter hstep_t hr hdiv
+
+/-- Under the small-step hypothesis, the block state one step before the
+block head is exactly the preceding full-orbit state.  This is the
+real-orbit word alignment at the reset predecessor. -/
+lemma blockState_pred_eq_fullOrbitIter_of_le_two
+    (n0 j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat)
+    (r x t : Nat)
+    (hn0 : 1 ≤ n0)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hiter : fullOrbitIter n0 = r)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (ht : t = 1 ∨ t = 2)
+    (hsmall : orbitStepWeight (n0 - 1) ≤ 2) :
+    blockState weight q (j - 1) = fullOrbitIter (n0 - 1) := by
+  have hpred : blockState weight q (j - 1) = x :=
+    blockState_pred_eq_of_reset_head j Wp Wj q Aj A_s s W_s r_s L H_s weight r x t
+      hPrem hrj ⟨n0, hiter⟩ hr hdiv ht
+  have hx : x = fullOrbitIter (n0 - 1) :=
+    reset_predecessor_eq_fullOrbitIter_of_le_two n0 j Wp Wj q Aj A_s s W_s r_s L H_s weight
+      r x t hn0 hPrem hrj hiter hr hdiv ht hsmall
+  omega
+
+/-- The reset terminal-chain equation read at the aligned predecessor:
+`5^k * s0 = x + 1 - delta * 5^(j-1)`.  Combined with
+`x = fullOrbitIter (n0 - 1)` this is the arithmetic input of the
+d-segment equations. -/
+lemma reset_terminal_chain_of_predecessor_alignment
+    (n0 j k t δ s0 x r : Nat)
+    (_hn0 : 1 ≤ n0)
+    (hj : 1 ≤ j)
+    (hδ : δ = 1 ∨ δ = 3)
+    (hres : ResetHeadEq s0 j k t δ r)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0)
+    (hx : x = fullOrbitIter (n0 - 1)) :
+    5 ^ k * s0 = fullOrbitIter (n0 - 1) + 1 - δ * 5 ^ (j - 1) := by
+  have hpred : x = 5 ^ k * s0 + δ * 5 ^ (j - 1) - 1 :=
+    reset_head_predecessor s0 j k t δ r x hj hres hr hdiv
+  have hpos : 1 ≤ 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+    have hB : 1 ≤ δ * 5 ^ (j - 1) := by
+      rcases hδ with rfl | rfl
+      · have h5 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+        omega
+      · have h5 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+        omega
+    omega
+  have h1 : (5 ^ k * s0 + δ * 5 ^ (j - 1) - 1) + 1 =
+      5 ^ k * s0 + δ * 5 ^ (j - 1) :=
+    Nat.sub_add_cancel hpos
+  have hx1 : x + 1 = 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+    rw [hpred, h1]
+  rw [hx] at hx1
+  omega
 
 /-- Packaged candidate parameterization: if the full-orbit step into the
 block head `r` has weight `t`, and the reset terminal satisfies
@@ -3758,6 +4045,89 @@ lemma fullOrbitIter_lt_five_pow (n : Nat) (hn : 3 ≤ n) :
     lt_trans hlt hltmul
   exact Nat.lt_of_mul_lt_mul_left hBx
 
+/-- Real block word to orbit segment alignment: the reset predecessor
+`x` lies on the full orbit at depth `n0-1`, and the reset formula
+`x = 5^k*s0 + δ*5^(j-1) - 1` plus the size bound `x < 5^(n0-1)` force
+`j+1 ≤ n0`.  The internal segment length `d = n0-j` is therefore
+positive, and `j = n0-d` follows from the alignment, not from a new
+premise. -/
+lemma orbit_word_depth_alignment
+    (j n0 k δ s0 x : Nat)
+    (hj : 1 ≤ j) (hn0 : 4 ≤ n0)
+    (hs0 : 0 < s0)
+    (hx_iter : x = fullOrbitIter (n0 - 1))
+    (hx : x = 5 ^ k * s0 + δ * 5 ^ (j - 1) - 1)
+    (hδ : δ = 1 ∨ δ = 3) :
+    j + 1 ≤ n0 := by
+  have hx_lt : x < 5 ^ (n0 - 1) := by
+    rw [hx_iter]
+    exact fullOrbitIter_lt_five_pow (n0 - 1) (by omega)
+  have hδge : 1 ≤ δ := by
+    rcases hδ with rfl | rfl <;> norm_num
+  have h5k : 1 ≤ 5 ^ k := Nat.one_le_pow k 5 (by norm_num)
+  have hmul : 1 ≤ 5 ^ k * s0 := by nlinarith
+  have hsum : x + 1 = 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+    have h5 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+    have hδ5 : 1 ≤ δ * 5 ^ (j - 1) := by nlinarith [hδge, h5]
+    have hge1 : 1 ≤ 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+      nlinarith [hmul, hδ5]
+    omega
+  have hxge : 5 ^ (j - 1) ≤ x := by
+    have hδ5 : 1 ≤ δ * 5 ^ (j - 1) := by
+      have h5 : 1 ≤ 5 ^ (j - 1) := Nat.one_le_pow (j - 1) 5 (by norm_num)
+      nlinarith [hδge, h5]
+    have hA : 5 ^ (j - 1) + 1 ≤ 5 ^ k * s0 + δ * 5 ^ (j - 1) := by
+      nlinarith [hmul, hδ5]
+    nlinarith [hA, hsum]
+  have hpowlt : 5 ^ (j - 1) < 5 ^ (n0 - 1) := lt_of_le_of_lt hxge hx_lt
+  have hjlt : j - 1 < n0 - 1 := by
+    exact (Nat.pow_lt_pow_iff_right (by decide : 1 < 5)).mp hpowlt
+  omega
+
+/-- The segment-length-`d` candidate parameterization aligned to the
+block index `j`: `d = n0-j` is internal, `j = n0-d` is derived from the
+real orbit alignment, and the bridge conclusion is read at `j`. -/
+theorem candidate_parameterization_of_reset_full_orbit_d_aligned
+    (j n0 k t δ s0 x r : Nat)
+    (hj : 3 ≤ j) (hn0 : 4 ≤ n0)
+    (hs0 : 0 < s0)
+    (hx_iter : x = fullOrbitIter (n0 - 1))
+    (hx : x = 5 ^ k * s0 + δ * 5 ^ (j - 1) - 1)
+    (hδ : δ = 1 ∨ δ = 3)
+    (hiter : fullOrbitIter n0 = r)
+    (hstep_t : orbitStepWeight (n0 - 1) = t)
+    (hres : ResetHeadEq s0 j k t δ r)
+    (hterm : 5 ^ k * s0 =
+      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) + 1)
+    (hr : r = candidateRj x t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    x = candidateX j (orbitStepWeight (j - 2)) (fullOrbitIter (j - 1)) δ ∧
+      x = fullOrbitIter (n0 - 1) := by
+  have hjn : j + 1 ≤ n0 :=
+    orbit_word_depth_alignment j n0 k δ s0 x (by omega) hn0 hs0 hx_iter hx hδ
+  have hd : 1 ≤ n0 - j := by omega
+  have hn0' : (n0 - j) + 3 ≤ n0 := by omega
+  have hjd : j = n0 - (n0 - j) := by omega
+  have hres' : ResetHeadEq s0 (n0 - (n0 - j)) k t δ r := by
+    rw [← hjd]
+    exact hres
+  have hiter_g : fullOrbitIter (n0 - (1 + (n0 - j))) = fullOrbitIter (j - 1) := by
+    congr 1
+    omega
+  have hstep_e : orbitStepWeight (n0 - (2 + (n0 - j))) = orbitStepWeight (j - 2) := by
+    congr 1
+    omega
+  have hterm' : 5 ^ k * s0 =
+      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) + 1 := hterm
+  have hbridge := candidate_parameterization_of_reset_full_orbit_d
+    n0 (n0 - j) k t δ (orbitStepWeight (j - 2)) (fullOrbitIter (j - 1)) s0 x r
+    hd hn0' hiter hiter_g hstep_e hstep_t hres' hterm' hr hdiv
+  have hb1 := hbridge.1
+  rw [← hjd] at hb1
+  constructor
+  · exact hb1
+  · exact hbridge.2.1
+
 /-- Sharp size bound for the `m2>0` run start: the odd part `u`
 satisfies `2^(2*m2+1)*u < 5^n_a`. -/
 lemma m2_pos_size_bound_sharp (n_a m2 u : Nat) (hm2 : 1 ≤ m2) (hn : 18 ≤ n_a)
@@ -4232,5 +4602,86 @@ lemma m2_pos_block_head_depth_ge_19
     · rcases h2 with ⟨ht, hδ, _⟩
       exact Or.inr ht
   rcases ht12 with ht1 | ht2 <;> omega
+
+/-- Explicit word decomposition of the previous reset terminal: the
+prefix `orbitSegmentWord 1 (j-2)` is the exact full-orbit word to depth
+`j-2`, and appending a final `1` lands on the even intermediate
+`(5*fullOrbitIter(j-2)+1)/2`. -/
+lemma previous_terminal_word_decomposition (j : Nat) :
+    ∃ w w' : List Nat,
+      w = w' ++ [1] ∧
+      StringFlow.Word.wordOrbit w' 7 = fullOrbitIter (j - 2) ∧
+      StringFlow.Word.wordOrbit w 7 = (5 * fullOrbitIter (j - 2) + 1) / 2 := by
+  let w' := orbitSegmentWord 1 (j - 2)
+  let w := w' ++ [1]
+  refine ⟨w, w', rfl, ?_, ?_⟩
+  · have horbit := orbitSegmentWord_orbit 1 (j - 2)
+    have h0 : fullOrbitIter 0 = 7 := rfl
+    rw [h0] at horbit
+    have hidx : 1 - 1 + (j - 2) = j - 2 := by omega
+    rwa [hidx] at horbit
+  · dsimp [w]
+    rw [wordOrbit_append_singleton]
+    have hprev : StringFlow.Word.wordOrbit w' 7 = fullOrbitIter (j - 2) := by
+      have horbit := orbitSegmentWord_orbit 1 (j - 2)
+      have h0 : fullOrbitIter 0 = 7 := rfl
+      rw [h0] at horbit
+      have hidx : 1 - 1 + (j - 2) = j - 2 := by omega
+      rwa [hidx] at horbit
+    rw [hprev]
+    norm_num
+
+/-- Step 2 of the reset-terminal alignment: the even intermediate
+`(5*fullOrbitIter(j-2)+1)/2` is exactly `2^(e-1)*g` with
+`e = orbitStepWeight(j-2)` and `g = fullOrbitIter(j-1)`. -/
+lemma previous_terminal_even_intermediate_eq
+    (j n0 : Nat)
+    (hj : 3 ≤ j) (hjn : j + 2 ≤ n0) :
+    (5 * fullOrbitIter (j - 2) + 1) / 2 =
+      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) := by
+  rcases previous_terminal_word_decomposition j with ⟨w, w', hsplit, hprev, horbit⟩
+  let d := n0 - j
+  have hd : 1 ≤ d := by
+    dsimp [d]
+    omega
+  have hn0 : 2 + d ≤ n0 := by
+    dsimp [d]
+    omega
+  have hiter_g : fullOrbitIter (n0 - (1 + d)) = fullOrbitIter (j - 1) := by
+    dsimp [d]
+    congr 1
+    omega
+  have hiter_gp : fullOrbitIter (n0 - (2 + d)) = fullOrbitIter (j - 2) := by
+    dsimp [d]
+    congr 1
+    omega
+  have hstep_e : orbitStepWeight (n0 - (2 + d)) = orbitStepWeight (j - 2) := by
+    dsimp [d]
+    congr 1
+    omega
+  have he : 1 ≤ orbitStepWeight (j - 2) := by
+    unfold orbitStepWeight
+    have hodd : IsOdd (fullOrbitIter (j - 2)) := fullOrbitIter_odd (j - 2)
+    exact twoValuation_five_mul_add_one_ge_one (fullOrbitIter (j - 2)) hodd
+  have hres := previous_terminal_hr_of_word_and_segment n0 d
+    (orbitStepWeight (j - 2)) (fullOrbitIter (j - 1))
+    (fullOrbitIter (j - 2)) ((5 * fullOrbitIter (j - 2) + 1) / 2) w w'
+    hd hn0 hiter_g hiter_gp hstep_e he hsplit hprev horbit
+  exact hres
+
+/-- Step 3 of the reset-terminal alignment: from the previous-terminal
+relation `s0·5^k = r_prev+1` and the word-derived identity
+`r_prev = 2^(e-1)*g`, the terminal-chain input `hterm` is derived, not
+assumed. -/
+lemma reset_terminal_hterm_of_alignment
+    (j n0 k s0 : Nat)
+    (hj : 3 ≤ j) (hjn : j + 2 ≤ n0)
+    (hterm0 : s0 * 5 ^ k = (5 * fullOrbitIter (j - 2) + 1) / 2 + 1) :
+    5 ^ k * s0 =
+      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) + 1 := by
+  have h_int := previous_terminal_even_intermediate_eq j n0 hj hjn
+  have hterm0' : 5 ^ k * s0 = (5 * fullOrbitIter (j - 2) + 1) / 2 + 1 := by
+    rwa [Nat.mul_comm] at hterm0
+  rwa [h_int] at hterm0'
 
 end S6Audit

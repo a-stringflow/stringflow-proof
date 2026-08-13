@@ -153,6 +153,9 @@ namespace S6Audit
 #check orbitSegmentWord_getD
 #check m2_pos_block_head_depth_ge_18
 #check m2_pos_block_head_depth_ge_19
+#check previous_terminal_word_decomposition
+#check previous_terminal_even_intermediate_eq
+#check reset_terminal_hterm_of_alignment
 
 -- Axioms used by the `m2>0` word-weight relations.
 #print axioms weight_diff_ge_steps
@@ -170,6 +173,9 @@ namespace S6Audit
 #print axioms orbitSegmentWord_getD
 #print axioms m2_pos_block_head_depth_ge_18
 #print axioms m2_pos_block_head_depth_ge_19
+#print axioms previous_terminal_word_decomposition
+#print axioms previous_terminal_even_intermediate_eq
+#print axioms reset_terminal_hterm_of_alignment
 
 end S6Audit
 
