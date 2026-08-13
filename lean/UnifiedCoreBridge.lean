@@ -3886,4 +3886,233 @@ lemma m2_pos_word_size_wiring
       · have hn' : 18 ≤ n0 + (n - m1 - m2) := by omega
         exact m2_pos_size_bound_sharp (n0 + (n - m1 - m2)) m2 u hm2 hn' hstart
 
+/-- Exact capacity relation for the `m2>0` tail: `H_s` is determined by
+`j`, `Wj-Wp`, `m2`, and the extra `t=2` weight in the block prefix
+before the tail run. -/
+lemma m2_pos_H_s_exact
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 : Nat) (weight : Nat → Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hn : n = s - j)
+    (hm : (m1, m2) = UnifiedCoreAudit.tailSplit (blockWord weight j n))
+    (hm2 : 1 ≤ m2) :
+    H_s = 2 * j + 13 - 2 * (Wj - Wp) - 2 * m2 -
+      2 * ((weight (j + (n - m1 - m2)) - weight j) - (n - m1 - m2)) := by
+  let a := j + (n - m1 - m2)
+  have htail := m2_pos_tail_weight_sum j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 weight
+    hPrem hn hm hm2
+  have hja : j ≤ a := by dsimp [a]; omega
+  have hsum_bound : m1 + m2 ≤ n := by
+    have hsum' := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum'
+    rw [hlen] at hsum'
+    exact hsum'
+  have has : a ≤ s := by
+    dsimp [a]
+    have hn' : n = s - j := hn
+    omega
+  have hmono_aj : weight j ≤ weight a := by
+    have hw : ∀ k < j + (a - j), weight k ≤ weight (k + 1) := by
+      intro k hk
+      have hk' : k < s := by
+        have hjle : j ≤ s := hPrem.j_le_s
+        have hks : k < j + (a - j) := hk
+        have hsum : j + (a - j) = a := Nat.add_sub_of_le hja
+        omega
+      rcases hPrem.weight_step k hk' with h1 | h2 <;> omega
+    have h := weight_mono_le weight j (a - j) hw
+    have hsum : j + (a - j) = a := Nat.add_sub_of_le hja
+    rwa [hsum] at h
+  have hWs_Wa : weight s - weight a = 2 * m2 + m1 := htail
+  have hWa_le_Ws : weight a ≤ weight s := by
+    have hw : ∀ k < a + (s - a), weight k ≤ weight (k + 1) := by
+      intro k hk
+      have hk' : k < s := by
+        have hks : k < a + (s - a) := hk
+        have hsum : a + (s - a) = s := Nat.add_sub_of_le has
+        omega
+      rcases hPrem.weight_step k hk' with h1 | h2 <;> omega
+    have h := weight_mono_le weight a (s - a) hw
+    have hsum : a + (s - a) = s := Nat.add_sub_of_le has
+    rwa [hsum] at h
+  have hWj_le_Wa : Wj ≤ weight a := by
+    rw [hPrem.Wj_def]
+    exact hmono_aj
+  have hWp_le_Wj : Wp ≤ Wj := by rcases hPrem.tj_mem with h1 | h2 <;> omega
+  have hWp_le_Wa : Wp ≤ weight a := by omega
+  have hstep_a : ∀ k < j + (a - j), weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2 := by
+    intro k hk
+    have hk' : k < s := by
+      have hks : k < j + (a - j) := hk
+      have hsum : j + (a - j) = a := Nat.add_sub_of_le hja
+      omega
+    exact hPrem.weight_step k hk'
+  have hdiff_aj : weight a - weight j ≥ a - j := by
+    have h := weight_diff_ge_steps weight j (a - j) hstep_a
+    have hsum : j + (a - j) = a := Nat.add_sub_of_le hja
+    rwa [hsum] at h
+  have hWsWp : W_s - Wp = (2 * m2 + m1) + (Wj - Wp) + (weight a - weight j) := by
+    have hWsWp' : W_s - Wp = (weight s - weight a) + (weight a - Wp) := by
+      rw [hPrem.Ws_def]
+      omega
+    have hWaWp : weight a - Wp = (Wj - Wp) + (weight a - weight j) := by
+      have hWj_eq : Wj = weight j := hPrem.Wj_def
+      have hWj_le_Wa' : weight j ≤ weight a := hmono_aj
+      omega
+    rw [hWsWp', hWs_Wa, hWaWp]
+    omega
+  have ha_eq : a - j = n - m1 - m2 := by
+    dsimp [a]
+    omega
+  have hT2 : weight a - weight j = (n - m1 - m2) +
+      ((weight a - weight j) - (n - m1 - m2)) := by
+    have hdiff : weight a - weight j ≥ n - m1 - m2 := by
+      rwa [ha_eq] at hdiff_aj
+    omega
+  have hH : H_s = 2 * s + 13 - 2 * (W_s - Wp) := hPrem.H_def
+  have hs : s = j + (n - m1 - m2) + m1 + m2 := by
+    have hn' : n = s - j := hn
+    have hsum' := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum'
+    rw [hlen] at hsum'
+    omega
+  rw [hH, hWsWp, hT2]
+  omega
+
+/-- The tail failure and the sharp size bound force a strict
+exponential inequality relating `H_s`, `L`, `m1`, `m2`, and `n_a`. -/
+lemma m2_pos_failure_size_inequality
+    (n_a m2 u L m1 H_s w : Nat)
+    (_hm2 : 1 ≤ m2) (hH : 1 ≤ H_s) (hu : 0 < u)
+    (hcong : 3 * 5 ^ m2 * u - 1 = 2 ^ ((L + m1) + 3) * w)
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ ((L + m1) + 3) * w + 1)
+    (hsize : 2 ^ (2 * m2 + 1) * u < 5 ^ n_a) :
+    2 ^ (H_s + ((L + m1) + 3) + 2 * m2) <
+      3 * 5 ^ (((L + m1) + 3) + m2 + n_a) := by
+  let k := (L + m1) + 3
+  have hkpos : 0 < k := by dsimp [k]; omega
+  have hz : 3 * 5 ^ m2 * u - 1 = 2 ^ k * w := by simpa [k] using hcong
+  have hfail' : 2 ^ (H_s - 1) ∣ 5 ^ k * w + 1 := by simpa [k] using hfail
+  have hdiv1 : 2 ^ (H_s - 1 + k) ∣ 2 ^ k * (5 ^ k * w + 1) := by
+    have hdiv' : 2 ^ k * 2 ^ (H_s - 1) ∣ 2 ^ k * (5 ^ k * w + 1) :=
+      Nat.mul_dvd_mul_left (2 ^ k) hfail'
+    have hpow : 2 ^ (H_s - 1 + k) = 2 ^ k * 2 ^ (H_s - 1) := by
+      rw [Nat.pow_add, Nat.mul_comm]
+    rwa [← hpow] at hdiv'
+  have heq : 2 ^ k * (5 ^ k * w + 1) = 5 ^ k * (3 * 5 ^ m2 * u - 1) + 2 ^ k := by
+    rw [hz]
+    ring
+  have hdivN : 2 ^ (H_s - 1 + k) ∣ 5 ^ k * (3 * 5 ^ m2 * u - 1) + 2 ^ k := by
+    rwa [heq] at hdiv1
+  have hposN : 0 < 5 ^ k * (3 * 5 ^ m2 * u - 1) + 2 ^ k := by positivity
+  have hleN : 2 ^ (H_s - 1 + k) ≤ 5 ^ k * (3 * 5 ^ m2 * u - 1) + 2 ^ k :=
+    Nat.le_of_dvd hposN hdivN
+  have h5ge2 : 2 ^ k ≤ 5 ^ k := pow_two_le_pow_five k
+  have hleN_A : 5 ^ k * (3 * 5 ^ m2 * u - 1) + 2 ^ k ≤
+      3 * 5 ^ (k + m2) * u := by
+    have hpow : 5 ^ k * 5 ^ m2 = 5 ^ (k + m2) := by rw [← Nat.pow_add]
+    have hmain : 5 ^ k * (3 * 5 ^ m2 * u) = 3 * 5 ^ (k + m2) * u := by
+      calc
+        5 ^ k * (3 * 5 ^ m2 * u) = (5 ^ k * 5 ^ m2) * (3 * u) := by ring
+        _ = 5 ^ (k + m2) * (3 * u) := by rw [hpow]
+        _ = 3 * 5 ^ (k + m2) * u := by ring
+    have hcalc : 5 ^ k * (3 * 5 ^ m2 * u - 1) =
+        3 * 5 ^ (k + m2) * u - 5 ^ k := by
+      rw [Nat.mul_sub_left_distrib]
+      rw [hmain]
+      ring_nf
+    rw [hcalc]
+    have hle5 : 2 ^ k ≤ 5 ^ k := h5ge2
+    have hA_ge : 5 ^ k ≤ 3 * 5 ^ (k + m2) * u := by
+      have h5m_pos : 0 < 5 ^ m2 := by positivity
+      have h1 : 5 ^ k ≤ 5 ^ k * 5 ^ m2 :=
+        Nat.le_mul_of_pos_right (5 ^ k) h5m_pos
+      have h2 : 5 ^ k * 5 ^ m2 ≤ 5 ^ k * 5 ^ m2 * 3 :=
+        Nat.le_mul_of_pos_right (5 ^ k * 5 ^ m2) (by norm_num)
+      have h3' : 5 ^ k * 5 ^ m2 * 3 ≤ 5 ^ k * 5 ^ m2 * 3 * u :=
+        Nat.le_mul_of_pos_right (5 ^ k * 5 ^ m2 * 3) hu
+      have hle : 5 ^ k ≤ 5 ^ k * 5 ^ m2 * 3 * u :=
+        le_trans (le_trans h1 h2) h3'
+      rw [hpow] at hle
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hle
+    omega
+  have hleA : 2 ^ (H_s - 1 + k) ≤ 3 * 5 ^ (k + m2) * u :=
+    le_trans hleN hleN_A
+  have hltU : 3 * 5 ^ (k + m2) * u * 2 ^ (2 * m2 + 1) <
+      3 * 5 ^ (k + m2 + n_a) := by
+    have hmul : 3 * 5 ^ (k + m2) * (2 ^ (2 * m2 + 1) * u) <
+        3 * 5 ^ (k + m2) * 5 ^ n_a := by
+      exact (Nat.mul_lt_mul_left (by positivity : 0 < 3 * 5 ^ (k + m2))).2 hsize
+    have hcalc : 3 * 5 ^ (k + m2) * (2 ^ (2 * m2 + 1) * u) =
+        3 * 5 ^ (k + m2) * u * 2 ^ (2 * m2 + 1) := by ring
+    have hpow5 : 3 * 5 ^ (k + m2) * 5 ^ n_a = 3 * 5 ^ (k + m2 + n_a) := by
+      have h5 : 5 ^ (k + m2) * 5 ^ n_a = 5 ^ (k + m2 + n_a) := by
+        rw [← Nat.pow_add]
+      calc
+        3 * 5 ^ (k + m2) * 5 ^ n_a = 3 * (5 ^ (k + m2) * 5 ^ n_a) := by ring
+        _ = 3 * 5 ^ (k + m2 + n_a) := by rw [h5]
+    rw [hcalc, hpow5] at hmul
+    exact hmul
+  have hstep1 : 2 ^ (H_s - 1 + k) * 2 ^ (2 * m2 + 1) ≤
+      3 * 5 ^ (k + m2) * u * 2 ^ (2 * m2 + 1) :=
+    Nat.mul_le_mul_right (2 ^ (2 * m2 + 1)) hleA
+  have hprod_lt : 2 ^ (H_s - 1 + k) * 2 ^ (2 * m2 + 1) <
+      3 * 5 ^ (k + m2 + n_a) :=
+    lt_of_le_of_lt hstep1 hltU
+  have hpowL : 2 ^ (H_s - 1 + k) * 2 ^ (2 * m2 + 1) =
+      2 ^ (H_s + k + 2 * m2) := by
+    have hsum : (H_s - 1 + k) + (2 * m2 + 1) = H_s + k + 2 * m2 := by
+      omega
+    rw [← Nat.pow_add, hsum]
+  rwa [hpowL] at hprod_lt
+
+/-- The same failure inequality, with `H_s` replaced by the exact
+word-weight expression and `n_a` replaced by its orbit-depth form. -/
+lemma m2_pos_failure_word_inequality
+    (j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 n0 : Nat) (weight : Nat → Nat)
+    (u w : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hn : n = s - j)
+    (hm : (m1, m2) = UnifiedCoreAudit.tailSplit (blockWord weight j n))
+    (hm2 : 1 ≤ m2) (hn0 : 18 ≤ n0) (hH : 2 ≤ H_s) (hu : 0 < u)
+    (hstart : fullOrbitIter (n0 + (n - m1 - m2)) + 1 =
+      2 ^ (2 * m2 + 1) * u)
+    (hcong : 3 * 5 ^ m2 * u - 1 = 2 ^ ((L + m1) + 3) * w)
+    (hfail : 2 ^ (H_s - 1) ∣ 5 ^ ((L + m1) + 3) * w + 1) :
+    2 ^ (2 * j + 13 - 2 * (Wj - Wp) -
+          2 * ((weight (j + (n - m1 - m2)) - weight j) - (n - m1 - m2)) +
+          L + m1 + 3) <
+      3 * 5 ^ (L + n0 + n + 3) := by
+  have hsize : 2 ^ (2 * m2 + 1) * u < 5 ^ (n0 + (n - m1 - m2)) :=
+    m2_pos_size_bound_sharp (n0 + (n - m1 - m2)) m2 u hm2 (by omega) hstart
+  have hineq := m2_pos_failure_size_inequality
+    (n0 + (n - m1 - m2)) m2 u L m1 H_s w hm2 (by omega) hu hcong hfail hsize
+  have hR : ((L + m1) + 3) + m2 + (n0 + (n - m1 - m2)) =
+      L + n0 + n + 3 := by
+    have hsum' := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+    have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+    rw [← hm] at hsum'
+    rw [hlen] at hsum'
+    have hn' : n = s - j := hn
+    have hsub : n = m1 + m2 + (n - m1 - m2) := by omega
+    omega
+  rw [hR] at hineq
+  have hHex := m2_pos_H_s_exact j Wp Wj q Aj A_s s W_s r_s L H_s n m1 m2 weight
+    hPrem hn hm hm2
+  have hLHS : H_s + ((L + m1) + 3) + 2 * m2 =
+      2 * j + 13 - 2 * (Wj - Wp) -
+        2 * ((weight (j + (n - m1 - m2)) - weight j) - (n - m1 - m2)) +
+        L + m1 + 3 := by
+    rw [hHex]
+    have hsum_bound : m1 + m2 ≤ n := by
+      have hsum' := UnifiedCoreAudit.tailSplit_sum_le_length (blockWord weight j n)
+      have hlen : (blockWord weight j n).length = n := blockWord_length weight j n
+      rw [← hm] at hsum'
+      rw [hlen] at hsum'
+      exact hsum'
+    omega
+  rwa [hLHS] at hineq
+
 end S6Audit
