@@ -137,6 +137,20 @@ namespace S6Audit
 #print axioms reset_k_is_five_valuation
 #print axioms kge1_excluded_by_segment_step
 
+-- Statement checks: `m2>0` word-weight relations and the size bound.
+#check weight_diff_ge_steps
+#check m2_pos_tail_weight_sum
+#check m2_pos_H_s_upper
+#check m2_pos_run_start_depth
+#check m2_pos_u_size_bound
+
+-- Axioms used by the `m2>0` word-weight relations.
+#print axioms weight_diff_ge_steps
+#print axioms m2_pos_tail_weight_sum
+#print axioms m2_pos_H_s_upper
+#print axioms m2_pos_run_start_depth
+#print axioms m2_pos_u_size_bound
+
 end S6Audit
 
 namespace StringFlow
