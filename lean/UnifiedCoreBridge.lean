@@ -223,6 +223,68 @@ theorem d2_exclusion_of_corrected_residue (j g : Nat)
     exact hg17
   exact d2_survivor_size_contradiction n hn (by simpa [P] using hgh)
 
+/-- Document 36.30.23.5 L1 bound for `d=2`: the step into `x` has weight
+`1+4a` with `a=0`.  The predecessor `y` of `x` satisfies
+`y < 5^(n-2)`, so `5y+1 ≤ 5^(n-1)-4`; with `x ≥ δ·5^(j-1)` this gives
+`2^(1+4a)·δ ≤ 24`, forcing `a=0`. -/
+lemma d2_last_step_weight_one
+    (n j a δ x y : Nat)
+    (hn : 16 ≤ n) (hd : n - j = 2) (hδ : 1 ≤ δ)
+    (hy_lt : y < 5 ^ (n - 2))
+    (hstep : 5 * y + 1 = 2 ^ (1 + 4 * a) * x)
+    (hxge : δ * 5 ^ (j - 1) ≤ x) :
+    a = 0 := by
+  have h5y : 5 * y + 1 ≤ 5 ^ (n - 1) - 4 := by
+    have hy_le : y ≤ 5 ^ (n - 2) - 1 := by omega
+    have hpow : 5 * 5 ^ (n - 2) = 5 ^ (n - 1) := by
+      have h : n - 1 = (n - 2) + 1 := by omega
+      rw [h, Nat.pow_succ]
+      ring
+    have hmul : 5 * y ≤ 5 * (5 ^ (n - 2) - 1) := Nat.mul_le_mul_left 5 hy_le
+    have hmul' : 5 * y + 1 ≤ 5 * (5 ^ (n - 2) - 1) + 1 := by omega
+    have hcalc : 5 * (5 ^ (n - 2) - 1) + 1 = 5 ^ (n - 1) - 4 := by
+      have hP1 : 1 ≤ 5 ^ (n - 2) := Nat.one_le_pow (n - 2) 5 (by norm_num)
+      have hsub : 5 * (5 ^ (n - 2) - 1) + 1 = 5 * 5 ^ (n - 2) - 4 := by omega
+      rw [hpow] at hsub
+      exact hsub
+    rwa [hcalc] at hmul'
+  have hL : 2 ^ (1 + 4 * a) * (δ * 5 ^ (j - 1)) ≤ 5 ^ (n - 1) - 4 := by
+    have h1 : 2 ^ (1 + 4 * a) * x ≤ 5 ^ (n - 1) - 4 := by
+      rw [← hstep]
+      exact h5y
+    exact le_trans (Nat.mul_le_mul_left (2 ^ (1 + 4 * a)) hxge) h1
+  have hpow : 5 ^ (n - 1) = 25 * 5 ^ (j - 1) := by
+    have hd' : n - 1 = (j - 1) + 2 := by omega
+    rw [hd', Nat.pow_add]
+    norm_num
+    ring
+  have hP : 4 ≤ 5 ^ (j - 1) := by
+    have hge : 2 ≤ j - 1 := by omega
+    have h5 : 5 ^ 2 ≤ 5 ^ (j - 1) := Nat.pow_le_pow_right (by norm_num) hge
+    norm_num at h5 ⊢
+    exact le_trans (by norm_num : 4 ≤ 25) h5
+  have h1' : (2 ^ (1 + 4 * a) * δ) * 5 ^ (j - 1) ≤ 25 * 5 ^ (j - 1) - 4 := by
+    rw [hpow] at hL
+    simpa [Nat.mul_assoc] using hL
+  have hstrict : (2 ^ (1 + 4 * a) * δ) * 5 ^ (j - 1) < 25 * 5 ^ (j - 1) := by
+    have hlt4 : 4 < 25 * 5 ^ (j - 1) := by
+      have hP' : 0 < 5 ^ (j - 1) := by positivity
+      nlinarith [hP]
+    omega
+  have hstrict' : 5 ^ (j - 1) * (2 ^ (1 + 4 * a) * δ) < 5 ^ (j - 1) * 25 := by
+    simpa [Nat.mul_comm, Nat.mul_assoc, Nat.mul_left_comm] using hstrict
+  have hA : 2 ^ (1 + 4 * a) * δ < 25 := Nat.lt_of_mul_lt_mul_left hstrict'
+  have hA24 : 2 ^ (1 + 4 * a) * δ ≤ 24 := by omega
+  have h2le : 2 ^ (1 + 4 * a) ≤ 24 := by nlinarith [hA24, hδ]
+  by_contra ha
+  have ha1 : 1 ≤ a := by omega
+  have h32 : 32 ≤ 2 ^ (1 + 4 * a) := by
+    have hle : 5 ≤ 1 + 4 * a := by omega
+    have hpow' := Nat.pow_le_pow_right (by norm_num : 0 < 2) hle
+    norm_num at hpow' ⊢
+    exact hpow'
+  omega
+
 /-- The depth-16 full-orbit step is small: `t_16 = 1`. -/
 lemma orbitStepWeight_16_eq_one : orbitStepWeight 16 = 1 := by
   unfold orbitStepWeight
@@ -6023,221 +6085,6 @@ lemma orbitStepWeight_into_block_head_le_two_of_le17
     rw [hrmod] at hmod
     omega
 
-/-- The depth-`≥16` branch of the unified core: assemble the
-reset-to-candidate bridge with the d-segment exclusions. -/
-theorem n16_core_impossible
-    (j Wp Wj q Aj A_s s W_s r_s L H_s n : Nat) (weight : Nat → Nat) (r : Nat)
-    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
-    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
-    (hiter : fullOrbitIter n = r) (hn16 : 16 ≤ n)
-    (hReset : ∃ s0 k t δ r_prev : Nat,
-      S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
-        S6Audit.PreviousTerminalAtDepth s0 j k r_prev)
-    (hH : 2 ≤ H_s) :
-    False := by
-  rcases hReset with ⟨s0, k, t, δ, r_prev, hre, hprod, hprev⟩
-  have hk : k = 0 := reset_k_zero_of_previous_terminal_depth s0 j k r_prev hprev hprod
-  subst k
-  rcases hprev with ⟨hprev0, hseg⟩
-  rcases hprev0 with ⟨r0, hprod', hodd_s0, hnd5, hlt, horbit⟩
-  have hr : r_prev = r0 := by
-    have h1 : s0 * 5 ^ 0 = r0 + 1 := hprod'
-    have h2 : s0 * 5 ^ 0 = r_prev + 1 := hprod
-    omega
-  have horbit' : OrbitFrom7 r_prev := by
-    rwa [← hr] at horbit
-  have hj3 : 3 ≤ j :=
-    previous_terminal_at_depth_ge_three s0 j 0 r_prev (by rfl) hodd_s0 hprod hlt horbit'
-  have hj : 2 ≤ j := by
-    by_contra h
-    have hj1 : j ≤ 1 := by omega
-    have hprod0 : s0 = r_prev + 1 := by simpa using hprod
-    have hlt0 : s0 < 5 ^ (j - 1) := by simpa using hlt
-    have h5le : 5 ^ (j - 1) ≤ 1 := by
-      have hj1' : j - 1 = 0 := by omega
-      rw [hj1']
-      norm_num
-    have hs0lt : s0 < 1 := lt_of_lt_of_le hlt0 h5le
-    have hs0ge : 1 ≤ s0 := by
-      have hrge : 1 ≤ r_prev + 1 := by omega
-      rw [hprod0]
-      exact hrge
-    omega
-  have hterm0 : s0 * 5 ^ 0 = (5 * fullOrbitIter (j - 2) + 1) / 2 + 1 := by
-    rw [hprod, hseg]
-  have hterm : 5 ^ 0 * s0 =
-      2 ^ (orbitStepWeight (j - 2) - 1) * fullOrbitIter (j - 1) + 1 :=
-    reset_terminal_hterm_of_depth s0 j 0 hj hterm0
-  rcases reset_predecessor_of_block_head_premises j Wp Wj q Aj A_s s W_s r_s L H_s weight r
-    hPrem hrj ⟨n, hiter⟩ with ⟨t', x, ht', hrx, hdiv⟩
-  have ht : t' = t := by
-    rcases hre with h1 | h2
-    · rcases h1 with ⟨ht1, hδ1, heq1⟩
-      have hr3 : r % 5 = 3 :=
-        t1_reset_rj_mod_five s0 j 0 r (by omega : 1 ≤ j) (by simpa using heq1)
-      rcases ht' with h'1 | h'2
-      · omega
-      · exfalso
-        have hdiv4 : 2 ^ 2 ∣ 5 * x + 1 := by
-          simpa [h'2] using (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
-        have hcj := candidateRj_mod_five x 2 (Or.inr rfl) hdiv4
-        have hr4 : r % 5 = 4 := by
-          rw [hrx, h'2]
-          exact hcj.2 rfl
-        omega
-    · rcases h2 with ⟨ht2, hδ2, heq2⟩
-      have hr4 : r % 5 = 4 :=
-        t2_reset_rj_mod_five s0 j 0 δ r (by omega : 1 ≤ j) (by simpa using heq2)
-      rcases ht' with h'1 | h'2
-      · exfalso
-        have hdiv2 : 2 ^ 1 ∣ 5 * x + 1 := by
-          simpa [h'1] using (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
-        have hcj := candidateRj_mod_five x 1 (Or.inl rfl) hdiv2
-        have hr3 : r % 5 = 3 := by
-          rw [hrx, h'1]
-          exact hcj.1 rfl
-        omega
-      · omega
-  have ht_t : t = 1 ∨ t = 2 := by
-    rcases hre with h1 | h2
-    · rcases h1 with ⟨ht1, _hδ, _heq⟩
-      exact Or.inl ht1
-    · rcases h2 with ⟨ht2, _hδ, _heq⟩
-      exact Or.inr ht2
-  have hdiv_t : (5 * x + 1) % 2 ^ t = 0 := by simpa [ht] using hdiv
-  have hx_form : x = 5 ^ 0 * s0 + δ * 5 ^ (j - 1) - 1 :=
-    reset_head_predecessor s0 j 0 t δ r x (by omega : 1 ≤ j) hre
-      (by simpa [candidateRj, ht] using hrx) hdiv_t
-  by_cases hv2 : orbitStepWeight (n - 1) ≤ 2
-  · have hstep_t : orbitStepWeight (n - 1) = t :=
-      orbitStepWeight_of_reset_head_le_two n j Wp Wj q Aj A_s s W_s r_s L H_s weight r x t
-        (by omega) hPrem hrj hiter (by simpa [candidateRj, ht] using hrx) hdiv_t ht_t hv2
-    have hx_iter : x = fullOrbitIter (n - 1) :=
-      candidateRj_eq_fullOrbitIter_of_weight n x t r (by omega) hiter hstep_t
-        (by simpa [candidateRj, ht] using hrx) hdiv_t
-    have hs0pos : 0 < s0 := by
-      have hge : 1 ≤ s0 := by
-        have hprod0 : s0 = r_prev + 1 := by simpa using hprod
-        rw [hprod0]
-        omega
-      omega
-    have hδ : δ = 1 ∨ δ = 3 := by
-      rcases hre with h1 | h2
-      · rcases h1 with ⟨_ht, hδ, _heq⟩
-        exact Or.inl hδ
-      · rcases h2 with ⟨_ht, hδ, _heq⟩
-        exact hδ
-    have hcand := candidate_parameterization_of_reset_full_orbit_d_aligned
-      j n 0 t δ s0 x r hj3 (by omega) hs0pos hx_iter hx_form hδ hiter hstep_t hre hterm
-      (by simpa [candidateRj, ht] using hrx) hdiv_t
-    by_cases hd1 : n - j = 1
-    · exfalso
-      let g := fullOrbitIter (n - 2)
-      let e := orbitStepWeight (n - 3)
-      let a := orbitStepWeight (n - 2) / 4
-      have hn1 : n - 1 = j := by omega
-      have hn2 : n - 2 = j - 1 := by omega
-      have hn3 : n - 3 = j - 2 := by omega
-      have hiter_g : fullOrbitIter (n - 2) = g := rfl
-      have hstep_e : orbitStepWeight (n - 3) = e := rfl
-      have hres' : ResetHeadEq s0 (n - 1) 0 t δ r := by
-        rw [hn1]
-        exact hre
-      have hterm' : 5 ^ 0 * s0 = 2 ^ (e - 1) * g + 1 := by
-        rw [← hn2] at hterm
-        rw [← hn3] at hterm
-        simpa [e, g] using hterm
-      have hprev0 : IsPreviousEvenTerminal s0 j 0 :=
-        ⟨r0, hprod', hodd_s0, hnd5, hlt, horbit⟩
-      have hs0mod : s0 % 5 = 4 :=
-        previous_terminal_s0_mod_five_of_k0 s0 j 0 r_prev hprev0 hprod (by rfl)
-      have hx_cand : x = candidateX j e g δ := by
-        simpa [e, g, ← hn2, ← hn3] using hcand.1
-      have hg : fullOrbitIter (j - 1) = g := by
-        rw [← hn2]
-      have hWform : orbitStepWeight (n - 2) = 1 + 4 * a := by
-        simpa [a] using
-          d1_step_weight_one_add_four_mul j n e g δ s0 x hd1 hj3 hg hx_cand hx_iter hterm' hs0mod
-      have hgpos : 0 < g := by
-        have hodd : g % 2 = 1 := by
-          dsimp [g]
-          exact fullOrbitIter_odd (n - 2)
-        by_contra hnot
-        have hg0 : g = 0 := by omega
-        rw [hg0] at hodd
-        norm_num at hodd
-      have hg4 : g < 5 ^ (n - 2) / 4 := by
-        have hge5 : 5 ≤ n - 2 := by omega
-        have hlt := fullOrbitIter_lt_five_pow_div_four (n - 2) hge5
-        simpa [g] using hlt
-      have he : 2 ≤ e := by
-        by_contra hnot
-        have he1 : e ≤ 1 := by omega
-        have he0 : e - 1 = 0 := by omega
-        have hpow : 2 ^ (e - 1) = 1 := by rw [he0]; norm_num
-        have hs0e : s0 = g + 1 := by
-          have hterm0 : s0 = 2 ^ (e - 1) * g + 1 := by simpa using hterm'
-          rw [hpow] at hterm0
-          omega
-        have hgodd : g % 2 = 1 := by
-          dsimp [g]
-          exact fullOrbitIter_odd (n - 2)
-        have hmod : (g + 1) % 2 = 1 := by
-          rwa [hs0e] at hodd_s0
-        have hmod2 : (g + 1) % 2 = 0 := by
-          rw [Nat.add_mod, hgodd]
-        omega
-      exact d1_exclusion_of_reset_candidate n 0 t δ e g a s0 x r
-        (by omega) hiter hiter_g hstep_e hstep_t hWform hres' hterm'
-        (by simpa [ht] using hrx) hdiv_t
-        hgpos hg4 hδ he
-    · sorry
-  · exfalso
-    by_cases hn1 : n - 1 ≤ 17
-    · have hle : orbitStepWeight (n - 1) ≤ 2 :=
-        orbitStepWeight_into_block_head_le_two_of_le17 n x t r (by omega) hn1 hiter ht_t
-          (by simpa [ht] using hrx) hdiv_t
-      exact hv2 hle
-    · sorry
-
-/--
-The final open core: document 36.20 terminal inequality
-
-    v2(5^(L+3) * ((3*r_s+1)/2^(L+4)) + 1) <= H_s - 2
-
-under `All36_20PremisesNoHge` (no `H_ge` input) and with the explicit
-block-head reachability `FullOrbitFrom7 r`, where
-`r = (Aj + 5^j*q)/2^Wj`.  `FullOrbitFrom7` is the real accelerated 7
-orbit, not `GeneralOrbitFrom7` and not mere legal-word membership.
-The premise `hReset` records the explicit 36.20 block-head condition
-that `r` is reached from a previous even terminal by the reset equation.
-It carries both `ResetHeadEq s0 j k t δ r` and the previous-terminal
-equation `s0 * 5 ^ k = r_prev + 1` as arithmetic witnesses.  No
-`GeneralOrbitFrom7` premise is used: the block-head reachability is
-`FullOrbitFrom7 r`, and the previous terminal enters only through the
-arithmetic equation above.  The d-segment bridge needs `hReset` to
-instantiate the candidate family.
-The premise `2 <= H_s` is a domain condition needed for `H_s - 1` to be a
-valid modulus; it is not the forbidden `H_ge` input.
--/
-theorem unified_core_final_no_hge
-    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
-    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
-    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
-    (hReach : S6Audit.FullOrbitFrom7 r)
-    (hReset : ∃ s0 k t δ r_prev : Nat,
-      S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
-        S6Audit.PreviousTerminalAtDepth s0 j k r_prev)
-    (hH : 2 ≤ H_s) :
-    twoValuation (5 ^ (L + 3) * UnifiedCoreAudit.wTerminal L r_s + 1) ≤ H_s - 2 := by
-  rcases hReach with ⟨n, hn⟩
-  by_cases hn15 : n ≤ 15
-  · rcases hReset with ⟨s0, k, t, δ, r_prev, hre, hprod, hprev⟩
-    exact unified_core_final_no_hge_le15 j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj ⟨n, hn⟩
-      ⟨s0, k, t, δ, hre⟩ hH ⟨n, hn, hn15⟩
-  · exfalso
-    exact n16_core_impossible j Wp Wj q Aj A_s s W_s r_s L H_s n weight r hPrem hrj hn
-      (by omega) hReset hH
 
 end UnifiedCoreAudit
 

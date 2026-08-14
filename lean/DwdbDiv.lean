@@ -1,4 +1,6 @@
 import CycleBridge
+import PureCore
+import UnifiedCoreBridge
 import UnifiedCoreAudit
 
 /-!
@@ -18,21 +20,40 @@ import UnifiedCoreAudit
 
 namespace StringFlow.DwdbDiv
 
+/-- Thin full-orbit-facing wrapper over the pure block-local unified core. -/
+theorem unified_core_final_no_hge_full_orbit
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat)
+    (hPrem : UnifiedCoreAudit.All36_20PremisesNoHge j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hOrbit : S6Audit.OrbitFrom7 r)
+    (hH : 2 ≤ H_s) :
+    S6Audit.twoValuation
+      (5 ^ (L + 3) * UnifiedCoreAudit.wTerminal L r_s + 1) ≤ H_s - 2 :=
+  UnifiedCoreAudit.unified_core_final_no_hge_pure
+    j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hOrbit hH
+
 /-- 统一核心闭合接口：所有 36.20 参数实例均成立。修正：显式携带
 块首重置前提 `∃ s0 k t δ, ResetHeadEq s0 j k t δ r`，它对应文档
-36.20 中“j 是上一偶数终端后的重置步”这一条。 -/
+36.20 中“j 是上一偶数终端后的重置步”这一条；上一终端使用
+`PreviousTerminalAtDepth`（含深度 `j-1`），与最终核心一致。 -/
 def unifiedCoreClosed : Prop :=
   ∀ (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat) (weight : Nat → Nat) (r : Nat),
     ∀ (_hPrem : UnifiedCoreAudit.All36_20PremisesNoHge
           j Wp Wj q Aj A_s s W_s r_s L H_s weight)
       (_hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
-      (_hReach : S6Audit.FullOrbitFrom7 r)
+      (_hReach : S6Audit.OrbitFrom7 r)
       (_hReset : ∃ s0 k t δ r_prev : Nat,
         S6Audit.ResetHeadEq s0 j k t δ r ∧ s0 * 5 ^ k = r_prev + 1 ∧
-          S6Audit.IsPreviousEvenTerminal s0 j k)
+          S6Audit.PreviousTerminalAtDepth s0 j k r_prev)
       (_hH : 2 ≤ H_s),
       S6Audit.twoValuation
         (5 ^ (L + 3) * UnifiedCoreAudit.wTerminal L r_s + 1) ≤ H_s - 2
+
+/-- 统一核心闭合：由 `unified_core_final_no_hge` 对全部参数实例化。 -/
+theorem unifiedCoreClosed_proved : unifiedCoreClosed := by
+  intro j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach hReset hH
+  exact unified_core_final_no_hge_full_orbit
+    j Wp Wj q Aj A_s s W_s r_s L H_s weight r hPrem hrj hReach hH
 
 /-- 条件引理接口：统一核心闭合后，循环给出全局可达重置点。 -/
 def orbitCycleImpFullGloballyReachableConditional : Prop :=

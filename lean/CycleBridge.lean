@@ -4,6 +4,7 @@ import S6AuditStage1
 import PhOne
 import SurvExAudit
 import Td0Real
+import AngelinaGilberta_Bridge
 
 /-!
 # Cycle bridge: corrected decisive window valuation -> no positive cycle of 7
@@ -30,6 +31,68 @@ declared as theorems here, so this file has no `sorry`.
 namespace StringFlow
 
 namespace CycleBridge
+
+/-- Exponent of the largest power of `5` dividing `n`. -/
+def fiveValuation (n : Nat) : Nat :=
+  n.factorization 5
+
+/-- The five-adic odd part of `n`. -/
+def fiveOddPart (n : Nat) : Nat :=
+  n / 5 ^ fiveValuation n
+
+/-- The five-adic decomposition `n = 5^k * s`. -/
+theorem fiveOddPart_spec {n : Nat} (hn : n ≠ 0) :
+    n = 5 ^ fiveValuation n * fiveOddPart n := by
+  have hp : Nat.Prime 5 := by norm_num
+  have hdvd : 5 ^ fiveValuation n ∣ n := by
+    exact (hp.pow_dvd_iff_le_factorization hn).mpr le_rfl
+  unfold fiveOddPart
+  exact (Nat.mul_div_cancel' hdvd).symm
+
+/-- The five-adic odd part is not divisible by `5`. -/
+theorem fiveOddPart_not_dvd_five {n : Nat} (hn : n ≠ 0) :
+    ¬ 5 ∣ fiveOddPart n := by
+  have hp : Nat.Prime 5 := by norm_num
+  have hnot : ¬ 5 ^ (n.factorization 5 + 1) ∣ n :=
+    Nat.pow_succ_factorization_not_dvd hn hp
+  intro hdiv
+  rcases hdiv with ⟨q, hq⟩
+  have hspec := fiveOddPart_spec hn
+  rw [hq] at hspec
+  dsimp [fiveValuation] at hspec
+  have hspec' : n = 5 ^ (fiveValuation n + 1) * q := by
+    calc
+      n = 5 ^ fiveValuation n * (5 * q) := hspec
+      _ = (5 ^ fiveValuation n * 5) * q := by ring
+      _ = (5 * 5 ^ fiveValuation n) * q := by ring
+      _ = 5 ^ (fiveValuation n + 1) * q := by
+          rw [Nat.pow_succ]
+          ring
+  exact hnot ⟨q, hspec'⟩
+
+/-- Oddness is preserved by removing factors of `5`. -/
+theorem fiveOddPart_odd_of_odd {n : Nat} (hn : n % 2 = 1) :
+    fiveOddPart n % 2 = 1 := by
+  by_cases hz : n = 0
+  · subst n
+    norm_num at hn
+  · have hspec := fiveOddPart_spec hz
+    have hoddn : Odd n := Nat.odd_iff.mpr hn
+    have hoddprod : Odd (5 ^ fiveValuation n * fiveOddPart n) := by
+      rwa [← hspec]
+    exact Nat.odd_iff.mp (Nat.odd_mul.mp hoddprod).2
+
+/-- The terminal data used to construct a reset-window witness.
+`s` and `k0` are forced to be the five-adic odd part and valuation of
+the single previous terminal `r_prev`. -/
+structure RealTerminal where
+  r_prev : Nat
+  s : Nat
+  k0 : Nat
+  hprod : s * 5 ^ k0 = r_prev + 1
+  hs_odd : S6Audit.IsOdd s
+  hs_not_five : ¬ 5 ∣ s
+  hreach : S6Audit.GeneralOrbitFrom7 r_prev
 
 /-- Target: the corrected decisive window valuation bound rules out
 every positive cycle of the accelerated 5x+1 orbit of 7.  The old
@@ -300,6 +363,24 @@ theorem periodic_shift (c p : Nat)
         rw [show c + (d + 1) = (c + d) + 1 by omega]
         simp [fiveXPlusOneOrbit]
       rw [h1, h2, ih]
+
+/-- Periodicity extends to shifts by multiples of `p`. -/
+theorem periodic_shift_mul (c p : Nat)
+    (hper : fiveXPlusOneOrbit 7 (c + p) = fiveXPlusOneOrbit 7 c)
+    (k n : Nat) :
+    fiveXPlusOneOrbit 7 (c + n + k * p) = fiveXPlusOneOrbit 7 (c + n) := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+      have hstep := periodic_shift c p hper (n + k * p)
+      have hidx : c + n + (k + 1) * p = c + (n + k * p) + p := by ring
+      calc
+        fiveXPlusOneOrbit 7 (c + n + (k + 1) * p)
+            = fiveXPlusOneOrbit 7 (c + (n + k * p) + p) := by
+                rw [hidx]
+        _ = fiveXPlusOneOrbit 7 (c + (n + k * p)) := hstep
+        _ = fiveXPlusOneOrbit 7 (c + n) := by
+            simpa [Nat.add_assoc] using ih
 
 /-- A positive cycle contains a periodic C3-start segment: there is
 `c` and a period `p` with `t(c) >= 3` and `orbit(c+p) = orbit c`. -/
@@ -730,6 +811,66 @@ theorem orbit_cycle_imp_min_rise_start (h : OrbitCycle 7) :
       omega
   exact ⟨c, p, hp, hclosed, hrise⟩
 
+/-- The same global-minimum rise-start construction, additionally
+carrying the period-minimality property for every shifted index. -/
+theorem orbit_cycle_imp_min_rise_start_min (h : OrbitCycle 7) :
+    ∃ c p : Nat, 1 ≤ p ∧
+      StringFlow.Word.wordOrbit (cycleWord c p) (fiveXPlusOneOrbit 7 c) =
+        fiveXPlusOneOrbit 7 c ∧
+      twoValuation (5 * fiveXPlusOneOrbit 7 c + 1) ≤ 2 ∧
+      ∀ j : Nat, j < p →
+        fiveXPlusOneOrbit 7 c ≤ fiveXPlusOneOrbit 7 (c + j) := by
+  rcases orbit_cycle_imp_periodic_c3_segment h with ⟨c0, p, hp, hc3, hper⟩
+  have hper' := periodic_shift c0 p hper
+  rcases cycle_min_exists c0 p hp with ⟨i, hi, hmin⟩
+  let c := c0 + i
+  have hclosed : StringFlow.Word.wordOrbit (cycleWord c p) (fiveXPlusOneOrbit 7 c) =
+      fiveXPlusOneOrbit 7 c := by
+    rw [cycleWord_orbit_eq c p]
+    have hperAt : fiveXPlusOneOrbit 7 (c0 + i + p) =
+        fiveXPlusOneOrbit 7 (c0 + i) := hper' i
+    simpa [c] using hperAt
+  have hrise : twoValuation (5 * fiveXPlusOneOrbit 7 c + 1) ≤ 2 := by
+    by_contra hnot
+    have ht3 : 3 ≤ twoValuation (5 * fiveXPlusOneOrbit 7 c + 1) := by omega
+    have hdec := orbit_step_lt_of_c3 c ht3
+    by_cases hi' : i + 1 < p
+    · have hle := hmin (i + 1) hi'
+      have hle' : fiveXPlusOneOrbit 7 c ≤
+          fiveXPlusOneOrbit 7 (c + 1) := by
+        simpa [c, Nat.add_assoc] using hle
+      exact (not_lt_of_ge hle') hdec
+    · have hip : i + 1 = p := by omega
+      have hc1 : fiveXPlusOneOrbit 7 (c + 1) = fiveXPlusOneOrbit 7 c0 := by
+        have hidx : c + 1 = c0 + p := by
+          dsimp [c]
+          omega
+        rw [hidx, hper]
+      have hle0 := hmin 0 (by omega)
+      have hle0' : fiveXPlusOneOrbit 7 c ≤ fiveXPlusOneOrbit 7 c0 := by
+        simpa [c] using hle0
+      omega
+  have hglobal : ∀ j : Nat, j < p →
+      fiveXPlusOneOrbit 7 c ≤ fiveXPlusOneOrbit 7 (c + j) := by
+    intro j hj
+    let r := (i + j) % p
+    let k := (i + j) / p
+    have hr : r < p := Nat.mod_lt (i + j) hp
+    have hminr := hmin r hr
+    have hdecomp : i + j = k * p + r := by
+      simpa [k, r, Nat.mul_comm] using
+        (Nat.div_add_mod (i + j) p).symm
+    have hper_mul := periodic_shift_mul c0 p hper k r
+    have hstate : fiveXPlusOneOrbit 7 (c + j) =
+        fiveXPlusOneOrbit 7 (c0 + r) := by
+      dsimp [c]
+      have hidx : c0 + i + j = c0 + r + k * p := by
+        nlinarith [hdecomp]
+      rw [hidx, hper_mul]
+    rw [hstate]
+    exact hminr
+  exact ⟨c, p, hp, hclosed, hrise, hglobal⟩
+
 /-- A rise start in the exact orbit satisfies the `j=1`, `k=0`,
 `δ=1` reset-head equation for the next accelerated state. -/
 theorem orbit_reset_head_eq_of_rise_start (c : Nat)
@@ -762,6 +903,24 @@ theorem orbit_reset_head_eq_of_rise_start (c : Nat)
     right
     refine ⟨rfl, Or.inl rfl, ?_⟩
     norm_num at hmul' ⊢
+    omega
+
+/-- Every exact one-step rise equation `2^t*rj = 5*q+1` gives the
+local reset-head equation with depth `j=1`, `k=0`, `δ=1`, and previous
+terminal odd part `s=q`.  The block suffix is handled separately. -/
+theorem reset_head_eq_of_rise_step (q t rj : Nat)
+    (ht : t = 1 ∨ t = 2)
+    (hstep : 2 ^ t * rj = 5 * q + 1) :
+    S6Audit.ResetHeadEq q 1 0 t 1 rj := by
+  unfold S6Audit.ResetHeadEq
+  rcases ht with rfl | rfl
+  · left
+    refine ⟨rfl, rfl, ?_⟩
+    norm_num at hstep ⊢
+    omega
+  · right
+    refine ⟨rfl, Or.inl rfl, ?_⟩
+    norm_num at hstep ⊢
     omega
 
 /-- A positive cycle supplies a rise start whose state is odd,
@@ -1001,6 +1160,19 @@ theorem rise_block_balance (r0 : Nat) (ts : List Nat)
           _ = twoValuation (r0 + 1) + riseChargeSum r0 (2 :: ts) := by
               rw [hsum]
 
+/-- If a block's local balance, window-avoidance bound, and explicit
+charge budget all hold, then its `t=2` count satisfies the capacity
+bound `H2 ≤ j-t+6`. -/
+theorem block_capacity_of_charge_bound
+    (j t u F H2 : Nat)
+    (hbal : 2 * H2 ≤ u + F)
+    (hwindow : u ≤ 2 * (j - t) + 12)
+    (hcharge : F ≤ 2 * (j - t) + 12 - u) :
+    H2 ≤ j - t + 6 := by
+  have hsum : u + F ≤ 2 * (j - t) + 12 := by omega
+  have htwo : 2 * H2 ≤ 2 * (j - t) + 12 := le_trans hbal hsum
+  omega
+
 /-- Number of C3 steps (`t >= 3`) in the cycle word. -/
 def cycleWordC3Count (c p : Nat) : Nat :=
   ((cycleWord c p).filter (fun t => decide (3 ≤ t))).length
@@ -1020,6 +1192,74 @@ theorem cycleWordC3Count_pos (c p : Nat) (hp : 1 ≤ p)
     rw [List.mem_filter]
     exact ⟨hmem, by simp [hc3]⟩
   exact List.length_pos_of_mem hfilter
+
+/-- A closed period word cannot consist only of rise steps: otherwise
+every step strictly increases and the period could not return to its
+starting state. -/
+theorem cycleWordC3Count_pos_of_rise_closed (c p : Nat) (hp : 1 ≤ p)
+    (hclosed : StringFlow.Word.wordOrbit (cycleWord c p)
+        (fiveXPlusOneOrbit 7 c) = fiveXPlusOneOrbit 7 c) :
+    1 ≤ cycleWordC3Count c p := by
+  by_contra hnot
+  have hcount0 : cycleWordC3Count c p = 0 := by omega
+  unfold cycleWordC3Count at hcount0
+  have hfilter_empty :
+      (cycleWord c p).filter (fun t => decide (3 ≤ t)) = [] := by
+    exact List.eq_nil_of_length_eq_zero hcount0
+  have hnone : ∀ t ∈ cycleWord c p, ¬ 3 ≤ t := by
+    intro t ht h3
+    have hmem : t ∈ (cycleWord c p).filter (fun t => decide (3 ≤ t)) := by
+      rw [List.mem_filter]
+      exact ⟨ht, by simp [h3]⟩
+    rw [hfilter_empty] at hmem
+    simpa using hmem
+  have hstep_le : ∀ k, k < p →
+      twoValuation (5 * fiveXPlusOneOrbit 7 (c + k) + 1) ≤ 2 := by
+    intro k hk
+    have htmem : twoValuation (5 * fiveXPlusOneOrbit 7 (c + k) + 1) ∈
+        cycleWord c p := cycleWord_mem_at c p k hk
+    have hge : 1 ≤ twoValuation (5 * fiveXPlusOneOrbit 7 (c + k) + 1) :=
+      twoValuation_five_mul_add_one_ge_one (fiveXPlusOneOrbit 7 (c + k))
+        (fiveXPlusOneOrbit_odd_7 (c + k))
+    have hnot3 := hnone
+      (twoValuation (5 * fiveXPlusOneOrbit 7 (c + k) + 1)) htmem
+    omega
+  have hstep_gt : ∀ k, k < p →
+      fiveXPlusOneOrbit 7 (c + k) < fiveXPlusOneOrbit 7 (c + (k + 1)) := by
+    intro k hk
+    have ht := hstep_le k hk
+    have hgt := fiveXPlusOneStep_gt_of_weight_le_two
+      (fiveXPlusOneOrbit 7 (c + k)) (fiveXPlusOneOrbit_pos_7 (c + k)) ht
+    have hsucc : fiveXPlusOneOrbit 7 (c + (k + 1)) =
+        fiveXPlusOneStep (fiveXPlusOneOrbit 7 (c + k)) := by
+      rw [show c + (k + 1) = (c + k) + 1 by omega]
+      simp [fiveXPlusOneOrbit]
+    rwa [hsucc]
+  have hchain : ∀ k, 1 ≤ k → k ≤ p →
+      fiveXPlusOneOrbit 7 c < fiveXPlusOneOrbit 7 (c + k) := by
+    intro k hk1 hkp
+    induction k with
+    | zero => omega
+    | succ k ih =>
+        cases k with
+        | zero =>
+            have h := hstep_gt 0 (by omega)
+            simpa using h
+        | succ k =>
+            have hltprev : fiveXPlusOneOrbit 7 c <
+                fiveXPlusOneOrbit 7 (c + (k + 1)) :=
+              ih (by omega) (by omega)
+            have hstep : fiveXPlusOneOrbit 7 (c + (k + 1)) <
+                fiveXPlusOneOrbit 7 (c + ((k + 1) + 1)) := by
+              exact hstep_gt (k + 1) (by omega)
+            have hidx : c + (k + 2) = c + ((k + 1) + 1) := by omega
+            simpa [hidx] using lt_trans hltprev hstep
+  have hltcycle : fiveXPlusOneOrbit 7 c < fiveXPlusOneOrbit 7 (c + p) :=
+    hchain p hp (by omega)
+  have hclosed' : fiveXPlusOneOrbit 7 (c + p) = fiveXPlusOneOrbit 7 c := by
+    rw [← cycleWord_orbit_eq c p]
+    exact hclosed
+  exact (ne_of_lt hltcycle) hclosed'.symm
 
 /-- Total word weight splits into rise weight (`t < 3`) plus C3 weight
 (`t >= 3`). -/
@@ -1735,11 +1975,21 @@ structure CycleQb8Input (m S P : Nat) (w rise c3 : List Nat) : Prop where
   hlen_split : rise.length + c3.length = P
   hweight_split : S = StringFlow.wordWeight rise + StringFlow.wordWeight c3
   hc3_pos : 1 ≤ c3.length
+  hrise_start : w.getI 0 = 1 ∨ w.getI 0 = 2
+  hglobal_min : ∀ i : Nat, i < P →
+    m ≤ StringFlow.Word.wordOrbit (w.take i) m
   hrise_filter : rise = (w.filter (fun t => decide (t < 3)))
   hc3_filter : c3 = (w.filter (fun t => decide (3 ≤ t)))
   hexact : ∀ k, k < w.length →
     twoValuation (5 * StringFlow.Word.wordOrbit (w.take k) m + 1) = w.getI k
   hm_pos : 0 < m
+  hstart : S6Audit.FullOrbitFrom7 m
+  hcycle : Nonempty { cp : Nat × Nat //
+    And (w = cycleWord cp.1 cp.2)
+      (And (m = fiveXPlusOneOrbit 7 cp.1)
+        (And (S = StringFlow.wordWeight (cycleWord cp.1 cp.2))
+          (And (rise = cycleWordRiseSteps cp.1 cp.2)
+            (c3 = cycleWordC3Steps cp.1 cp.2)))) }
   hm_odd : S6Audit.IsOdd m
   hm_not_five : ¬ 5 ∣ m
   hrise_pos : 1 ≤ rise.length
@@ -1751,8 +2001,10 @@ theorem orbit_cycle_imp_cycle_qb8_input (h : OrbitCycle 7) :
       w = cycleWord c p ∧ rise = cycleWordRiseSteps c p ∧
       c3 = cycleWordC3Steps c p ∧ S = StringFlow.wordWeight w ∧
       m = fiveXPlusOneOrbit 7 c := by
-  rcases orbit_cycle_imp_cycle_word_valid_closed h with
-    ⟨c, p, hp, hvalid, hclosed, hc3⟩
+  rcases orbit_cycle_imp_min_rise_start_min h with
+    ⟨c, p, hp, hclosed, hrise, hglobal⟩
+  have hvalid : StringFlow.Word.wordValid (cycleWord c p)
+      (fiveXPlusOneOrbit 7 c) := cycleWord_wordValid c p
   refine ⟨c, p, fiveXPlusOneOrbit 7 c,
     StringFlow.wordWeight (cycleWord c p), cycleWord c p,
     cycleWordRiseSteps c p, cycleWordC3Steps c p, ?_, rfl, rfl, rfl, rfl, rfl⟩
@@ -1769,9 +2021,21 @@ theorem orbit_cycle_imp_cycle_qb8_input (h : OrbitCycle 7) :
       exact cycleWord_weight_decomp c p
     hc3_pos := by
       have hpos : 1 ≤ cycleWordC3Count c p :=
-        cycleWordC3Count_pos c p hp hc3
+        cycleWordC3Count_pos_of_rise_closed c p hp hclosed
       rw [← cycleWordC3Steps_length c p] at hpos
       exact hpos
+    hrise_start := by
+      rw [cycleWord_head_eq c p hp]
+      have hge : 1 ≤ twoValuation (5 * fiveXPlusOneOrbit 7 c + 1) :=
+        twoValuation_five_mul_add_one_ge_one (fiveXPlusOneOrbit 7 c)
+          (fiveXPlusOneOrbit_odd_7 c)
+      simp
+      omega
+    hglobal_min := by
+      intro i hi
+      have hprefix := cycleWord_prefix_orbit_eq c p i (by omega)
+      have hmin := hglobal i (by omega)
+      simpa [hprefix] using hmin
     hrise_filter := by
       unfold cycleWordRiseSteps
       rfl
@@ -1785,6 +2049,9 @@ theorem orbit_cycle_imp_cycle_qb8_input (h : OrbitCycle 7) :
         exact hk
       exact cycleWord_step_exact c p k hk'
     hm_pos := fiveXPlusOneOrbit_pos_7 c
+    hstart := Exists.intro c (by rw [fullOrbitIter_eq_fiveXPlusOneOrbit])
+    hcycle := Nonempty.intro (Subtype.mk (c, p)
+      (And.intro rfl (And.intro rfl (And.intro rfl (And.intro rfl rfl)))))
     hm_odd := fiveXPlusOneOrbit_odd_7 c
     hm_not_five := fiveXPlusOneOrbit_not_dvd_five c
     hrise_pos := by
@@ -1941,6 +2208,322 @@ theorem wordOrbit_take_succ (w : List Nat) (m j : Nat) (hj : j < w.length) :
             List.take_cons (by omega)
           simpa [htake, StringFlow.Word.wordOrbit, List.getI_cons_succ] using hih
 
+/-- The prefix orbit at `b+L` is the orbit of the suffix after `b`
+starting from the prefix orbit at `b`. -/
+theorem wordOrbit_take_drop (w : List Nat) (m b L : Nat)
+    (hbL : b + L <= w.length) :
+    StringFlow.Word.wordOrbit (w.take (b + L)) m =
+      StringFlow.Word.wordOrbit ((w.take (b + L)).drop b)
+        (StringFlow.Word.wordOrbit (w.take b) m) := by
+  have hsplit : w.take (b + L) =
+      (w.take (b + L)).take b ++ (w.take (b + L)).drop b := by
+    rw [List.take_append_drop b (w.take (b + L))]
+  have htake : (w.take (b + L)).take b = w.take b := by
+    rw [List.take_take]
+    rw [Nat.min_eq_left]
+    omega
+  conv_lhs => rw [hsplit]
+  rw [S6Audit.wordOrbit_append]
+  rw [htake]
+
+/-- A nonempty dropped segment of the first `b+L` entries is obtained
+by appending the last entry to the dropped segment of the first
+`b+L-1` entries. -/
+lemma cycleWord_drop_take_concat_last
+    (w : List Nat) (b L : Nat)
+    (hL : 1 ≤ L) (hbL : b + L ≤ w.length) :
+    (w.take (b + L)).drop b =
+      (w.take (b + L - 1)).drop b ++ [w.getI (b + L - 1)] := by
+  let i := b + L - 1
+  have hi : i < w.length := by omega
+  have htake : (w.take i).concat w[i] = w.take (i + 1) :=
+    List.take_concat_get hi
+  have happ : (w.take i) ++ [w[i]] = w.take (i + 1) := by
+    simpa [List.concat_eq_append] using htake
+  have hlen_take : b ≤ (w.take i).length := by
+    have hle : i ≤ w.length := le_of_lt hi
+    rw [List.length_take_of_le hle]
+    omega
+  have hdrop := List.drop_append_of_le_length
+    (l₁ := w.take i) (l₂ := [w[i]]) hlen_take
+  have hget : w[i] = w.getI i := by
+    have hd := List.getElem_eq_getD (l := w) (i := i) (h := hi) 0
+    unfold List.getI
+    exact hd
+  have hidx : i + 1 = b + L := by omega
+  calc
+    (w.take (b + L)).drop b = (w.take (i + 1)).drop b := by rw [← hidx]
+    _ = ((w.take i) ++ [w[i]]).drop b := by rw [← happ]
+    _ = (w.take i).drop b ++ [w[i]] := hdrop
+    _ = (w.take (b + L - 1)).drop b ++ [w.getI (b + L - 1)] := by
+        dsimp [i]
+        rw [hget]
+
+/-- The actual local block equation obtained by writing a `CycleQb8Input`
+segment as a suffix of the full cycle word.  This supplies the genuine
+`q`, `A_j`, `Wj`, and `rj` required by 36.30.8.2; `q` is the local orbit
+start state, not the previous terminal odd part `s`. -/
+theorem cycleQb8Input_local_block_equation
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b L : Nat) (hbL : b + L ≤ w.length) :
+    let u := (w.take (b + L)).drop b
+    let q := StringFlow.Word.wordOrbit (w.take b) m
+    let rj := StringFlow.Word.wordOrbit u q
+    u.length = L ∧ StringFlow.Word.wordValid u q ∧
+      StringFlow.Word.wordOrbit (w.take (b + L)) m = rj ∧
+      2 ^ StringFlow.wordWeight u * rj =
+        5 ^ L * q + StringFlow.Word.wordA u := by
+  let u := (w.take (b + L)).drop b
+  let q := StringFlow.Word.wordOrbit (w.take b) m
+  let rj := StringFlow.Word.wordOrbit u q
+  have hu_take : u = (w.drop b).take L := by
+    dsimp [u]
+    rw [List.take_drop]
+  have hvalid_rest : StringFlow.Word.wordValid (w.drop b) q := by
+    have hv : StringFlow.Word.wordValid (w.take b ++ w.drop b) m := by
+      simpa using h.hvalid
+    have hparts := (S6Audit.wordValid_append (w.take b) (w.drop b) m).mp hv
+    dsimp [q]
+    exact hparts.2
+  have hrest_split : w.drop b = u ++ (w.drop b).drop L := by
+    calc
+      w.drop b = (w.drop b).take L ++ (w.drop b).drop L :=
+        (List.take_append_drop L (w.drop b)).symm
+      _ = u ++ (w.drop b).drop L :=
+        congrArg (fun v => v ++ (w.drop b).drop L) hu_take.symm
+  have hvalid_u : StringFlow.Word.wordValid u q := by
+    have hvalid_rest' : StringFlow.Word.wordValid
+        (u ++ (w.drop b).drop L) q := by
+      rw [← hrest_split]
+      exact hvalid_rest
+    exact (S6Audit.wordValid_append u ((w.drop b).drop L) q).mp
+      hvalid_rest' |>.1
+  have hlen : u.length = L := by
+    dsimp [u]
+    rw [List.length_drop, List.length_take_of_le hbL]
+    omega
+  have hend : StringFlow.Word.wordOrbit (w.take (b + L)) m = rj := by
+    dsimp [rj, q, u]
+    exact wordOrbit_take_drop w m b L hbL
+  have hid := StringFlow.Word.word_orbit_identity u q hvalid_u
+  have hid' : 2 ^ StringFlow.wordWeight u * rj =
+      5 ^ L * q + StringFlow.Word.wordA u := by
+    simpa [rj, hlen] using hid
+  exact ⟨hlen, hvalid_u, hend, hid'⟩
+
+/-- The full local block data used in 36.30.8.2: the block quotient
+`q`, numerator `A_j`, prefix weights `Wp,Wj`, last step `t`, and block
+head `rj`.  The endpoint equation and divisibility are returned as
+proofs, so this is not a bare parameter bundle. -/
+theorem cycleQb8Input_local_block_data
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b L : Nat) (hL : 1 ≤ L) (hbL : b + L ≤ w.length) :
+    ∃ q Aj Wp Wj t rj : Nat,
+      q = StringFlow.Word.wordOrbit (w.take b) m ∧
+      rj = StringFlow.Word.wordOrbit (w.take (b + L)) m ∧
+      Aj = StringFlow.Word.wordA ((w.take (b + L)).drop b) ∧
+      Wj = StringFlow.wordWeight ((w.take (b + L)).drop b) ∧
+      Wp = StringFlow.wordWeight ((w.take (b + L - 1)).drop b) ∧
+      t = w.getI (b + L - 1) ∧
+      Wj = Wp + t ∧
+      2 ^ Wj * rj = Aj + 5 ^ L * q ∧
+      (Aj + 5 ^ L * q) % 2 ^ Wj = 0 ∧
+      rj = (Aj + 5 ^ L * q) / 2 ^ Wj := by
+  let u := (w.take (b + L)).drop b
+  let q := StringFlow.Word.wordOrbit (w.take b) m
+  let rj := StringFlow.Word.wordOrbit u q
+  have hblock := cycleQb8Input_local_block_equation h b L hbL
+  have hlen : u.length = L := hblock.1
+  have hvalid : StringFlow.Word.wordValid u q := hblock.2.1
+  have hend : StringFlow.Word.wordOrbit (w.take (b + L)) m = rj := hblock.2.2.1
+  have hid : 2 ^ StringFlow.wordWeight u * rj = 5 ^ L * q + StringFlow.Word.wordA u :=
+    hblock.2.2.2
+  let Aj := StringFlow.Word.wordA u
+  let Wj := StringFlow.wordWeight u
+  let Wp := StringFlow.wordWeight ((w.take (b + L - 1)).drop b)
+  let t := w.getI (b + L - 1)
+  have hsplitList : u = (w.take (b + L - 1)).drop b ++ [t] := by
+    dsimp [u, t]
+    exact cycleWord_drop_take_concat_last w b L hL hbL
+  have hW : Wj = Wp + t := by
+    dsimp [Wj, Wp, t]
+    rw [hsplitList]
+    exact UnifiedCoreAudit.wordWeight_append_singleton
+      ((w.take (b + L - 1)).drop b) (w.getI (b + L - 1))
+  have hEq : Aj + 5 ^ L * q = 2 ^ Wj * rj := by
+    have h := hid
+    dsimp [Aj, Wj] at h ⊢
+    rw [Nat.add_comm] at h
+    exact h.symm
+  have hdiv : (Aj + 5 ^ L * q) % 2 ^ Wj = 0 := by
+    exact Nat.mod_eq_zero_of_dvd ⟨rj, hEq⟩
+  have hrjform : rj = (Aj + 5 ^ L * q) / 2 ^ Wj := by
+    rw [hEq]
+    exact (Nat.mul_div_right rj (Nat.pow_pos (by decide : 0 < 2) :
+      0 < 2 ^ Wj)).symm
+  exact ⟨q, Aj, Wp, Wj, t, rj, rfl, by
+    dsimp [rj]
+    exact hend.symm, rfl, rfl, rfl, rfl, hW, by
+      dsimp [Aj, Wj]
+      simpa [Nat.add_comm] using hid, hdiv, hrjform⟩
+
+/-- Every prefix of a closed cycle word from the full-orbit start
+state is itself a full-orbit state. -/
+theorem cycleQb8Input_prefix_full_reachable
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (j : Nat) (hj : j <= w.length) :
+    S6Audit.FullOrbitFrom7 (StringFlow.Word.wordOrbit (w.take j) m) := by
+  induction j with
+  | zero =>
+      simpa [StringFlow.Word.wordOrbit] using h.hstart
+  | succ j ih =>
+      have hjw : j < w.length := by omega
+      have hprev : S6Audit.FullOrbitFrom7
+          (StringFlow.Word.wordOrbit (w.take j) m) := ih (by omega)
+      rcases hprev with ⟨n, hn⟩
+      have hstep := wordOrbit_take_succ w m j hjw
+      have hex : twoValuation
+          (5 * StringFlow.Word.wordOrbit (w.take j) m + 1) =
+          w.getI j := h.hexact j hjw
+      have hexS : S6Audit.twoValuation
+          (5 * StringFlow.Word.wordOrbit (w.take j) m + 1) =
+          w.getI j := by simpa using hex
+      have hnext : StringFlow.Word.wordOrbit (w.take (j + 1)) m =
+          S6Audit.fullOrbitStep (StringFlow.Word.wordOrbit (w.take j) m) := by
+        rw [hstep]
+        unfold S6Audit.fullOrbitStep
+        rw [hexS]
+      have hiter : S6Audit.fullOrbitIter (n + 1) =
+          S6Audit.fullOrbitStep (S6Audit.fullOrbitIter n) := rfl
+      refine Exists.intro (n + 1) ?_
+      rw [hnext, ← hn, hiter]
+
+/-- The even intermediate immediately before a prefix state is
+reachable in the general orbit, with the same concrete cycle word. -/
+theorem cycleQb8Input_predecessor_general_reachable
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (j : Nat) (hj : 1 <= j) (hjl : j <= w.length) :
+    S6Audit.GeneralOrbitFrom7
+      ((5 * StringFlow.Word.wordOrbit (w.take (j - 1)) m + 1) / 2) := by
+  let x := StringFlow.Word.wordOrbit (w.take (j - 1)) m
+  have hfull : S6Audit.FullOrbitFrom7 x :=
+    cycleQb8Input_prefix_full_reachable h (j - 1) (by omega)
+  have hgen : S6Audit.GeneralOrbitFrom7 x :=
+    S6Audit.FullOrbitFrom7_imp_general x hfull
+  have hodd : S6Audit.IsOdd x := S6Audit.FullOrbitFrom7_odd x hfull
+  have hmod : (5 * x + 1) % 2 = 0 := by
+    have hx : x % 2 = 1 := hodd
+    rw [Nat.add_mod, Nat.mul_mod]
+    simp [hx]
+  exact S6Audit.general_orbit_step x 1 hmod hgen
+
+/-- Construct the real terminal data from the exact C3 step preceding
+a rise block.  This keeps `q` and `s` separate: `q` never enters this
+structure. -/
+theorem cycleQb8Input_real_terminal
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b : Nat) (hb1 : 1 ≤ b) (hb_le : b ≤ w.length)
+    (hprev3 : 3 ≤ w.getI (b - 1)) :
+    ∃ rt : RealTerminal,
+      rt.r_prev = (5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1) / 2 := by
+  let x := StringFlow.Word.wordOrbit (w.take (b - 1)) m
+  let rprev := (5 * x + 1) / 2
+  have hbprev_lt : b - 1 < w.length := by omega
+  have htprev : twoValuation (5 * x + 1) = w.getI (b - 1) := by
+    dsimp [x]
+    exact h.hexact (b - 1) hbprev_lt
+  have hge3 : 3 ≤ twoValuation (5 * x + 1) := by
+    rw [htprev]
+    exact hprev3
+  have hge2 : 2 ≤ twoValuation (5 * x + 1) := by omega
+  have h4dvd : 4 ∣ 5 * x + 1 := by
+    exact (StringFlow.Lte.twoValuation_ge_iff_dvd_pow
+      (5 * x + 1) 2 (by positivity)).mp hge2
+  rcases h4dvd with ⟨y, hy⟩
+  have hrprev_even : rprev % 2 = 0 := by
+    dsimp [rprev]
+    have hdiv : (4 * y) / 2 = 2 * y := by omega
+    rw [hy, hdiv]
+    rw [Nat.mul_mod, Nat.mod_self]
+    simp
+  have hr_odd : (rprev + 1) % 2 = 1 := by
+    rw [Nat.add_mod, hrprev_even]
+  have hrpos : rprev + 1 ≠ 0 := by positivity
+  let k0 := fiveValuation (rprev + 1)
+  let s := fiveOddPart (rprev + 1)
+  have hreach : S6Audit.GeneralOrbitFrom7 rprev := by
+    dsimp [rprev, x]
+    exact cycleQb8Input_predecessor_general_reachable h b hb1 hb_le
+  refine ⟨{ r_prev := rprev
+            s := s
+            k0 := k0
+            hprod := by
+              dsimp [s, k0]
+              have h := (fiveOddPart_spec hrpos).symm
+              rw [Nat.mul_comm] at h
+              exact h
+            hs_odd := by
+              dsimp [s]
+              exact fiveOddPart_odd_of_odd hr_odd
+            hs_not_five := by
+              dsimp [s]
+              exact fiveOddPart_not_dvd_five hrpos
+            hreach := hreach }, ?_⟩
+  dsimp [rprev, x]
+
+/-- The same real terminal packaged in the
+`AngelinaGilbertaRealTerminal` structure.  This is the terminal
+component used by the local `hident` assembly below; it does not
+introduce the block quotient `q` as `s`. -/
+theorem cycleQb8Input_angelina_real_terminal
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b : Nat) (hb1 : 1 ≤ b) (hb_le : b ≤ w.length)
+    (hprev3 : 3 ≤ w.getI (b - 1)) :
+    ∃ rt : S6Audit.AngelinaGilbertaRealTerminal,
+      rt.r = (5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1) / 2 := by
+  rcases cycleQb8Input_real_terminal h b hb1 hb_le hprev3 with
+    ⟨rt, hrt⟩
+  refine ⟨{ r := rt.r_prev
+            s := rt.s
+            k := rt.k0
+            hprod := rt.hprod
+            hs_odd := rt.hs_odd
+            hs_not_five := rt.hs_not_five
+            hreach := rt.hreach }, ?_⟩
+  exact hrt
+
+/-- Recover the concrete cycle parameters from the `Nonempty` field
+of a `CycleQb8Input`. -/
+theorem cycleQb8Input_cycle_params
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3) :
+    ∃ c p : Nat, w = cycleWord c p ∧
+      m = fiveXPlusOneOrbit 7 c ∧
+      S = StringFlow.wordWeight (cycleWord c p) ∧
+      rise = cycleWordRiseSteps c p ∧
+      c3 = cycleWordC3Steps c p := by
+  rcases h.hcycle with ⟨hcp⟩
+  rcases hcp with ⟨cp, hprops⟩
+  rcases hprops with ⟨hw, hm⟩
+  rcases hm with ⟨hm, hS⟩
+  rcases hS with ⟨hS, hr⟩
+  rcases hr with ⟨hrise, hc3⟩
+  exact ⟨cp.1, cp.2, hw, hm, hS, hrise, hc3⟩
+
+/-- A `CycleQb8Input` is anchored at a rise start, so its first
+step weight is `1` or `2`. -/
+theorem cycleQb8Input_rise_start
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3) :
+    w.getI 0 = 1 ∨ w.getI 0 = 2 :=
+  h.hrise_start
+
 /-- Every closed QB-8 input has a rise index whose next state is
 `3 mod 5` or `4 mod 5`. -/
 theorem cycleQb8Input_exists_block_head_mod_five
@@ -1975,6 +2558,278 @@ theorem cycleQb8Input_exists_block_head_mod_five
       rw [hj2] at hmod
       exact hmod
     exact hmod'
+
+/-- The five-power numerator determined by a local block head and the
+reset parameters.  For the `t=1,δ=1` case this is
+`2*rj - 5^j + 4`; the leading addition avoids a second Nat
+subtraction in the definition. -/
+def localResetNumerator (t j rj δ : Nat) : Nat :=
+  2 ^ t * rj + 4 - δ * 5 ^ j
+
+/-- A real terminal is locally compatible with a block head when its
+`s*5^(k+1)` exactly equals the numerator
+`2^t*rj - δ*5^j + 4`.  The extra factor of `5` is the one appearing
+as `5^(k+1)*s - 4` in the document's definition of `B`. -/
+def IsLocalResetTerminal (t j rj δ : Nat)
+    (rt : S6Audit.AngelinaGilbertaRealTerminal) : Prop :=
+  rt.s * 5 ^ (rt.k + 1) = localResetNumerator t j rj δ
+
+/-- The local construction of the document 36.30.8.2 identity from the
+block-head representation and the single reset-step scalar equation.
+The scalar equation is the undivided local relation between the real
+previous terminal and the block head. -/
+theorem local_hident_of_reset_scalar
+    (j Wp Wj q Aj rj s k t δ : Nat)
+    (hW : Wj = Wp + t)
+    (hrj : rj = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hdiv : (Aj + 5 ^ j * q) % 2 ^ Wj = 0)
+    (hscalar : 2 ^ t * rj = 5 ^ (k + 1) * s - 4 + δ * 5 ^ j) :
+    Aj + 5 ^ j * q =
+      2 ^ Wp * (5 ^ (k + 1) * s - 4 + δ * 5 ^ j) := by
+  have hmul : 2 ^ Wj * rj = Aj + 5 ^ j * q := by
+    rw [hrj]
+    exact Nat.mul_div_cancel' (Nat.dvd_iff_mod_eq_zero.mpr hdiv)
+  have hpow : 2 ^ Wj = 2 ^ Wp * 2 ^ t := by
+    rw [hW, Nat.pow_add]
+  calc
+    Aj + 5 ^ j * q = 2 ^ Wj * rj := hmul.symm
+    _ = (2 ^ Wp * 2 ^ t) * rj := by rw [hpow]
+    _ = 2 ^ Wp * (2 ^ t * rj) := by ring
+    _ = 2 ^ Wp * (5 ^ (k + 1) * s - 4 + δ * 5 ^ j) := by rw [hscalar]
+
+/-- The local terminal equation recovers the undivided scalar equation
+`2^t*rj = 5^(k+1)*s - 4 + δ*5^j` from
+`rt.s * 5^(rt.k+1) = 2^t*rj - δ*5^j + 4`. -/
+theorem local_reset_scalar_of_angelina_terminal
+    (t j rj δ : Nat) (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hterm : IsLocalResetTerminal t j rj δ rt) :
+    2 ^ t * rj = 5 ^ (rt.k + 1) * rt.s - 4 + δ * 5 ^ j := by
+  unfold IsLocalResetTerminal localResetNumerator at hterm
+  have hspos : 0 < rt.s := by
+    have hodd : rt.s % 2 = 1 := rt.hs_odd
+    by_contra hnot
+    have hz : rt.s = 0 := by omega
+    rw [hz] at hodd
+    norm_num at hodd
+  let N := rt.s * 5 ^ (rt.k + 1)
+  let A := 2 ^ t * rj
+  let C := δ * 5 ^ j
+  have hNpos : 0 < N := by
+    dsimp [N]
+    exact Nat.mul_pos hspos
+      (Nat.pow_pos (by decide : 0 < 5) : 0 < 5 ^ (rt.k + 1))
+  have hs1 : 1 ≤ rt.s := Nat.succ_le_of_lt hspos
+  have hpow5 : 5 ≤ 5 ^ (rt.k + 1) := by
+    have hle : 1 ≤ rt.k + 1 := by omega
+    have hpow := Nat.pow_le_pow_right (by decide : 0 < 5) hle
+    simpa using hpow
+  have hNge4 : 4 ≤ N := by
+    dsimp [N]
+    nlinarith [hs1, hpow5]
+  have hterm' : N = A + 4 - C := by
+    simpa [N, A, C] using hterm
+  have hC_le : C ≤ A + 4 := by
+    by_contra hnot
+    have hlt : A + 4 < C := by omega
+    have hsub : A + 4 - C = 0 := by omega
+    rw [hsub] at hterm'
+    omega
+  have hsum : A + 4 = N + C := by omega
+  have hgoal : A = N - 4 + C := by
+    have hA_eq : A = N + C - 4 :=
+      (Nat.sub_eq_of_eq_add (a := N + C) (b := 4) (c := A) hsum.symm).symm
+    have hshift' : C + N - 4 = C + (N - 4) :=
+      Nat.add_sub_assoc hNge4 C
+    have hshift : N + C - 4 = N - 4 + C := by
+      simpa [Nat.add_comm] using hshift'
+    rw [hA_eq, hshift]
+  simpa [N, A, C, Nat.mul_comm] using hgoal
+
+/-- Given the local block-head representation and a locally compatible
+real terminal, construct the exact 36.30.8.2 identity.  The terminal
+`rt.s` and `rt.k` are determined by the local numerator
+`2^t*rj - δ*5^j + 4`, not by an unrelated global previous terminal. -/
+theorem local_hident_of_angelina_terminal
+    (j Wp Wj q Aj rj t δ : Nat)
+    (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hW : Wj = Wp + t)
+    (hrj : rj = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hdiv : (Aj + 5 ^ j * q) % 2 ^ Wj = 0)
+    (hterm : IsLocalResetTerminal t j rj δ rt) :
+    Aj + 5 ^ j * q =
+      2 ^ Wp * (5 ^ (rt.k + 1) * rt.s - 4 + δ * 5 ^ j) := by
+  have hscalar := local_reset_scalar_of_angelina_terminal t j rj δ rt hterm
+  exact local_hident_of_reset_scalar
+    j Wp Wj q Aj rj rt.s rt.k t δ hW hrj hdiv hscalar
+
+/-- The explicit 36.30.8.2 quotient form
+`q = m + δ*2^Wp`, `m < 2^Wp`.  This is the document's integrality
+reduction; it is obtained from the local `hident` by the already proved
+`S6Audit.reset_q0_form`. -/
+theorem local_hident_q_form
+    (j Wp Wj q Aj rj t δ : Nat)
+    (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hW : Wj = Wp + t)
+    (hrj : rj = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hdiv : (Aj + 5 ^ j * q) % 2 ^ Wj = 0)
+    (hterm : IsLocalResetTerminal t j rj δ rt)
+    (hA : Aj < 5 ^ j)
+    (hB : 0 < 5 ^ (rt.k + 1) * rt.s - 4)
+    (hBlt : 5 ^ (rt.k + 1) * rt.s - 4 < 5 ^ j)
+    (hδ : δ = 1 ∨ δ = 3) :
+    ∃ m : Nat, q = m + δ * 2 ^ Wp ∧ m < 2 ^ Wp := by
+  have hident := local_hident_of_angelina_terminal
+    j Wp Wj q Aj rj t δ rt hW hrj hdiv hterm
+  exact S6Audit.reset_q0_form j Wp δ Aj q
+    (5 ^ (rt.k + 1) * rt.s - 4) hA hB hBlt hδ hident
+
+/-- Local block data that has already been written in document 36.30.8.2.
+The `hterm` field says that the real terminal is locally compatible:
+`rt.s * 5^(rt.k+1)` is the local numerator
+`2^t*rj - δ*5^j + 4`.  This is the undivided input used to construct the
+exact identity `A_j + 5^j*q = 2^Wp*(B + δ*5^j)`. -/
+structure LocalHidentBlock
+    (j Wp Wj q Aj rj t δ : Nat)
+    (rt : S6Audit.AngelinaGilbertaRealTerminal) : Prop where
+  hW : Wj = Wp + t
+  ht : t = 1 ∨ t = 2
+  hδ : (t = 1 → δ = 1) ∧ (t = 2 → δ = 1 ∨ δ = 3)
+  hrj : rj = (Aj + 5 ^ j * q) / 2 ^ Wj
+  hdiv : (Aj + 5 ^ j * q) % 2 ^ Wj = 0
+  hterm : IsLocalResetTerminal t j rj δ rt
+  hk : rt.k + 1 ≤ j
+  hs_lt : rt.s < 5 ^ (j - rt.k - 1)
+  hrj_odd : S6Audit.IsOdd rj
+  hrj_reach : S6Audit.FullOrbitFrom7 rj
+
+/-- Once the local 36.30.8.2 identity is available, it generates both
+the reset-head equation and the corrected reset-window reachability
+witness.  This is the exact wiring requested for
+`cycleQb8Input_exists_block_reset_head`: no parameter is filled by
+hand; `s`, `j`, `k`, `t`, and `δ` are all taken from `LocalHidentBlock`
+and the single real terminal `rt`. -/
+theorem local_hident_to_reset_reachability
+    {j Wp Wj q Aj rj t δ : Nat}
+    {rt : S6Audit.AngelinaGilbertaRealTerminal}
+    (d : LocalHidentBlock j Wp Wj q Aj rj t δ rt) :
+    S6Audit.ResetHeadEq rt.s j rt.k t δ rj ∧
+      S6Audit.ResetWindowReachability j rt.k t δ rt.s := by
+  have hpos_s : 0 < rt.s := by
+    have hodd : rt.s % 2 = 1 := rt.hs_odd
+    by_contra hnot
+    have hz : rt.s = 0 := by omega
+    rw [hz] at hodd
+    norm_num at hodd
+  have hreset : S6Audit.ResetHeadEq rt.s j rt.k t δ rj :=
+    have hident := local_hident_of_angelina_terminal
+      j Wp Wj q Aj rj t δ rt d.hW d.hrj d.hdiv d.hterm
+    S6Audit.reset_head_eq_of_block_head_identity
+      j Wp Wj q Aj rj rt.s rt.k t δ hpos_s d.hW d.ht d.hδ d.hrj d.hdiv hident
+  have hs_lt' : rt.s < 5 ^ (j - 1 - rt.k) := by
+    have hsub : j - rt.k - 1 = j - 1 - rt.k := by omega
+    simpa [hsub] using d.hs_lt
+  refine ⟨hreset, ?_⟩
+  refine ⟨rt.r, rj, d.hk, ?_, rt.hs_odd, rt.hs_not_five, hs_lt',
+    rt.hreach, hreset, d.hrj_odd, d.hrj_reach⟩
+  exact rt.hprod
+
+/-- The local `hident` also gives the explicit quotient form
+`q = m + δ*2^Wp` with `m < 2^Wp`.  The extra size bound
+`A_j < 5^j` is the only input not already in `LocalHidentBlock`; it is
+the usual word-numerator bound from the local `{1,2}` suffix. -/
+theorem local_hident_block_q_form
+    {j Wp Wj q Aj rj t δ : Nat}
+    {rt : S6Audit.AngelinaGilbertaRealTerminal}
+    (d : LocalHidentBlock j Wp Wj q Aj rj t δ rt)
+    (hA : Aj < 5 ^ j) :
+    ∃ m : Nat, q = m + δ * 2 ^ Wp ∧ m < 2 ^ Wp := by
+  have hspos : 0 < rt.s := by
+    have hodd : rt.s % 2 = 1 := rt.hs_odd
+    by_contra hnot
+    have hz : rt.s = 0 := by omega
+    rw [hz] at hodd
+    norm_num at hodd
+  have hs1 : 1 ≤ rt.s := Nat.succ_le_of_lt hspos
+  have hpow5 : 5 ≤ 5 ^ (rt.k + 1) := by
+    have hle : 1 ≤ rt.k + 1 := by omega
+    have hpow := Nat.pow_le_pow_right (by decide : 0 < 5) hle
+    simpa using hpow
+  have hprod_ge5 : 5 ≤ 5 ^ (rt.k + 1) * rt.s := by
+    have hmul := Nat.mul_le_mul hpow5 hs1
+    simpa using hmul
+  have hBpos : 0 < 5 ^ (rt.k + 1) * rt.s - 4 := by
+    omega
+  have hBlt : 5 ^ (rt.k + 1) * rt.s - 4 < 5 ^ j := by
+    have hsub : j - rt.k - 1 = j - (rt.k + 1) := by omega
+    have hlt := d.hs_lt
+    have hlt' : rt.s < 5 ^ (j - (rt.k + 1)) := by
+      simpa [hsub] using hlt
+    have hmul : 5 ^ (rt.k + 1) * rt.s <
+        5 ^ (rt.k + 1) * 5 ^ (j - (rt.k + 1)) :=
+      Nat.mul_lt_mul_of_pos_left hlt'
+        (Nat.pow_pos (by decide : 0 < 5) : 0 < 5 ^ (rt.k + 1))
+    have hpowadd : 5 ^ (rt.k + 1) * 5 ^ (j - (rt.k + 1)) = 5 ^ j := by
+      rw [← Nat.pow_add]
+      congr 1
+      exact Nat.add_sub_of_le d.hk
+    have hmul' : 5 ^ (rt.k + 1) * rt.s < 5 ^ j := by
+      simpa [hpowadd] using hmul
+    exact Nat.sub_lt_of_lt hmul'
+  have hδall : δ = 1 ∨ δ = 3 := by
+    rcases d.ht with h1 | h2
+    · left
+      exact d.hδ.1 h1
+    · exact d.hδ.2 h2
+  have hident := local_hident_of_angelina_terminal
+    j Wp Wj q Aj rj t δ rt d.hW d.hrj d.hdiv d.hterm
+  exact S6Audit.reset_q0_form j Wp δ Aj q
+    (5 ^ (rt.k + 1) * rt.s - 4) hA hBpos hBlt hδall hident
+
+/-- Assemble a `LocalHidentBlock` from a concrete cycle-word segment,
+its last step, and a locally compatible real terminal.  The local
+`A_j,q,Wp,Wj,rj` are taken from
+`cycleQb8Input_local_block_data`; no local coordinate is guessed. -/
+theorem cycleQb8Input_local_hident_block
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b L t δ : Nat) (hL : 1 ≤ L) (hbL : b + L ≤ w.length)
+    (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (ht : t = 1 ∨ t = 2)
+    (hδ : (t = 1 → δ = 1) ∧ (t = 2 → δ = 1 ∨ δ = 3))
+    (hlast : w.getI (b + L - 1) = t)
+    (hterm : IsLocalResetTerminal t L
+      (StringFlow.Word.wordOrbit (w.take (b + L)) m) δ rt)
+    (hk : rt.k + 1 ≤ L)
+    (hslt : rt.s < 5 ^ (L - rt.k - 1))
+    (hrj_odd : S6Audit.IsOdd
+      (StringFlow.Word.wordOrbit (w.take (b + L)) m))
+    (hrj_reach : S6Audit.FullOrbitFrom7
+      (StringFlow.Word.wordOrbit (w.take (b + L)) m)) :
+    ∃ q Aj Wp Wj : Nat,
+      LocalHidentBlock L Wp Wj q Aj
+        (StringFlow.Word.wordOrbit (w.take (b + L)) m) t δ rt := by
+  rcases cycleQb8Input_local_block_data h b L hL hbL with
+    ⟨q, Aj, Wp, Wj, t0, rj, hq, hrj, hAj, hWj, hWp, ht0, hW, hEq,
+      hdiv, hrjform⟩
+  have ht_eq : t0 = t := by omega
+  rw [ht_eq] at hW
+  have hrjform' :
+      StringFlow.Word.wordOrbit (w.take (b + L)) m =
+        (Aj + 5 ^ L * q) / 2 ^ Wj := by
+    exact hrj.symm.trans hrjform
+  refine ⟨q, Aj, Wp, Wj, ?_⟩
+  exact {
+    hW := hW
+    ht := ht
+    hδ := hδ
+    hrj := hrjform'
+    hdiv := hdiv
+    hterm := hterm
+    hk := hk
+    hs_lt := hslt
+    hrj_odd := hrj_odd
+    hrj_reach := hrj_reach
+  }
 
 /-- A reset-head failure window: parameters matching
 `BlockAutomaton.decisiveWindowValuationBoundCorrected`, with the

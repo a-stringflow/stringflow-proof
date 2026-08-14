@@ -2,13 +2,21 @@ import S6Audit
 import FBeta
 
 /-!
-# Final theorem statement: divergence of the 5x+1 orbit of 7
+# Final statement and orbit foundations
 
-This module defines the top-level statement
-`five_x_plus_one_diverges_at_7`. The proof is not yet assembled; the
-theorem below is the assembly target and currently uses `sorry` on
-purpose. No other file in this repository is allowed to depend on this
-`sorry`.
+This module defines the top-level orbit objects and the already proved
+no-cycle-to-unbounded bridge:
+
+- `fiveXPlusOneStep`
+- `fiveXPlusOneOrbit`
+- `IsUnboundedOrbit`
+- `OrbitCycle`
+- `unbounded_of_no_cycle`
+
+It contains no `sorry`. The top-level assembly theorem
+`five_x_plus_one_diverges_at_7` is deliberately isolated in
+`FinalTheorem.lean`; modules such as `CycleBridge` can import this file
+without importing that final assembly target.
 
 The step is the full accelerated 5x+1 map:
 
@@ -104,13 +112,4 @@ lemma fiveXPlusOneOrbit_general_orbit (x : Nat) (h : S6Audit.GeneralOrbitFrom7 x
   | succ n ih =>
       have hstep := fiveXPlusOneStep_general_orbit (fiveXPlusOneOrbit x n) ih
       simpa [fiveXPlusOneOrbit] using hstep
-
-/-- Assembly target: the 5x+1 orbit of 7 diverges. -/
-theorem five_x_plus_one_diverges_at_7 : IsUnboundedOrbit 7 := by
-  -- Assembly pending: S6/local lemma, phase-1 coverage, X=1 chain,
-  -- downstream D0, and TD0/TD1 wiring must be combined here.
-  -- The SURV-EX/TD0 no-cycle interface is now isolated as
-  -- `SurvExTd0`; see `five_x_plus_one_diverges_at_7_of_surv_ex_td0`.
-  sorry
-
 end StringFlow

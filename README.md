@@ -38,21 +38,32 @@ def IsUnboundedOrbit (x : Nat) : Prop :=
   ∀ B : Nat, ∃ n : Nat, B ≤ fiveXPlusOneOrbit x n
 ```
 
-The top-level assembly target is
+The public mathematical target is:
 
 ```lean
-theorem five_x_plus_one_diverges_at_7 : IsUnboundedOrbit 7
+IsUnboundedOrbit 7
 ```
+
+In words, this is exactly the proposition that the accelerated 5x+1 orbit
+starting from `7` is unbounded. This is the standard formal statement of
+the claim that the orbit of `7` diverges.
+
+For this deterministic total map on `Nat`, boundedness is equivalent to
+eventual periodicity: if the orbit is bounded, two iterates must repeat,
+and the orbit is periodic from then on. Conversely, if the orbit never
+enters a finite cycle, it is unbounded. The Lean theorem
+`unbounded_of_no_cycle` supplies the no-cycle-to-unbounded direction used
+in the final assembly.
 
 ## Status
 
 The S6 / local-lemma audit chain is machine-checked in
 `lean/S6Audit.lean` with zero `sorry`. This includes the pure `t=2`
 `M=1` base-case exclusion (`pure_t2_m1_no_odd_hit`) and the local lemma
-(`local_lemma_final`). The final theorem
-`five_x_plus_one_diverges_at_7` is not yet assembled; the remaining open
-items are the post-exit block coverage, the X=1 chain, the downstream
-`L/C/G/c_k/m_d/D0` chain, and the TD0/TD1 wiring.
+(`local_lemma_final`). The public statement `IsUnboundedOrbit 7` is not
+yet assembled; the remaining open items are the post-exit block coverage,
+the X=1 chain, the downstream `L/C/G/c_k/m_d/D0` chain, and the TD0/TD1
+wiring.
 
 ## Layout
 
@@ -88,12 +99,13 @@ theorem.
 
 ## AI assistance
 
-AI-assisted tools were used during development for drafting Lean code,
-organizing documentation, and assisting proof development. The final
-proofs are fully verified by the Lean 4 kernel; no AI-generated
-correctness claim is used as evidence. All formal statements, proof
-obligations, and verification results are reproducible from the pinned
-toolchain and dependencies in this repository.
+AI-assisted tools (DeepSeek V4 Flash (0731), Codex, and OpenCode Go)
+were used during development for drafting Lean code, organizing
+documentation, and assisting proof development. The final proofs are
+fully verified by the Lean 4 kernel; no AI-generated correctness claim
+is used as evidence. All formal statements, proof obligations, and
+verification results are reproducible from the pinned toolchain and
+dependencies in this repository.
 
 ## Identity proof
 

@@ -24,14 +24,24 @@ def IsUnboundedOrbit (x : Nat) : Prop :=
 
 These are `StringFlow.fiveXPlusOneStep`,
 `StringFlow.fiveXPlusOneOrbit` and `StringFlow.IsUnboundedOrbit` in
-`lean/FinalStatement.lean`. The final theorem is
-`StringFlow.five_x_plus_one_diverges_at_7 : IsUnboundedOrbit 7`.
+`lean/FinalStatement.lean`. The public statement to be proved is
+`StringFlow.IsUnboundedOrbit 7`.
 
-Cross-check: `#check StringFlow.five_x_plus_one_diverges_at_7` prints
-the statement; `lake build` reproduces the artifact; `lean/AxiomAudit.lean`
-lists the axioms used by the closed S6 theorems. The Lean source is public
-and intentionally not hidden; the definition above is the part a
-mathematician needs to review, and it matches the Lean code line by line.
+This proposition says precisely that for every bound `B`, the accelerated
+5x+1 orbit starting from `7` eventually exceeds `B`. In other words, it is
+the formal statement that the 5x+1 orbit of `7` diverges.
+
+Because the map is deterministic and its state space is `Nat`, an orbit
+is bounded exactly when it eventually repeats and becomes periodic.
+Therefore `IsUnboundedOrbit 7` is equivalent to saying that the orbit of
+`7` does not enter any finite cycle.
+
+Cross-check: `#check StringFlow.IsUnboundedOrbit 7` prints
+`Prop`; `lake build` reproduces the artifact; `lean/AxiomAudit.lean`
+lists the axioms used by the closed S6 theorems. The Lean source is
+public and intentionally not hidden; the definitions above are the part
+a mathematician needs to review, and they match the Lean code line by
+line.
 
 ## Formal status
 
@@ -42,7 +52,7 @@ The S6 / local-lemma audit chain is machine-checked in
 - `local_lemma_final` - the local lemma under the corrected 36.20
   premises, full word legality, `wordValid`, and `OrbitFrom7 r`.
 
-The final theorem `five_x_plus_one_diverges_at_7` is not yet assembled.
+The public statement `IsUnboundedOrbit 7` is not yet assembled.
 Remaining work:
 
 - post-exit block coverage (block-layer induction for new blocks after
@@ -51,9 +61,9 @@ Remaining work:
 - the downstream `L/C/G_i/c_k/m_d/D0` chain;
 - TD0/TD1 final wiring and the top-level theorem.
 
-The top-level statement is defined in `lean/FinalStatement.lean` as
-`StringFlow.five_x_plus_one_diverges_at_7`; its proof is the assembly
-target and is not yet complete.
+The public statement is defined in `lean/FinalStatement.lean` as
+`StringFlow.IsUnboundedOrbit 7`; its proof is the assembly target and is
+not yet complete.
 
 ## Build
 
