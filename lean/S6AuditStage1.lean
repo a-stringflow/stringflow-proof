@@ -932,6 +932,19 @@ def ResetWindowReachability (j k0 t δ s : Nat) : Prop :=
     IsOdd rj ∧
     FullOrbitFrom7 rj
 
+/-- Corrected C3-tail reset-window reachability: `rj` is the state after
+the C3 chain whose head satisfies `x + 1 = 4 * 5^k0 * s0`; the head
+`x` is on the full orbit and `rj` is its exact accelerated successor. -/
+def ResetWindowReachabilityC3 (j k0 t s0 : Nat) : Prop :=
+  ∃ x rj : Nat,
+    k0 + 1 ≤ j ∧
+    x + 1 = 4 * 5 ^ k0 * s0 ∧
+    IsOdd s0 ∧ ¬ 5 ∣ s0 ∧
+    s0 < 5 ^ (j - 1 - k0) ∧
+    FullOrbitFrom7 x ∧
+    ResetHeadEqC3 s0 j k0 t rj ∧
+    IsOdd rj ∧
+    FullOrbitFrom7 rj
 /-- A `ResetWindowReachability` witness projects to the generic
 `FullIsGloballyReachableCorrected` form.  The converse is deliberately
 not claimed: the generic form may use a different `j,k` than the window

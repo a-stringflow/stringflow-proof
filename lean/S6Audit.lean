@@ -521,6 +521,13 @@ def ResetHeadEq (s0 j k t δ rj : Nat) : Prop :=
   (t = 1 ∧ δ = 1 ∧ 2 * (rj + 1) = 5 ^ (k + 1) * s0 + 5 ^ j - 2) ∨
   (t = 2 ∧ (δ = 1 ∨ δ = 3) ∧ 4 * (rj + 1) = 5 ^ (k + 1) * s0 + δ * 5 ^ j)
 
+/-- C3-chain reset equation: a C3 step `2^t * rj = 5x + 1` from a head
+`x` with `x + 1 = 4 * 5^k * s0` gives the tail reset identity
+`2^(t-2) * (rj + 1) = 5^(k+1) * s0 + 2^(t-2) - 1`. -/
+def ResetHeadEqC3 (s0 j k t rj : Nat) : Prop :=
+  3 <= t /\
+    2 ^ (t - 2) * (rj + 1) =
+      5 ^ (k + 1) * s0 + 2 ^ (t - 2) - 1
 def IsGloballyReachable (s0 N δ : Nat) : Prop :=
   ∃ j k r rj t : Nat,
     k + 1 ≤ j ∧

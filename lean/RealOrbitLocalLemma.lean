@@ -2860,8 +2860,80 @@ lemma state_rank_eq_two_of_outgoing_c3
     simpa using Nat.dvd_iff_mod_eq_zero.mp hdvd8'
   omega
 
+/-- A single C3 step has the generalized reset form
+`2^(t-2) * (rj+1) = 5^(k+1)*s + 2^(t-2) - 1` when the input head
+satisfies `x+1 = 4 * 5^k * s`. -/
+theorem c3_step_reset_identity
+    (x k s t rj : Nat)
+    (hx : x + 1 = 4 * 5 ^ k * s)
+    (ht : 3 <= t)
+    (hstep : 2 ^ t * rj = 5 * x + 1) :
+    2 ^ (t - 2) * (rj + 1) =
+      5 ^ (k + 1) * s + 2 ^ (t - 2) - 1 := by
+  have hspos : 0 < s := by
+    have hxpos : 0 < x + 1 := by positivity
+    rw [hx] at hxpos
+    exact Nat.pos_of_ne_zero (by
+      intro hs0
+      rw [hs0, Nat.mul_zero] at hxpos
+      omega)
+  have hxeq : x = 4 * 5 ^ k * s - 1 := by omega
+  have hB0pos : 0 < 4 * 5 ^ k * s := by positivity
+  have h5base : 5 * (5 ^ k * s) = 5 ^ (k + 1) * s := by
+    rw [Nat.pow_succ]
+    ring
+  have h5x : 5 * x + 1 = 4 * (5 ^ (k + 1) * s - 1) := by
+    calc
+      5 * x + 1 = 5 * (4 * 5 ^ k * s - 1) + 1 := by rw [hxeq]
+      _ = 5 * (4 * 5 ^ k * s) - 4 := by omega
+      _ = 4 * (5 * (5 ^ k * s)) - 4 := by ring
+      _ = 4 * (5 ^ (k + 1) * s) - 4 := by rw [h5base]
+      _ = 4 * (5 ^ (k + 1) * s - 1) := by omega
+  have hpow : 2 ^ t = 4 * 2 ^ (t - 2) := by
+    have ht_decomp : t = 2 + (t - 2) := by omega
+    rw [ht_decomp, Nat.pow_add]
+    norm_num
+  have hstep4 : 4 * (2 ^ (t - 2) * rj) = 4 * (5 ^ (k + 1) * s - 1) := by
+    calc
+      4 * (2 ^ (t - 2) * rj) = (4 * 2 ^ (t - 2)) * rj := by ring
+      _ = 2 ^ t * rj := by rw [hpow]
+      _ = 5 * x + 1 := hstep
+      _ = 4 * (5 ^ (k + 1) * s - 1) := h5x
+  have hcancel : 2 ^ (t - 2) * rj = 5 ^ (k + 1) * s - 1 := by
+    exact Nat.mul_left_cancel (by norm_num : 0 < 4) hstep4
+  have hrewrite : 5 ^ (k + 1) * s - 1 + 2 ^ (t - 2) =
+      5 ^ (k + 1) * s + 2 ^ (t - 2) - 1 := by
+    have hBge1 : 1 <= 5 ^ (k + 1) * s := by omega
+    omega
+  calc
+    2 ^ (t - 2) * (rj + 1)
+        = 2 ^ (t - 2) * rj + 2 ^ (t - 2) := by ring
+    _ = (5 ^ (k + 1) * s - 1) + 2 ^ (t - 2) := by rw [hcancel]
+    _ = 5 ^ (k + 1) * s + 2 ^ (t - 2) - 1 := hrewrite
+
+/-- A real C3 step from a reachable head satisfying the `4 * 5^k * s0`
+form supplies the C3-tail reset window with the same head parameter. -/
+theorem c3_step_reset_window_reachability
+    (x k0 s0 t rj j : Nat)
+    (hx : x + 1 = 4 * 5 ^ k0 * s0)
+    (hodd : IsOdd s0) (hnd5 : ¬ 5 ∣ s0)
+    (hk : k0 + 1 ≤ j) (hslt : s0 < 5 ^ (j - 1 - k0))
+    (hxFull : FullOrbitFrom7 x)
+    (ht : 3 ≤ t) (hstep : 2 ^ t * rj = 5 * x + 1)
+    (hrj_full : rj = fullOrbitStep x) :
+    ResetWindowReachabilityC3 j k0 t s0 := by
+  refine ⟨x, rj, hk, hx, hodd, hnd5, hslt, hxFull, ?_, ?_, ?_⟩
+  · exact ⟨ht, c3_step_reset_identity x k0 s0 t rj hx ht hstep⟩
+  · rw [hrj_full]
+    exact FullOrbitFrom7_odd (fullOrbitStep x) (by
+      rcases hxFull with ⟨n, hn⟩
+      exact ⟨n + 1, by simpa [fullOrbitIter, fullOrbitStep, hn]⟩)
+  · rw [hrj_full]
+    rcases hxFull with ⟨n, hn⟩
+    exact ⟨n + 1, by simpa [fullOrbitIter, fullOrbitStep, hn]⟩
 /-- If a failure-window endpoint is also known to be the head of the
 next C3 chain, its rank is exactly two. -/
+
 theorem failureWindow_rank_two_of_outgoing_c3
     {m S P : Nat} {w rise c3 : List Nat}
     {j k0 t delta s : Nat}
