@@ -425,4 +425,19 @@ theorem riseBoundaryIter_eq_add_totalAdvance
           _ = (b0 + (T + A)) % P := by rw [Nat.add_assoc]
       exact hmod
 
+/-- With every block advancing at least two, the total advance after
+`n` blocks is at least `2*n`. -/
+theorem blockTotalAdvance_ge_two_mul
+    (w : List Nat) (P b0 : Nat) (n : Nat)
+    (hall : ∀ k < n, 2 ≤ blockAdvance w P (riseBoundaryIter w P b0 k)) :
+    2 * n ≤ blockTotalAdvance w P b0 n := by
+  induction n with
+  | zero =>
+      simp [blockTotalAdvance]
+  | succ n ih =>
+      simp [blockTotalAdvance]
+      have h := hall n (by omega)
+      have ih' := ih (fun k hk => hall k (by omega))
+      omega
+
 end StringFlow.CycleBridge
