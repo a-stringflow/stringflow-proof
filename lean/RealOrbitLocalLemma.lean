@@ -2911,6 +2911,53 @@ theorem c3_step_reset_identity
     _ = (5 ^ (k + 1) * s - 1) + 2 ^ (t - 2) := by rw [hcancel]
     _ = 5 ^ (k + 1) * s + 2 ^ (t - 2) - 1 := hrewrite
 
+/-- A single C3 step controls the rank gain exactly:
+`t + v2(rj+1) = 2 + v2(5*q + 2^(t-2) - 1)` when the input head
+satisfies `x+1 = 4*q`.  This is the per-step valuation recurrence used
+by the cyclic C3 rank-gain budget. -/
+theorem c3_step_rank_gain
+    (x q t rj : Nat)
+    (hq : x + 1 = 4 * q)
+    (ht : 3 ≤ t)
+    (hstep : 2 ^ t * rj = 5 * x + 1) :
+    twoValuation (rj + 1) + t =
+      2 + twoValuation (5 * q + 2 ^ (t - 2) - 1) := by
+  have hgain := c3_step_reset_identity x 0 q t rj (by simpa using hq) ht hstep
+  have hgain' : 2 ^ (t - 2) * (rj + 1) =
+      5 * q + 2 ^ (t - 2) - 1 := by
+    simpa [Nat.pow_succ] using hgain
+  have hposrj : 0 < rj + 1 := by positivity
+  have hv := StringFlow.Lte.twoValuation_mul_two_pow (t - 2) (rj + 1) hposrj
+  rw [hgain'] at hv
+  omega
+
+/-- Division form of `c3_step_rank_gain`: the input head has rank two,
+so its odd part is exactly `(x+1)/4`. -/
+theorem c3_step_rank_gain_div
+    (x t rj : Nat)
+    (hrank : twoValuation (x + 1) = 2)
+    (ht : 3 ≤ t)
+    (hstep : 2 ^ t * rj = 5 * x + 1) :
+    twoValuation (rj + 1) + t =
+      2 + twoValuation
+        (5 * ((x + 1) / 4) + 2 ^ (t - 2) - 1) := by
+  have hposx1 : 0 < x + 1 := by positivity
+  have hdecx := StringFlow.n_eq_two_pow_mul_oddPart (x + 1) hposx1
+  rw [hrank] at hdecx
+  have hdecx' : x + 1 = 4 * StringFlow.oddPart (x + 1) := by
+    simpa [show (2 ^ 2 : Nat) = 4 by norm_num] using hdecx
+  have hodd : StringFlow.oddPart (x + 1) = (x + 1) / 4 := by
+    calc
+      StringFlow.oddPart (x + 1) = (4 * StringFlow.oddPart (x + 1)) / 4 := by
+        exact (Nat.mul_div_right (StringFlow.oddPart (x + 1))
+          (by norm_num : 0 < 4)).symm
+      _ = (x + 1) / 4 := by rw [← hdecx']
+  have hq : x + 1 = 4 * ((x + 1) / 4) := by
+    calc
+      x + 1 = 4 * StringFlow.oddPart (x + 1) := hdecx'
+      _ = 4 * ((x + 1) / 4) := by rw [hodd]
+  exact c3_step_rank_gain x ((x + 1) / 4) t rj hq ht hstep
+
 /-- A real C3 step from a reachable head satisfying the `4 * 5^k * s0`
 form supplies the C3-tail reset window with the same head parameter. -/
 theorem c3_step_reset_window_reachability
