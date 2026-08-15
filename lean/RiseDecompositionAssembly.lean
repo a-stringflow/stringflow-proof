@@ -1740,6 +1740,30 @@ theorem cycleRiseBlockHpred_of_real_terminal
     ring_nf
     rw [Nat.mul_comm (2 ^ S - 5 ^ P) q]
     rw [hqD]
+    have hrot_split : cyclicSegmentAt w b =
+        u' ++ [t] ++ (cyclicSegmentAt w b).drop L := by
+      have hLlt : L - 1 < (cyclicSegmentAt w b).length := by
+        rw [cyclicSegmentAt_length w b hble]
+        omega
+      have htc := List.take_concat_get (l := cyclicSegmentAt w b) (i := L - 1) hLlt
+      have hget : (cyclicSegmentAt w b)[L - 1] = t := by
+        have hg := List.getI_eq_getElem (l := cyclicSegmentAt w b) (n := L - 1) hLlt
+        rw [← hg]
+        exact ht_last'.symm
+      have htake : (cyclicSegmentAt w b).take L = u' ++ [t] := by
+        have htc' : (cyclicSegmentAt w b).take (L - 1) ++
+            [(cyclicSegmentAt w b)[L - 1]] = (cyclicSegmentAt w b).take L := by
+          have hsub : L - 1 + 1 = L := Nat.sub_add_cancel hLpos
+          rw [List.concat_eq_append] at htc
+          simpa [hsub] using htc
+        rw [hget] at htc'
+        change (cyclicSegmentAt w b).take L = u' ++ [t]
+        exact htc'.symm
+      have hsplit : cyclicSegmentAt w b =
+          (cyclicSegmentAt w b).take L ++ (cyclicSegmentAt w b).drop L :=
+        (List.take_append_drop L (cyclicSegmentAt w b)).symm
+      rw [htake] at hsplit
+      simpa [List.append_assoc] using hsplit
     sorry
   have heq' : 2 ^ StringFlow.wordWeight u' * StringFlow.Word.wordOrbit u' q =
       2 ^ StringFlow.wordWeight u' * (rt.r + delta * 5 ^ (L - 1)) := by
