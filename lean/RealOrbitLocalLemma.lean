@@ -2931,6 +2931,115 @@ theorem c3_step_reset_window_reachability
   · rw [hrj_full]
     rcases hxFull with ⟨n, hn⟩
     exact ⟨n + 1, by simpa [fullOrbitIter, fullOrbitStep, hn]⟩
+
+/-- Every odd natural factors as `5^k * s` with `s` odd and coprime to
+`5`. -/
+theorem odd_nat_five_factor (a : Nat) (ha : IsOdd a) :
+    ∃ k s, a = 5 ^ k * s ∧ IsOdd s ∧ ¬ 5 ∣ s := by
+  exact Nat.strong_induction_on a
+    (p := fun n => IsOdd n → ∃ k s, n = 5 ^ k * s ∧ IsOdd s ∧ ¬ 5 ∣ s)
+    (fun n ih hn => by
+      by_cases hd : 5 ∣ n
+      · rcases hd with ⟨b, hb⟩
+        subst n
+        have hb_odd : IsOdd b := by
+          have hmod : (5 * b) % 2 = 1 := by simpa [IsOdd] using hn
+          rw [Nat.mul_mod] at hmod
+          have h5 : 5 % 2 = 1 := by norm_num
+          rw [h5] at hmod
+          have hbmodlt : b % 2 < 2 := Nat.mod_lt b (by norm_num)
+          rw [one_mul, Nat.mod_eq_of_lt hbmodlt] at hmod
+          exact hmod
+        have hb_pos : 0 < b := by
+          by_contra hb0
+          have : b = 0 := Nat.eq_zero_of_not_pos hb0
+          subst b
+          norm_num [IsOdd] at hn
+        have hb_lt : b < 5 * b := by
+          nlinarith [hb_pos]
+        rcases ih b hb_lt hb_odd with ⟨k, s, hb_eq, hs_odd, hs_nd5⟩
+        refine ⟨k + 1, s, ?_, hs_odd, hs_nd5⟩
+        calc
+          5 * b = 5 * (5 ^ k * s) := by rw [hb_eq]
+          _ = 5 ^ (k + 1) * s := by rw [Nat.pow_succ]; ring
+      · exact ⟨0, n, by simp, hn, hd⟩)
+    ha
+
+/-- A rank-two head below `5^j`, followed by at least one C3 step, has
+the product form `x + 1 = 4 * 5^k * s` with the tail-depth bound
+`s < 5^(j + c3len - 1 - k)`. -/
+theorem c3_head_five_product_of_lt_five_pow
+    (x j c3len : Nat)
+    (_hodd : IsOdd x)
+    (hrank : twoValuation (x + 1) = 2)
+    (hx : x < 5 ^ j)
+    (hc3 : 1 ≤ c3len) :
+    ∃ k0 s0,
+      x + 1 = 4 * 5 ^ k0 * s0 ∧
+      IsOdd s0 ∧ ¬ 5 ∣ s0 ∧
+      s0 < 5 ^ (j + c3len - 1 - k0) := by
+  have hpos : 0 < x + 1 := by positivity
+  have hdec := StringFlow.n_eq_two_pow_mul_oddPart (x + 1) hpos
+  have hoddPart : IsOdd (StringFlow.oddPart (x + 1)) :=
+    StringFlow.oddPart_odd_of_pos (x + 1) hpos
+  have hprod : x + 1 = 4 * StringFlow.oddPart (x + 1) := by
+    calc
+      x + 1 = 2 ^ StringFlow.twoValuation (x + 1) * StringFlow.oddPart (x + 1) := hdec
+      _ = 2 ^ 2 * StringFlow.oddPart (x + 1) := by rw [hrank]
+      _ = 4 * StringFlow.oddPart (x + 1) := by norm_num
+  rcases odd_nat_five_factor (StringFlow.oddPart (x + 1)) hoddPart with
+    ⟨k0, s0, hf, hs_odd, hs_nd5⟩
+  have heq : x + 1 = 4 * 5 ^ k0 * s0 := by
+    calc
+      x + 1 = 4 * StringFlow.oddPart (x + 1) := hprod
+      _ = 4 * (5 ^ k0 * s0) := by rw [hf]
+      _ = 4 * 5 ^ k0 * s0 := by ring
+  have hx1 : x + 1 < 5 ^ j := by
+    have hle : x + 1 ≤ 5 ^ j := by omega
+    have hne : x + 1 ≠ 5 ^ j := by
+      intro hEq
+      rw [hEq] at hrank
+      have h5 : twoValuation (5 ^ j) = 0 :=
+        StringFlow.twoValuation_odd (5 ^ j) (StringFlow.Lte.five_pow_odd j)
+      omega
+    omega
+  have hs0pos : 0 < s0 := by
+    by_contra hnot
+    have : s0 = 0 := Nat.eq_zero_of_not_pos hnot
+    subst s0
+    norm_num [IsOdd] at hs_odd
+  have hlt4 : 4 * (5 ^ k0 * s0) < 5 ^ j := by
+    have hx1' := hx1
+    rw [heq] at hx1'
+    simpa [Nat.mul_assoc] using hx1'
+  have hlt : 5 ^ k0 * s0 < 5 ^ j := by
+    have hle4 : 5 ^ k0 * s0 ≤ 4 * (5 ^ k0 * s0) :=
+      Nat.le_mul_of_pos_left (5 ^ k0 * s0) (by norm_num : 0 < 4)
+    exact lt_of_le_of_lt hle4 hlt4
+  have hle1 : 5 ^ k0 ≤ 5 ^ k0 * s0 := by
+    have h := Nat.le_mul_of_pos_left (5 ^ k0) hs0pos
+    simpa [Nat.mul_comm] using h
+  have hle' : 5 ^ k0 ≤ 5 ^ j := le_trans hle1 (le_of_lt hlt)
+  have hk0j : k0 ≤ j := by
+    by_contra hnot
+    have hjlt : j < k0 := Nat.lt_of_not_ge hnot
+    have hpowlt : 5 ^ j < 5 ^ k0 := Nat.pow_lt_pow_right (by norm_num : 1 < 5) hjlt
+    exact (not_le_of_gt hpowlt) hle'
+  have hkJ : k0 ≤ j + c3len - 1 := by omega
+  have hpow_eq : 5 ^ (j + c3len - 1) =
+      5 ^ k0 * 5 ^ (j + c3len - 1 - k0) := by
+    rw [← Nat.pow_add]
+    congr 1
+    exact (Nat.add_sub_of_le hkJ).symm
+  have hlej : 5 ^ j ≤ 5 ^ (j + c3len - 1) :=
+    Nat.pow_le_pow_right (by decide : 0 < 5) (by omega)
+  have htmp : 5 ^ k0 * s0 < 5 ^ (j + c3len - 1) :=
+    lt_of_lt_of_le hlt hlej
+  have hprod_lt : 5 ^ k0 * s0 < 5 ^ k0 * 5 ^ (j + c3len - 1 - k0) := by
+    rwa [hpow_eq] at htmp
+  exact ⟨k0, s0, heq, hs_odd, hs_nd5,
+    (Nat.mul_lt_mul_left (by positivity : 0 < 5 ^ k0)).1 hprod_lt⟩
+
 /-- If a failure-window endpoint is also known to be the head of the
 next C3 chain, its rank is exactly two. -/
 
