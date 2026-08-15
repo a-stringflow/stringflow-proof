@@ -1626,14 +1626,19 @@ algebraic reduction, `hpred` is exactly the word equation
 for the rise prefix `u'` of length `L-1`; that word equation is the
 single remaining step, to be supplied by the cyclic block equations of
 `CycleQb8Input` (delta-zero block structure, real orbit occurrence,
-boundary-terminal identity).  No size estimate and no C3-rank input is
-used. -/
+boundary-terminal identity).  The block length must be at least three:
+for `L <= 2` the conclusion would force `rt.r + delta*5^(L-1) = o_local`
+with `rt.r >= 4*q` while zero or one rise step keeps `o_local < 4*q`,
+so those cases are exactly the pseudo-candidates excluded by
+`cyclic_local_reset_length_ge_three`.  No size estimate and no C3-rank
+input is used. -/
 theorem cycleRiseBlockHpred_of_real_terminal
     {m S P : Nat} {w rise c3 : List Nat}
     (h : CycleQb8Input m S P w rise c3)
     (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
     (hr : r < d.blockCount) (hne : d.suffixWord r ≠ [])
     (hLle : (d.suffixWord r).length ≤ w.length)
+    (hLge3 : 3 ≤ (d.suffixWord r).length)
     (t delta : Nat)
     (ht_last : t = (d.suffixWord r).getI ((d.suffixWord r).length - 1))
     (ht : t = 1 ∨ t = 2)
@@ -1767,6 +1772,8 @@ theorem cycleRiseBlockHpred_of_real_terminal
         (List.take_append_drop L (cyclicSegmentAt w b)).symm
       rw [htake] at hsplit
       simpa [List.append_assoc] using hsplit
+    rw [hrot_split]
+    rw [wordA_append]
     sorry
   have heq' : 2 ^ StringFlow.wordWeight u' * StringFlow.Word.wordOrbit u' q =
       2 ^ StringFlow.wordWeight u' * (rt.r + delta * 5 ^ (L - 1)) := by
