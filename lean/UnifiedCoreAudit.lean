@@ -586,6 +586,86 @@ lemma blockWord_wordA (weight : Nat → Nat) (j n : Nat)
       rw [blockB]
       ring
 
+/-- `wordOK` splits across appending a singleton step. -/
+lemma wordOK_append_singleton (w : List Nat) (t : Nat) :
+    StringFlow.Word.wordOK (w ++ [t]) ↔ StringFlow.Word.wordOK w ∧ t ≤ 2 := by
+  induction w with
+  | nil => simp [StringFlow.Word.wordOK]
+  | cons a as ih =>
+      simp [StringFlow.Word.wordOK, ih]
+      constructor
+      · intro h
+        exact ⟨⟨h.1, h.2.1⟩, h.2.2⟩
+      · intro h
+        exact ⟨h.1.1, h.1.2, h.2⟩
+
+/-- The block word has all steps `1` or `2`, hence is `wordOK`. -/
+lemma blockWord_wordOK (weight : Nat → Nat) (j n : Nat)
+    (hstep : ∀ k, k < j + n → weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2) :
+    StringFlow.Word.wordOK (blockWord weight j n) := by
+  induction n with
+  | zero => simp [blockWord, StringFlow.Word.wordOK]
+  | succ n ih =>
+      rw [blockWord]
+      rw [wordOK_append_singleton]
+      have hstep_small : ∀ k, k < j + n → weight (k + 1) = weight k + 1 ∨
+          weight (k + 1) = weight k + 2 := by
+        intro k hk
+        exact hstep k (by omega)
+      constructor
+      · exact ih hstep_small
+      · rcases hstep (j + n) (by omega) with h1 | h2 <;> omega
+
+/-- The block molecule is the `A`-molecule of the block word when the
+weight starts at zero: `wordMolecule weight k = wordA (blockWord weight 0 k)`. -/
+lemma wordMolecule_eq_wordA_blockWord (weight : Nat → Nat) (k : Nat)
+    (h0 : weight 0 = 0)
+    (hstep : ∀ i, i < k → weight (i + 1) = weight i + 1 ∨
+      weight (i + 1) = weight i + 2) :
+    wordMolecule weight k = StringFlow.Word.wordA (blockWord weight 0 k) := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+      have hstep_small : ∀ i, i < k → weight (i + 1) = weight i + 1 ∨
+          weight (i + 1) = weight i + 2 := by
+        intro i hi
+        exact hstep i (by omega)
+      have ih' : wordMolecule weight k =
+          StringFlow.Word.wordA (blockWord weight 0 k) := ih hstep_small
+      have hw : StringFlow.wordWeight (blockWord weight 0 k) = weight k := by
+        have h := blockWord_wordWeight weight 0 k (by
+          intro i hi
+          exact hstep_small i (by simpa using hi))
+        simpa [h0] using h
+      calc
+        wordMolecule weight (k + 1) =
+            2 ^ weight k + 5 * wordMolecule weight k := by
+          rfl
+        _ = 5 * StringFlow.Word.wordA (blockWord weight 0 k) +
+              2 ^ StringFlow.wordWeight (blockWord weight 0 k) := by
+            rw [ih', hw]
+            ring
+        _ = StringFlow.Word.wordA (blockWord weight 0 (k + 1)) := by
+            rw [blockWord]
+            rw [wordA_append_singleton]
+
+/-- The molecule bound needed by `All36_20PremisesNoHge.Aj_lt` and
+`A_s_lt`: `wordMolecule weight k < 5^k` for step weights `1` or `2`. -/
+theorem wordMolecule_lt_five_pow (weight : Nat → Nat) (k : Nat)
+    (h0 : weight 0 = 0)
+    (hstep : ∀ i, i < k → weight (i + 1) = weight i + 1 ∨
+      weight (i + 1) = weight i + 2) :
+    wordMolecule weight k < 5 ^ k := by
+  rw [wordMolecule_eq_wordA_blockWord weight k h0 hstep]
+  have hok : StringFlow.Word.wordOK (blockWord weight 0 k) :=
+    blockWord_wordOK weight 0 k (by
+      intro i hi
+      exact hstep i (by simpa using hi))
+  have hlt := StringFlow.Word.wordA_lt_five_pow (blockWord weight 0 k) hok
+  have hlen : (blockWord weight 0 k).length = k := blockWord_length weight 0 k
+  simpa [hlen] using hlt
+
 /-- The exact block-tail relation:
 `2^(W_s-W_j)*r_s = 5^(s-j)*r_j + B`, where `B` is the block suffix
 molecule. -/
