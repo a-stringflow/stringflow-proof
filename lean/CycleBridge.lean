@@ -2669,6 +2669,75 @@ theorem cycleQb8Input_rise_start
     w.getI 0 = 1 ∨ w.getI 0 = 2 :=
   h.hrise_start
 
+/-- A valid word step from a positive state stays positive. -/
+theorem wordOrbit_pos_of_wordValid (w : List Nat) (x : Nat) (hx : 0 < x) :
+    StringFlow.Word.wordValid w x → 0 < StringFlow.Word.wordOrbit w x := by
+  induction w generalizing x with
+  | nil => simpa [StringFlow.Word.wordValid, StringFlow.Word.wordOrbit]
+  | cons t ts ih =>
+      intro hv
+      have hqpos : 0 < (5 * x + 1) / 2 ^ t := by
+        have hmod : (5 * x + 1) % 2 ^ t = 0 := hv.1
+        have hdvd : 2 ^ t ∣ 5 * x + 1 := Nat.dvd_iff_mod_eq_zero.mpr hmod
+        have hpos1 : 0 < 5 * x + 1 := by positivity
+        have hle : 2 ^ t ≤ 5 * x + 1 := Nat.le_of_dvd hpos1 hdvd
+        exact Nat.div_pos hle (Nat.pow_pos (by decide))
+      simpa [StringFlow.Word.wordOrbit] using
+        ih ((5 * x + 1) / 2 ^ t) hqpos hv.2
+
+/-- A closed QB-8 input is anchored at a cyclic rise boundary: the
+last cyclic entry before position `0` is a C3 step.  This follows
+because the start state is the global minimum of the cycle, so the
+last step back to it cannot be a rise step. -/
+theorem cycleQb8Input_last_step_c3
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3) : 3 ≤ w.getI (P - 1) := by
+  have hP2 : 2 ≤ P := cycleQb8Input_P_ge_two h
+  by_contra hnot
+  have hle2 : w.getI (P - 1) ≤ 2 := by omega
+  let r := StringFlow.Word.wordOrbit (w.take (P - 1)) m
+  have hlast_lt : P - 1 < w.length := by
+    rw [h.hlength]
+    omega
+  have hr_pos : 0 < r := by
+    dsimp [r]
+    have hvalid_prefix : StringFlow.Word.wordValid (w.take (P - 1)) m := by
+      have hsplit : w.take (P - 1) ++ w.drop (P - 1) = w :=
+        List.take_append_drop (P - 1) w
+      have hv : StringFlow.Word.wordValid
+          (w.take (P - 1) ++ w.drop (P - 1)) m := by
+        rw [hsplit]
+        exact h.hvalid
+      exact ((S6Audit.wordValid_append (w.take (P - 1)) (w.drop (P - 1)) m).mp hv).1
+    exact wordOrbit_pos_of_wordValid (w.take (P - 1)) m h.hm_pos hvalid_prefix
+  have ht : twoValuation (5 * r + 1) = w.getI (P - 1) := by
+    dsimp [r]
+    exact h.hexact (P - 1) hlast_lt
+  have ht_le : twoValuation (5 * r + 1) ≤ 2 := by
+    rwa [ht]
+  have hgt : r < StringFlow.fiveXPlusOneStep r :=
+    fiveXPlusOneStep_gt_of_weight_le_two r hr_pos ht_le
+  have hmin : m ≤ r := by
+    dsimp [r]
+    have hP : P - 1 < P := by omega
+    exact h.hglobal_min (P - 1) hP
+  have hstep : StringFlow.fiveXPlusOneStep r = m := by
+    dsimp [r]
+    have htake : w.take P = w := by
+      exact List.take_of_length_le (by rw [h.hlength])
+    have hsucc := wordOrbit_take_succ w m (P - 1) hlast_lt
+    have hsub : P - 1 + 1 = P := by omega
+    rw [hsub] at hsucc
+    rw [← ht] at hsucc
+    rw [htake] at hsucc
+    rw [h.hclosed] at hsucc
+    exact hsucc.symm
+  have hlt : r < m := by
+    calc
+      r < StringFlow.fiveXPlusOneStep r := hgt
+      _ = m := hstep
+  omega
+
 /-- Every closed QB-8 input has a rise index whose next state is
 `3 mod 5` or `4 mod 5`. -/
 theorem cycleQb8Input_exists_block_head_mod_five

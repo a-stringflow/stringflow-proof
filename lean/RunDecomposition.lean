@@ -1141,4 +1141,553 @@ theorem blockCountOf_le_P
   unfold blockCountOf riseRunCycleLen
   omega
 
+/-- If the cycle-length counter stops at `k` steps below its fuel,
+the boundary iteration really reached the starting boundary. -/
+theorem riseRunCycleLenAux_eq_imp_hit
+    (w : List Nat) (P fuel b0 b : Nat) (k : Nat)
+    (hk : k < fuel) (haux : riseRunCycleLenAux w P fuel b0 b = k) :
+    riseBoundaryIter w P b k = b0 := by
+  induction fuel generalizing b k with
+  | zero => omega
+  | succ fuel ih =>
+      by_cases hb : b = b0
+      · have hk0 : k = 0 := by
+          have hs : riseRunCycleLenAux w P (fuel + 1) b0 b = 0 := by
+            simp [riseRunCycleLenAux, hb]
+          rw [hs] at haux
+          exact haux.symm
+        rw [hk0]
+        simpa [riseBoundaryIter, hb]
+      · have hkpos : 1 ≤ k := by
+          by_contra hz
+          have hk0 : k = 0 := Nat.eq_zero_of_not_pos hz
+          rw [hk0] at haux
+          unfold riseRunCycleLenAux at haux
+          rw [if_neg hb] at haux
+          omega
+        have haux' : riseRunCycleLenAux w P fuel b0 (nextRiseStart w P b) = k - 1 := by
+          have hsimp : riseRunCycleLenAux w P (fuel + 1) b0 b =
+              1 + riseRunCycleLenAux w P fuel b0 (nextRiseStart w P b) := by
+            simp [riseRunCycleLenAux, hb]
+          rw [hsimp] at haux
+          omega
+        have hk' : k - 1 < fuel := by omega
+        have hhit := ih (nextRiseStart w P b) (k - 1) hk' haux'
+        have hcomp : riseBoundaryIter w P b k =
+            riseBoundaryIter w P (nextRiseStart w P b) (k - 1) := by
+          have hsub : k = (k - 1) + 1 := by omega
+          rw [hsub]
+          exact (riseBoundaryIter_succ_compose w P b (k - 1)).symm
+        rwa [← hcomp] at hhit
+
+/-- The boundary tour returns to the starting boundary exactly after
+`blockCountOf` steps. -/
+theorem riseBoundaryIter_blockCount_eq
+    (w : List Nat) (P b0 : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hbnd : IsCyclicBoundary w P b0) :
+    riseBoundaryIter w P b0 (blockCountOf w P b0) = b0 := by
+  have hcomp' : riseBoundaryIter w P (nextRiseStart w P b0)
+        (blockCountOf w P b0 - 1) =
+      riseBoundaryIter w P b0 (blockCountOf w P b0) := by
+    have hsub : blockCountOf w P b0 - 1 + 1 = blockCountOf w P b0 := by
+      have hpos1 : 1 ≤ blockCountOf w P b0 := blockCountOf_pos w P b0
+      omega
+    rw [← hsub]
+    exact riseBoundaryIter_succ_compose w P b0 (blockCountOf w P b0 - 1)
+  rw [← hcomp']
+  apply riseRunCycleLenAux_eq_imp_hit w P P b0 (nextRiseStart w P b0)
+    (blockCountOf w P b0 - 1)
+  · have hle := blockCountOf_le_P w P b0 hw hP hpos hbnd
+    have hpos1 : 1 ≤ blockCountOf w P b0 := blockCountOf_pos w P b0
+    omega
+  · unfold blockCountOf riseRunCycleLen
+    omega
+
+/-- The boundary index `P` represents the cyclic position `0`, so a
+word position `0` boundary is kept inside `1..P`. -/
+def cyclicBoundaryIndex (P : Nat) (b : Nat) : Nat :=
+  if b = 0 then P else b
+
+theorem cyclicBoundaryIndex_zero (P : Nat) :
+    cyclicBoundaryIndex P 0 = P := by
+  simp [cyclicBoundaryIndex]
+
+theorem cyclicBoundaryIndex_of_pos (P : Nat) (b : Nat) (hb : b ≠ 0) :
+    cyclicBoundaryIndex P b = b := by
+  simp [cyclicBoundaryIndex, hb]
+
+theorem cyclicBoundaryIndex_pos {P : Nat} (hP : 0 < P) (b : Nat) :
+    1 ≤ cyclicBoundaryIndex P b := by
+  by_cases hb : b = 0
+  · simp [cyclicBoundaryIndex, hb]
+    omega
+  · simp [cyclicBoundaryIndex, hb]
+    omega
+
+theorem cyclicBoundaryIndex_le {P : Nat} (b : Nat) (hb : b < P) :
+    cyclicBoundaryIndex P b ≤ P := by
+  by_cases hb0 : b = 0
+  · simp [cyclicBoundaryIndex, hb0]
+  · simp [cyclicBoundaryIndex, hb0]
+    omega
+
+/-- A rise run starting at a boundary `b < P` cannot wrap around the
+end of the word: its last entry would be the C3 entry before zero. -/
+theorem blockRiseLen_boundary_add_lt
+    (w : List Nat) (P b : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hb1 : 1 ≤ b) (hbP : b < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hnext : w.getI (b % w.length) = 1 ∨ w.getI (b % w.length) = 2)
+    (hprev0 : 3 ≤ w.getI (P - 1)) :
+    b + blockRiseLen w b < P := by
+  by_contra hnot
+  have hge : P ≤ b + blockRiseLen w b := Nat.le_of_not_gt hnot
+  let j := P - 1 - b
+  have hbw : b ≤ w.length := by rw [hw]; omega
+  have hjl : j < blockRiseLen w b := by
+    dsimp [j]
+    omega
+  have hjlw : j < w.length := by
+    have hle := risePrefixLength_le (cyclicSegmentAt w b)
+    have hseg := cyclicSegmentAt_length w b hbw
+    have hjl' : j < blockRiseLen w b := hjl
+    unfold blockRiseLen at hjl'
+    omega
+  have hmem := risePrefixLength_mem (cyclicSegmentAt w b) j
+    (by simpa [blockRiseLen] using hjl)
+  have hget := cyclicSegmentAt_getI_mod w b j hbw hjlw
+  have hposP1 : (b + j) % w.length = P - 1 := by
+    dsimp [j]
+    have hsum : b + (P - 1 - b) = P - 1 := by omega
+    rw [hsum]
+    exact Nat.mod_eq_of_lt (by rw [hw]; omega)
+  have hw12 : w.getI (P - 1) = 1 ∨ w.getI (P - 1) = 2 := by
+    rw [hposP1] at hget
+    rwa [hget] at hmem
+  rcases hw12 with h1 | h2
+  · rw [h1] at hprev0
+    omega
+  · rw [h2] at hprev0
+    omega
+
+/-- The C3 run ending before `b` stops at the first non-C3 entry. -/
+theorem c3SuffixLengthAt_stop
+    (w : List Nat) (b : Nat) (hb : b ≤ w.length)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hstop : c3SuffixLengthAt w b < b) :
+    w.getI (b - 1 - c3SuffixLengthAt w b) = 1 ∨
+      w.getI (b - 1 - c3SuffixLengthAt w b) = 2 := by
+  unfold c3SuffixLengthAt
+  have hlenRev : ((w.take b).reverse).length = b := by
+    rw [List.length_reverse, List.length_take_of_le hb]
+  have hlt : c3PrefixLength ((w.take b).reverse) <
+      ((w.take b).reverse).length := by
+    rwa [hlenRev]
+  have hposRev : ∀ x, x ∈ (w.take b).reverse → 1 ≤ x := by
+    intro x hx
+    exact hpos x (List.mem_of_mem_take (List.mem_reverse.mp hx))
+  have hstop' := c3PrefixLength_stop ((w.take b).reverse) hposRev hlt
+  have hlenTake : (w.take b).length = b := List.length_take_of_le hb
+  have hlen : c3PrefixLength ((w.take b).reverse) < (w.take b).length := by
+    rwa [hlenTake]
+  rw [reverse_getI_of_lt (w.take b)
+    (c3PrefixLength ((w.take b).reverse)) hlen] at hstop'
+  have hsub : (w.take b).length - 1 - c3PrefixLength ((w.take b).reverse) =
+      b - 1 - c3PrefixLength ((w.take b).reverse) := by
+    simpa [hlenTake]
+  rw [hsub] at hstop'
+  have hlt2 : b - 1 - c3PrefixLength ((w.take b).reverse) < w.length := by
+    have hle' : c3PrefixLength ((w.take b).reverse) < b := by
+      have hlt3 : c3PrefixLength ((w.take b).reverse) < b := by
+        simpa [hlenRev] using hlt
+      exact hlt3
+    omega
+  have htake : (w.take b).getI (b - 1 - c3PrefixLength ((w.take b).reverse)) =
+      w.getI (b - 1 - c3PrefixLength ((w.take b).reverse)) := by
+    have hlt3 : b - 1 - c3PrefixLength ((w.take b).reverse) <
+        (w.take b).length := by
+      rw [hlenTake]
+      omega
+    rw [List.getI_eq_getElem (l := w.take b)
+      (n := b - 1 - c3PrefixLength ((w.take b).reverse)) hlt3]
+    rw [List.getI_eq_getElem (l := w)
+      (n := b - 1 - c3PrefixLength ((w.take b).reverse)) hlt2]
+    exact List.getElem_take (xs := w) (j := b)
+      (i := b - 1 - c3PrefixLength ((w.take b).reverse))
+  rwa [htake] at hstop'
+
+/-- The C3 run ending before a boundary whose entries are exactly the
+linear segment `s .. q-1`, with a rise step before `s`, has length
+`q - s`. -/
+theorem c3SuffixLengthAt_eq_sub_of_c3_run
+    (w : List Nat) (q s : Nat) (hb : q ≤ w.length) (hss : s ≤ q)
+    (hs1 : 1 ≤ s)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hC3 : ∀ k, k < q - s → 3 ≤ w.getI (s + k))
+    (hprev12 : w.getI (s - 1) = 1 ∨ w.getI (s - 1) = 2) :
+    c3SuffixLengthAt w q = q - s := by
+  unfold c3SuffixLengthAt
+  let u := (w.take q).reverse
+  have hlenU : u.length = q := by
+    dsimp [u]
+    rw [List.length_reverse, List.length_take_of_le hb]
+  apply le_antisymm
+  · by_contra hnot
+    have hlt : q - s < c3PrefixLength u := Nat.lt_of_not_ge hnot
+    have hmem := c3PrefixLength_mem u (q - s) hlt
+    have hk : q - s < u.length := by
+      have hle' := c3PrefixLength_le u
+      exact lt_of_lt_of_le hlt hle'
+    have hlenT : (w.take q).length = q := List.length_take_of_le hb
+    rw [reverse_getI_of_lt (w.take q) (q - s)
+      (by rw [hlenT]; omega)] at hmem
+    have hsub : (w.take q).length - 1 - (q - s) = s - 1 := by
+      rw [hlenT]
+      omega
+    rw [hsub] at hmem
+    have hlt2 : s - 1 < (w.take q).length := by
+      rw [hlenT]
+      omega
+    have htake : (w.take q).getI (s - 1) = w.getI (s - 1) := by
+      rw [List.getI_eq_getElem (l := w.take q) (n := s - 1) hlt2]
+      rw [List.getI_eq_getElem (l := w) (n := s - 1) (by omega)]
+      exact List.getElem_take (xs := w) (j := q) (i := s - 1)
+    rw [htake] at hmem
+    rcases hprev12 with h1 | h2
+    · rw [h1] at hmem
+      omega
+    · rw [h2] at hmem
+      omega
+  · by_contra hnot
+    have hlt : c3PrefixLength u < q - s := Nat.lt_of_not_ge hnot
+    have hltU : c3PrefixLength u < u.length := by
+      have hqle : q - s ≤ u.length := by omega
+      omega
+    have hposU : ∀ x, x ∈ u → 1 ≤ x := by
+      intro x hx
+      dsimp [u] at hx
+      exact hpos x (List.mem_of_mem_take (List.mem_reverse.mp hx))
+    have hstop' := c3PrefixLength_stop u hposU hltU
+    let k := c3PrefixLength u
+    have hkU : k < u.length := by
+      have hle' := c3PrefixLength_le u
+      dsimp [k]
+      omega
+    have hlenT : (w.take q).length = q := List.length_take_of_le hb
+    rw [reverse_getI_of_lt (w.take q) k
+      (by rw [hlenT, ← hlenU]; exact hkU)] at hstop'
+    have hsub : (w.take q).length - 1 - k = q - 1 - k := by
+      rw [hlenT]
+    rw [hsub] at hstop'
+    have hj : q - 1 - k - s < q - s := by
+      dsimp [k]
+      omega
+    have hposIdx : q - 1 - k = s + (q - 1 - k - s) := by omega
+    have hge' : 3 ≤ w.getI (q - 1 - k) := by
+      have hh := hC3 (q - 1 - k - s) hj
+      rw [← hposIdx] at hh
+      exact hh
+    have hltW : q - 1 - k < w.length := by
+      have hk' : k < q := by
+        have hle' := c3PrefixLength_le u
+        dsimp [k]
+        have hlenU' : u.length = q := hlenU
+        omega
+      omega
+    have htake : (w.take q).getI (q - 1 - k) = w.getI (q - 1 - k) := by
+      rw [List.getI_eq_getElem (l := w.take q) (n := q - 1 - k)
+        (by rw [hlenT]; omega)]
+      rw [List.getI_eq_getElem (l := w) (n := q - 1 - k) hltW]
+      exact List.getElem_take (xs := w) (j := q) (i := q - 1 - k)
+    rw [htake] at hstop'
+    rcases hstop' with h1 | h2
+    · rw [h1] at hge'
+      omega
+    · rw [h2] at hge'
+      omega
+
+/-- The C3 run after the rise at a boundary `b` is exactly the C3 run
+ending before the next boundary (represented in `1..P`).  Position
+`0` is a rise boundary, so neither run wraps across it. -/
+theorem blockC3Len_next_eq_of_cyclic
+    (w : List Nat) (P b : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hb1 : 1 ≤ b) (hbP : b < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hprev : 3 ≤ w.getI (b - 1))
+    (hnext : w.getI (b % w.length) = 1 ∨ w.getI (b % w.length) = 2)
+    (hzero0 : w.getI 0 = 1 ∨ w.getI 0 = 2)
+    (hprev0 : 3 ≤ w.getI (P - 1)) :
+    c3SuffixLengthAt w (cyclicBoundaryIndex P (nextRiseStart w P b)) =
+      c3PrefixLength (cyclicSegmentAt w (b + blockRiseLen w b)) := by
+  let L := blockRiseLen w b
+  let s := b + L
+  have hsP : s < P := by
+    dsimp [s, L]
+    exact blockRiseLen_boundary_add_lt w P b hw hP hb1 hbP hpos hnext hprev0
+  have hs1 : 1 ≤ s := by omega
+  let C := c3PrefixLength (cyclicSegmentAt w s)
+  have hsC_le : s + C ≤ P := by
+    by_contra hnot
+    have hgt : P < s + C := Nat.lt_of_not_ge hnot
+    let j := P - s
+    have hjlt : j < C := by
+      dsimp [j]
+      omega
+    have hmem := c3PrefixLength_mem (cyclicSegmentAt w s) j hjlt
+    have hklt : j < w.length := by
+      have hle' := c3PrefixLength_le (cyclicSegmentAt w s)
+      have hle'' : C ≤ w.length := by
+        dsimp [C]
+        have hseg := cyclicSegmentAt_length w s (by dsimp [s]; rw [hw]; omega)
+        simpa [hseg] using hle'
+      rw [hw]
+      omega
+    have hget := cyclicSegmentAt_getI_mod w s j (by dsimp [s]; rw [hw]; omega) hklt
+    have hpos0 : (s + j) % w.length = 0 := by
+      dsimp [j]
+      have hsum : s + (P - s) = P := Nat.add_sub_of_le (by omega)
+      rw [hsum]
+      simp [hw]
+    have h0ge : 3 ≤ w.getI 0 := by
+      have hwget : w.getI ((s + j) % w.length) = w.getI 0 := by rw [hpos0]
+      have hge' : 3 ≤ w.getI ((s + j) % w.length) := by rwa [hget] at hmem
+      rwa [← hwget]
+    rcases hzero0 with h1 | h2
+    · rw [h1] at h0ge
+      omega
+    · rw [h2] at h0ge
+      omega
+  have hC3 : ∀ k, k < C → 3 ≤ w.getI (s + k) := by
+    intro k hk
+    have hmem := c3PrefixLength_mem (cyclicSegmentAt w s) k hk
+    have hklt : k < w.length := by
+      rw [hw]
+      have hle' : C ≤ P := by
+        have hseg := cyclicSegmentAt_length w s (by dsimp [s]; rw [hw]; omega)
+        calc
+          C ≤ (cyclicSegmentAt w s).length := by dsimp [C]; exact c3PrefixLength_le _
+          _ = w.length := hseg
+          _ = P := hw
+      omega
+    have hget := cyclicSegmentAt_getI_mod w s k (by dsimp [s]; rw [hw]; omega) hklt
+    have hmod : (s + k) % w.length = s + k := by
+      have hlt : s + k < P := by omega
+      rw [hw]
+      exact Nat.mod_eq_of_lt (by omega)
+    have hge : 3 ≤ w.getI (s + k) := by
+      rw [hget] at hmem
+      rwa [hmod] at hmem
+    exact hge
+  have hprev12 : w.getI (s - 1) = 1 ∨ w.getI (s - 1) = 2 := by
+    have hbw : b ≤ w.length := by rw [hw]; omega
+    have hLpos : 1 ≤ L := by
+      dsimp [L]
+      exact blockRiseLen_pos_of_boundary w b hbw hnext
+    have hmem := risePrefixLength_mem (cyclicSegmentAt w b) (L - 1)
+      (by
+        dsimp [L]
+        simpa [blockRiseLen] using
+          (Nat.sub_lt (blockRiseLen_pos_of_boundary w b hbw hnext) (by decide : 0 < 1)))
+    have hklt : L - 1 < w.length := by
+      have hle' : L ≤ w.length := by
+        dsimp [L]
+        have hseg := cyclicSegmentAt_length w b hbw
+        calc
+          risePrefixLength (cyclicSegmentAt w b) ≤
+              (cyclicSegmentAt w b).length := risePrefixLength_le _
+          _ = w.length := hseg
+      rw [hw]
+      omega
+    have hget := cyclicSegmentAt_getI_mod w b (L - 1) hbw hklt
+    have hmod : (b + (L - 1)) % w.length = s - 1 := by
+      have hsum : b + (L - 1) = s - 1 := by
+        dsimp [s]
+        omega
+      rw [hsum]
+      exact Nat.mod_eq_of_lt (by dsimp [s] at hsP; dsimp [s]; rw [hw]; omega)
+    rw [hget] at hmem
+    rwa [hmod] at hmem
+  let q := nextRiseStart w P b
+  have hq : q = (s + C) % P := by
+    dsimp [q, s, C, L]
+    rw [nextRiseStart_eq_add_blockAdvance]
+    unfold blockAdvance
+    have hmod : (b + blockRiseLen w b) % P = s := by
+      dsimp [s]
+      exact Nat.mod_eq_of_lt (by simpa [s] using hsP)
+    rw [hmod]
+    have hadd : b + (blockRiseLen w b + c3PrefixLength (cyclicSegmentAt w s)) =
+        s + C := by
+      dsimp [s, C]
+      omega
+    rw [hadd]
+  let bndq := cyclicBoundaryIndex P q
+  have hCq : c3SuffixLengthAt w bndq = C := by
+    by_cases hlt : s + C < P
+    · have hq' : q = s + C := by
+        rw [hq]
+        exact Nat.mod_eq_of_lt hlt
+      have hbnd : bndq = s + C := by
+        dsimp [bndq]
+        rw [hq']
+        unfold cyclicBoundaryIndex
+        rw [if_neg (by dsimp [s]; omega : s + C ≠ 0)]
+      have hC3' : ∀ k, k < (s + C) - s → 3 ≤ w.getI (s + k) := by
+        intro k hk
+        have hk' : k < C := by omega
+        exact hC3 k hk'
+      have hsle : s ≤ s + C := by omega
+      have hlen : s + C ≤ w.length := by
+        rw [hw]
+        omega
+      have hsub0 : c3SuffixLengthAt w (s + C) = (s + C) - s :=
+        c3SuffixLengthAt_eq_sub_of_c3_run w (s + C) s hlen hsle hs1 hpos hC3' hprev12
+      have hsub' : c3SuffixLengthAt w (s + C) = C := by
+        rw [hsub0]
+        omega
+      rwa [← hbnd] at hsub'
+    · have heq : s + C = P := by omega
+      have hq' : q = 0 := by
+        rw [hq, heq]
+        simp
+      have hbnd : bndq = P := by
+        dsimp [bndq]
+        rw [hq']
+        simp [cyclicBoundaryIndex]
+      have hC3' : ∀ k, k < P - s → 3 ≤ w.getI (s + k) := by
+        intro k hk
+        have hk' : k < C := by
+          rw [← heq] at hk
+          omega
+        exact hC3 k hk'
+      have hsle : s ≤ P := by omega
+      have hlen : P ≤ w.length := by rw [hw]
+      have hsub' : c3SuffixLengthAt w P = P - s :=
+        c3SuffixLengthAt_eq_sub_of_c3_run w P s hlen hsle hs1 hpos hC3' hprev12
+      have hPs : P - s = C := by omega
+      rw [hbnd]
+      rw [hsub', hPs]
+  exact hCq
+
+/-- For a cyclic rise boundary `b < P` whose block does not wrap, the
+head depth of the next block is the current head depth plus the C3 and
+rise lengths of the current block. -/
+theorem blockHeadDepth_next_of_boundary
+    (w : List Nat) (P b : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hb1 : 1 ≤ b) (hbP : b < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hprev : 3 ≤ w.getI (b - 1))
+    (hnext : w.getI (b % w.length) = 1 ∨ w.getI (b % w.length) = 2)
+    (hzero0 : w.getI 0 = 1 ∨ w.getI 0 = 2)
+    (hprev0 : 3 ≤ w.getI (P - 1)) :
+    blockHeadDepth w (cyclicBoundaryIndex P (nextRiseStart w P b)) =
+      blockHeadDepth w b + blockC3Len w b + blockRiseLen w b := by
+  let L := blockRiseLen w b
+  let C := blockC3Len w b
+  let q := nextRiseStart w P b
+  let bndq := cyclicBoundaryIndex P q
+  have hbw : b ≤ w.length := by rw [hw]; omega
+  have hCle : C ≤ b := by
+    dsimp [C]
+    exact c3SuffixLengthAt_le w b hbw
+  have hCq : c3SuffixLengthAt w bndq = c3PrefixLength (cyclicSegmentAt w (b + L)) := by
+    dsimp [bndq, q, L]
+    exact blockC3Len_next_eq_of_cyclic w P b hw hP hb1 hbP hpos hprev hnext hzero0 hprev0
+  have hbndC : c3SuffixLengthAt w bndq ≤ bndq := by
+    have hqlt : q < P := nextRiseStart_lt hP w b
+    have hle' : bndq ≤ P := cyclicBoundaryIndex_le q hqlt
+    exact c3SuffixLengthAt_le w bndq (by rw [hw]; exact hle')
+  have hbd : blockHeadDepth w bndq = bndq - c3SuffixLengthAt w bndq := rfl
+  have hbd0 : blockHeadDepth w b = b - C := by
+    dsimp [C]
+    rfl
+  let s := b + L
+  let C' := c3PrefixLength (cyclicSegmentAt w s)
+  have hCq' : c3SuffixLengthAt w bndq = C' := by
+    dsimp [C', s]
+    exact hCq
+  have hsP : s < P := by
+    dsimp [s, L]
+    exact blockRiseLen_boundary_add_lt w P b hw hP hb1 hbP hpos hnext hprev0
+  have hsC_le : s + C' ≤ P := by
+    by_contra hnot
+    have hgt : P < s + C' := Nat.lt_of_not_ge hnot
+    let j := P - s
+    have hjlt : j < C' := by
+      dsimp [j]
+      omega
+    have hmem := c3PrefixLength_mem (cyclicSegmentAt w s) j hjlt
+    have hklt : j < w.length := by
+      have hle' : C' ≤ w.length := by
+        dsimp [C']
+        have hseg := cyclicSegmentAt_length w s (by dsimp [s]; rw [hw]; omega)
+        calc
+          c3PrefixLength (cyclicSegmentAt w s) ≤
+              (cyclicSegmentAt w s).length := c3PrefixLength_le _
+          _ = w.length := hseg
+      rw [hw]
+      omega
+    have hget := cyclicSegmentAt_getI_mod w s j (by dsimp [s]; rw [hw]; omega) hklt
+    have hpos0 : (s + j) % w.length = 0 := by
+      dsimp [j]
+      have hsum : s + (P - s) = P := Nat.add_sub_of_le (by omega)
+      rw [hsum]
+      simp [hw]
+    have h0ge : 3 ≤ w.getI 0 := by
+      have hwget : w.getI ((s + j) % w.length) = w.getI 0 := by rw [hpos0]
+      have hge' : 3 ≤ w.getI ((s + j) % w.length) := by rwa [hget] at hmem
+      rwa [← hwget]
+    rcases hzero0 with h1 | h2
+    · rw [h1] at h0ge
+      omega
+    · rw [h2] at h0ge
+      omega
+  by_cases hlt : s + C' < P
+  · have hbnd : bndq = s + C' := by
+      dsimp [bndq, q]
+      rw [nextRiseStart_eq_add_blockAdvance]
+      unfold blockAdvance
+      have hmod : (b + blockRiseLen w b) % P = s := by
+        dsimp [s]
+        exact Nat.mod_eq_of_lt (by simpa [s] using hsP)
+      rw [hmod]
+      have hadd : b + (blockRiseLen w b + c3PrefixLength (cyclicSegmentAt w s)) =
+          s + C' := by
+        dsimp [s, C']
+        omega
+      rw [hadd]
+      rw [Nat.mod_eq_of_lt hlt]
+      unfold cyclicBoundaryIndex
+      rw [if_neg (by dsimp [s]; omega : s + C' ≠ 0)]
+    have hmain : bndq - c3SuffixLengthAt w bndq = s := by
+      rw [hCq', hbnd]
+      omega
+    rw [hbd, hmain, hbd0]
+    dsimp [s, L, C]
+    dsimp [C] at hCle
+    omega
+  · have heq : s + C' = P := by omega
+    have hbnd : bndq = P := by
+      dsimp [bndq, q]
+      rw [nextRiseStart_eq_add_blockAdvance]
+      unfold blockAdvance
+      have hmod : (b + blockRiseLen w b) % P = s := by
+        dsimp [s]
+        exact Nat.mod_eq_of_lt (by simpa [s] using hsP)
+      rw [hmod]
+      have hadd : b + (blockRiseLen w b + c3PrefixLength (cyclicSegmentAt w s)) =
+          s + C' := by
+        dsimp [s, C']
+        omega
+      rw [hadd, heq]
+      simp [cyclicBoundaryIndex]
+    have hmain : bndq - c3SuffixLengthAt w bndq = s := by
+      rw [hCq', hbnd]
+      omega
+    rw [hbd, hmain, hbd0]
+    dsimp [s, L, C]
+    dsimp [C] at hCle
+    omega
+
 end StringFlow.CycleBridge
