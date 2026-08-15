@@ -201,3 +201,18 @@ def failureWindowExistenceOfUnifiedCore : Prop :=
 `hfail_t1/t2`（失败下界）必须由真实轨道可达性与 PMI 供给；
 `rjRankT1LargeBound`/`rjRankT2LargeBound` 的大深度界仍需精确结构，
 不能用小深度尺寸估计替代。
+
+## 10. 关键路径澄清（2026-08-15）
+
+`cycleRiseBlockWindowFalse` 已经证明：一旦 `failureWindowExistence`
+在某个 rise 块上组出完全循环失败窗口，出边 C3 的 rank-two 恒等式
+（`state_rank_eq_two_of_outgoing_c3`）直接给出 `False`，不需要
+`decisiveWindowValuationBoundCorrected`，也不需要
+`rjRankT1LargeBound`/`rjRankT2LargeBound`。因此大深度 rank 界不在
+失败窗口矛盾路线（`failureWindowExistence` → `cycleRiseBlockWindowFalse`
+→ 无循环 → 发散）的关键路径上；它只属于 corrected 窗口上界路线。
+
+失败窗口路线的关键路径只剩：从真实 `CycleQb8Input` 的 PMI 失败块构造
+`hterm`（真实终端到 `ResetHeadEq` 的前驱恒等式）与
+`hfail_t1/t2`（失败估值下界），其余结构输入
+（`hb`/`hall`/`hstop`/`ht_last`/`hne`/`hLlt`）已全部闭合。
