@@ -594,4 +594,16 @@ theorem riseBoundaryIter_mod
       simp [riseBoundaryIter]
       exact nextRiseStart_lt hP w (riseBoundaryIter w P b (n + 1))
 
+/-- Every block advance lies in the interval `[2, P]`. -/
+theorem blockAdvance_two_le_le_P
+    (w : List Nat) (P : Nat) (b : Nat) (hw : w.length = P)
+    (hb : b ≤ w.length) (hb1 : 1 ≤ b)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hprev : 3 ≤ w.getI (b - 1))
+    (hnext : w.getI (b % w.length) = 1 ∨ w.getI (b % w.length) = 2) :
+    2 ≤ blockAdvance w P b ∧ blockAdvance w P b ≤ P := by
+  constructor
+  · exact blockAdvance_pos w P b hw hb hb1 hpos hprev hnext
+  · exact blockAdvance_le_P w P b hw hb hb1 hpos hprev hnext
+
 end StringFlow.CycleBridge
