@@ -156,3 +156,20 @@ hfail 仍未由 PMI 块层求和推出。
 ```
 
 对所有避块成立。这条等价式闭合后，才能说 `hfail` 只是 Lean 接线。
+
+## 7. Lean 进展（2026-08-15）
+
+已编译并推送：
+
+- `c3_step_rank_gain` / `c3_step_rank_gain_div`：单步 C3 rank gain
+  `t + v2(rj+1) = 2 + v2(5q + 2^(t-2) - 1)`；
+- `c3Chain_rank_gain`：整条极大 C3 链
+  `tailRank + Σt = 2 + Σresidual`；
+- `cycleRiseBlockC3ChainRankGain`：把该链恒等式接到
+  `CycleRiseBlockDecomposition.c3Word r`；
+- `cycleRiseBlockTailRankSum_add_c3WeightSum`：对全循环求和
+  `Σ tailRank + Σ c3Weight = 2K + Σ residual`。
+
+仍未闭合的正是本文第 4 节的全局比较 (6)：把周期闭合
+`2^S > 5^P` 接到 `2ΣH2 > Σ(2(tailDepth - tailReset) + 12 + F)`
+或等价预算。C3 rank gain 层只是该预算的估值端，不虚标已闭合。
