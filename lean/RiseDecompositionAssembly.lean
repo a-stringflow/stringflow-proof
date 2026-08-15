@@ -1615,23 +1615,23 @@ theorem wordA_append (v u : List Nat) :
       ring
 
 /-- Direct construction of the block-head predecessor identity
-(`hpred`) from the real boundary terminal.  The proof instantiates the
-real terminal, the cyclic prefix occurrence with its exact incoming
-edge, the exact word identity for the rise prefix, and the exact
-boundary-terminal identity `rt.r = 2^(w[b-1]-1) * q`.  After this
+(`hpred`) from the real boundary terminal and its genuine local reset
+(`hterm`).  The proof instantiates the real terminal, the cyclic prefix
+occurrence with its exact incoming edge, the exact word identity for
+the rise prefix, the exact boundary-terminal identity
+`rt.r = 2^(w[b-1]-1) * q`, and the reset alignment that turns
+`IsLocalResetTerminal` into the real predecessor identity.  After this
 algebraic reduction, `hpred` is exactly the word equation
 
 `wordA u' + 5^(L-1)*q = 2^(weight u' + c - 1)*q + delta*2^(weight u')*5^(L-1)`
 
-for the rise prefix `u'` of length `L-1`; that word equation is the
-single remaining step, to be supplied by the cyclic block equations of
-`CycleQb8Input` (delta-zero block structure, real orbit occurrence,
-boundary-terminal identity).  The block length must be at least three:
-for `L <= 2` the conclusion would force `rt.r + delta*5^(L-1) = o_local`
-with `rt.r >= 4*q` while zero or one rise step keeps `o_local < 4*q`,
-so those cases are exactly the pseudo-candidates excluded by
-`cyclic_local_reset_length_ge_three`.  No size estimate and no C3-rank
-input is used. -/
+for the rise prefix `u'` of length `L-1`; the equation is obtained
+from `hterm`, not from the cycle closure alone.  The block length must
+be at least three: for `L <= 2` the conclusion would force
+`rt.r + delta*5^(L-1) = o_local` with `rt.r >= 4*q` while zero or one
+rise step keeps `o_local < 4*q`, so those cases are exactly the
+pseudo-candidates excluded by `cyclic_local_reset_length_ge_three`.  No
+size estimate and no C3-rank input is used. -/
 theorem cycleRiseBlockHpred_of_real_terminal
     {m S P : Nat} {w rise c3 : List Nat}
     (h : CycleQb8Input m S P w rise c3)
@@ -1644,6 +1644,12 @@ theorem cycleRiseBlockHpred_of_real_terminal
     (ht : t = 1 ∨ t = 2)
     (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
     (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hterm : IsLocalResetTerminal t (d.suffixWord r).length
+      (StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+          (d.suffixWord r).length)
+        (StringFlow.Word.wordOrbit
+          (w.take (cycleRiseBlockTailDepth d r)) m)) delta rt)
     (hrt : rt.r = (5 * StringFlow.Word.wordOrbit
       (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2) :
     5 ^ rt.k * rt.s + delta * 5 ^ ((d.suffixWord r).length - 1) - 1 =
@@ -1706,75 +1712,54 @@ theorem cycleRiseBlockHpred_of_real_terminal
     rw [List.length_take_of_le]
     · rw [cyclicSegmentAt_length w b hble]
       exact le_trans (Nat.sub_le L 1) hLle
-  -- E5 is not a new consequence of the block equation: the block
-  -- equation only rewrites the left-hand side to the word-equation
-  -- side.  E5 is equivalent to the predecessor identity itself,
-  -- `o_local(L-1) = rt.r + delta*5^(L-1)`, hence to `hterm`.  Its
-  -- source is therefore the delta-zero block property of this
-  -- specific block (the reset equation holds), which is exactly
-  -- `hterm`; whether the cycle closure/PMI forces this property is
-  -- exactly what remains to be derived.  The coefficient mismatch
-  -- after the cycle-closure substitution does not mean E5 is false:
-  -- it only means E5 is not an automatic consequence of the cycle
-  -- closure, and the delta-zero block property is the remaining input.
+  -- E5 is the word-equation form of the real predecessor identity.  It
+  -- is derived from `hterm` through `isLocalResetTerminal_iff_resetHeadEq`
+  -- and the depth-aligned predecessor lemma; the cycle closure does not
+  -- force the delta-zero block property, so that real reset remains the
+  -- open upstream input.
   have hE5 : StringFlow.Word.wordA u' + 5 ^ (L - 1) * q =
       2 ^ ((StringFlow.wordWeight u' + w.getI (b - 1)) - 1) * q +
         delta * 2 ^ StringFlow.wordWeight u' * 5 ^ (L - 1) := by
-    have hDpos : 0 < 2 ^ S - 5 ^ P := by
-      rcases h.hcycle with ⟨hcp⟩
-      rcases hcp with ⟨cp, hprops⟩
-      rcases hprops with ⟨hw, hm⟩
-      rcases hm with ⟨hm, hS⟩
-      rcases hS with ⟨hS, _hr, _hc⟩
-      have hclosed' : StringFlow.Word.wordOrbit
-          (cycleWord cp.1 cp.2) (fiveXPlusOneOrbit 7 cp.1) =
-          fiveXPlusOneOrbit 7 cp.1 := by
-        simpa [hw, hm] using h.hclosed
-      have hP : P = cp.2 := by
-        rw [← h.hlength, hw, cycleWord_length cp.1 cp.2]
-      have hp : 1 ≤ cp.2 := by
-        have hPge2 : 2 ≤ P := cycleQb8Input_P_ge_two h
+    have hterm' : IsLocalResetTerminal t L
+        (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L) q) delta rt := by
+      simpa [b, L, q] using hterm
+    have hw : S6Audit.orbitStepWeight (n - 1) = t := by
+      rw [hwWord, ← ht_last']
+    have hreset : S6Audit.ResetHeadEq rt.s L rt.k t delta
+        (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L) q) :=
+      (isLocalResetTerminal_iff_resetHeadEq t L
+        (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L) q)
+        delta rt ht hdelta).mp hterm'
+    have hpred := RealOrbitLocalLemma.reset_predecessor_eq_fullOrbit_of_aligned_weight_of_j_pos
+      n L rt.k t delta rt.s 0
+        (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L) q)
+        hLpos hreset hn hiter hw
+    have hxprev : S6Audit.fullOrbitIter (n - 1) =
+        rt.r + delta * 5 ^ (L - 1) := by
+      omega
+    have ho_prev : StringFlow.Word.wordOrbit u' q =
+        rt.r + delta * 5 ^ (L - 1) := by
+      rw [← hprev]
+      exact hxprev
+    rw [ho_prev] at hid
+    rw [hterminal] at hid
+    have hleft : 2 ^ StringFlow.wordWeight u' *
+        (2 ^ (w.getI (b - 1) - 1) * q + delta * 5 ^ (L - 1)) =
+        2 ^ ((StringFlow.wordWeight u' + w.getI (b - 1)) - 1) * q +
+          delta * 2 ^ StringFlow.wordWeight u' * 5 ^ (L - 1) := by
+      rw [Nat.mul_add]
+      rw [← Nat.mul_assoc]
+      rw [← Nat.pow_add]
+      have hc : 1 ≤ w.getI (b - 1) := by
+        have h3 : 3 ≤ w.getI (b - 1) := hb.2.2.1
         omega
-      have hD := cycleWord_D_pos cp.1 cp.2 hclosed' hp
-      have hS' : S = cycleWordTotalWeight cp.1 cp.2 := by
-        dsimp [cycleWordTotalWeight]
-        exact hS
-      simpa [hS', hP] using hD
-    have hqD : q * (2 ^ S - 5 ^ P) =
-        StringFlow.Word.wordA (cyclicSegmentAt w b) := by
-      exact cycleQb8Input_rotated_wordA h b hble
-    apply Nat.eq_of_mul_eq_mul_left hDpos
-    rw [Nat.mul_add, Nat.mul_add]
-    ring_nf
-    rw [Nat.mul_comm (2 ^ S - 5 ^ P) q]
-    rw [hqD]
-    have hrot_split : cyclicSegmentAt w b =
-        u' ++ [t] ++ (cyclicSegmentAt w b).drop L := by
-      have hLlt : L - 1 < (cyclicSegmentAt w b).length := by
-        rw [cyclicSegmentAt_length w b hble]
-        omega
-      have htc := List.take_concat_get (l := cyclicSegmentAt w b) (i := L - 1) hLlt
-      have hget : (cyclicSegmentAt w b)[L - 1] = t := by
-        have hg := List.getI_eq_getElem (l := cyclicSegmentAt w b) (n := L - 1) hLlt
-        rw [← hg]
-        exact ht_last'.symm
-      have htake : (cyclicSegmentAt w b).take L = u' ++ [t] := by
-        have htc' : (cyclicSegmentAt w b).take (L - 1) ++
-            [(cyclicSegmentAt w b)[L - 1]] = (cyclicSegmentAt w b).take L := by
-          have hsub : L - 1 + 1 = L := Nat.sub_add_cancel hLpos
-          rw [List.concat_eq_append] at htc
-          simpa [hsub] using htc
-        rw [hget] at htc'
-        change (cyclicSegmentAt w b).take L = u' ++ [t]
-        exact htc'.symm
-      have hsplit : cyclicSegmentAt w b =
-          (cyclicSegmentAt w b).take L ++ (cyclicSegmentAt w b).drop L :=
-        (List.take_append_drop L (cyclicSegmentAt w b)).symm
-      rw [htake] at hsplit
-      simpa [List.append_assoc] using hsplit
-    rw [hrot_split]
-    rw [wordA_append]
-    sorry
+      have hsub : (StringFlow.wordWeight u' + w.getI (b - 1)) - 1 =
+          StringFlow.wordWeight u' + (w.getI (b - 1) - 1) := by omega
+      rw [hsub]
+      rw [← Nat.mul_assoc]
+      rw [Nat.mul_comm (2 ^ StringFlow.wordWeight u') delta]
+    rw [hleft] at hid
+    simpa [Nat.add_comm] using hid.symm
   have heq' : 2 ^ StringFlow.wordWeight u' * StringFlow.Word.wordOrbit u' q =
       2 ^ StringFlow.wordWeight u' * (rt.r + delta * 5 ^ (L - 1)) := by
     rw [hterminal]
