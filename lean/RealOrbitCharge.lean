@@ -926,6 +926,57 @@ lemma cycleRiseBlockC3ExactMax
       omega
     omega
 
+/-- Every cyclic rise block head enters a C3 chain, so its rank is
+exactly two. -/
+lemma cycleRiseBlockHeadRank_two
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    cycleRiseBlockHeadRank d r = 2 := by
+  have hQ : 0 < (d.c3Word r).length :=
+    List.length_pos_iff.mpr (d.hc3_nonempty r hr)
+  have hgt : 3 ≤ twoValuation (5 * StringFlow.Word.wordOrbit
+      (w.take (d.headDepth r)) m + 1) := by
+    have hmem : (d.c3Word r).getI 0 ∈ d.c3Word r := by
+      rw [List.getI_eq_getElem (l := d.c3Word r) (n := 0) hQ]
+      exact List.getElem_mem hQ
+    have hge : 3 ≤ (d.c3Word r).getI 0 := d.hc3_entries r hr _ hmem
+    have hex0 : twoValuation (5 * StringFlow.Word.wordOrbit
+        (w.take (d.headDepth r)) m + 1) = (d.c3Word r).getI 0 := by
+      simpa using d.hc3_exact r hr 0 hQ
+    rw [hex0]
+    exact hge
+  have hodd : S6Audit.IsOdd (StringFlow.Word.wordOrbit
+      (w.take (d.headDepth r)) m) := by
+    by_contra hnot
+    have hxeven : StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m % 2 = 0 := by
+      rcases Nat.mod_two_eq_zero_or_one
+        (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m) with h0 | h1
+      · exact h0
+      · exact False.elim (hnot h1)
+    have hx1odd : (5 * StringFlow.Word.wordOrbit
+        (w.take (d.headDepth r)) m + 1) % 2 = 1 := by
+      omega
+    have hv : twoValuation (5 * StringFlow.Word.wordOrbit
+        (w.take (d.headDepth r)) m + 1) = 0 :=
+      StringFlow.twoValuation_odd _ hx1odd
+    omega
+  have hrank := StringFlow.RealOrbitLocalLemma.state_rank_eq_two_of_outgoing_c3
+    (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m) hodd hgt
+  simpa [cycleRiseBlockHeadRank] using hrank
+
+/-- For a non-wrapping block, the rise-suffix endpoint is the next
+block head, hence has rank two. -/
+lemma cycleRiseBlockSuffixEndpointRank_eq_two
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hrnext : r + 1 < d.blockCount) :
+    cycleRiseBlockSuffixEndpointRank d r = 2 := by
+  have hstate := cycleRiseBlockSuffixEndpoint_eq_nextHead_nonwrap d r hr hrnext
+  change twoValuation (cycleRiseBlockSuffixEndpointState d r + 1) = 2
+  rw [hstate]
+  exact cycleRiseBlockHeadRank_two d (r + 1) hrnext
+
 /-- Block-level C3 rank gain: the C3-tail rank of a block is
 controlled by its C3 word and the per-step residuals. -/
 theorem cycleRiseBlockC3ChainRankGain
@@ -944,34 +995,7 @@ theorem cycleRiseBlockC3ChainRankGain
   let headState := StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m
   have hheadN : twoValuation (headState + 1) = 2 := by
     dsimp [headState]
-    have hgt : 3 ≤ twoValuation (5 * StringFlow.Word.wordOrbit
-        (w.take (d.headDepth r)) m + 1) := by
-      have hmem : (d.c3Word r).getI 0 ∈ d.c3Word r := by
-        rw [List.getI_eq_getElem (l := d.c3Word r) (n := 0) hQ]
-        exact List.getElem_mem hQ
-      have hge : 3 ≤ (d.c3Word r).getI 0 := d.hc3_entries r hr _ hmem
-      have hex0 : twoValuation (5 * StringFlow.Word.wordOrbit
-          (w.take (d.headDepth r)) m + 1) = (d.c3Word r).getI 0 := by
-        simpa using d.hc3_exact r hr 0 hQ
-      rw [hex0]
-      exact hge
-    have hodd : S6Audit.IsOdd (StringFlow.Word.wordOrbit
-        (w.take (d.headDepth r)) m) := by
-      by_contra hnot
-      have hxeven : StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m % 2 = 0 := by
-        rcases Nat.mod_two_eq_zero_or_one
-          (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m) with h0 | h1
-        · exact h0
-        · exact False.elim (hnot h1)
-      have hx1odd : (5 * StringFlow.Word.wordOrbit
-          (w.take (d.headDepth r)) m + 1) % 2 = 1 := by
-        omega
-      have hv : twoValuation (5 * StringFlow.Word.wordOrbit
-          (w.take (d.headDepth r)) m + 1) = 0 :=
-        StringFlow.twoValuation_odd _ hx1odd
-      omega
-    exact StringFlow.RealOrbitLocalLemma.state_rank_eq_two_of_outgoing_c3
-      (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m) hodd hgt
+    exact cycleRiseBlockHeadRank_two d r hr
   have hgain := StringFlow.RealOrbitLocalLemma.c3Chain_rank_gain
     (c3ChainStates headState (d.c3Word r))
     (d.c3Word r) hQ hmax (d.hc3_entries r hr)
