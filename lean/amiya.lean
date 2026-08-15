@@ -50,6 +50,29 @@ theorem tailPerBlockCapacity_implies_weak_global_comparison
   have hc := hcap r hrlt
   omega
 
+/-- The open hfail rank target for one cyclic rise decomposition: some
+block head crosses the branchwise failure threshold.  This is the
+direct input needed by the hfail/rank valuation bridge; it no longer
+uses the rejected global comparison (6). -/
+def hfailRankLowerBoundOfDecomposition {m S P : Nat} {w : List Nat}
+    (d : CycleBridge.CycleRiseBlockDecomposition m S P w) : Prop :=
+  ∃ r : Nat, r < d.blockCount ∧
+    ((d.resetWeight r = 1 ∧
+        2 * d.headDepth r + 11 ≤ CycleBridge.cycleRiseBlockHeadRank d r) ∨
+     (d.resetWeight r = 2 ∧
+        2 * d.headDepth r + 9 ≤ CycleBridge.cycleRiseBlockHeadRank d r))
+
+/-- The precise open hfail goal: every real `CycleQb8Input` with
+`5^P < 2^S` has a cyclic rise block whose head rank reaches the
+branchwise failure threshold.  The missing piece is exactly this rank
+lower bound, not the rejected strict global comparison. -/
+def hfailRankLowerBoundTarget : Prop :=
+  ∀ m S P : Nat, ∀ w rise c3 : List Nat,
+    CycleBridge.CycleQb8Input m S P w rise c3 →
+    5 ^ P < 2 ^ S →
+      ∃ d : CycleBridge.CycleRiseBlockDecomposition m S P w,
+        hfailRankLowerBoundOfDecomposition d
+
 /-- A `t=1` rank threshold is exactly the `hfail_t1` valuation bound,
 once the reset equation identifies the block head. -/
 theorem hfail_t1_of_rank
