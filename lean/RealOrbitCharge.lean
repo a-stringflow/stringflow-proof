@@ -987,6 +987,43 @@ theorem cycleRiseBlockC3ChainRankGain
     exact (cycleRiseBlockC3TailState_eq_wordOrbit_c3Word d r hr).symm
   simpa [cycleRiseBlockTailRank, headState, hlast] using hgain
 
+/-- The C3 residual sum of one block. -/
+def cycleRiseBlockC3ResidualSum {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat) : Nat :=
+  (StringFlow.RealOrbitLocalLemma.c3Residuals
+    (c3ChainStates
+      (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m)
+      (d.c3Word r))
+    (d.c3Word r)).sum
+
+/-- Summed block-level C3 rank gain over the whole cyclic
+decomposition:
+`Σ tailRank + Σ c3Weight = 2*K + Σ residual`. -/
+theorem cycleRiseBlockTailRankSum_add_c3WeightSum
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) :
+    ((List.range d.blockCount).map (fun r => cycleRiseBlockTailRank d r)).sum +
+      ((List.range d.blockCount).map (fun r => (d.c3Word r).sum)).sum =
+    2 * d.blockCount +
+      ((List.range d.blockCount).map
+        (fun r => cycleRiseBlockC3ResidualSum d r)).sum := by
+  rw [← List.sum_map_add]
+  have hmap : (List.range d.blockCount).map
+      (fun r => cycleRiseBlockTailRank d r + (d.c3Word r).sum) =
+    (List.range d.blockCount).map
+      (fun r => 2 + cycleRiseBlockC3ResidualSum d r) := by
+    refine List.ext_getElem ?_ ?_
+    · simp
+    · intro k hk1 hk2
+      have hklt : k < d.blockCount := by simpa using hk1
+      rw [List.getElem_map]
+      rw [List.getElem_map]
+      simpa [cycleRiseBlockC3ResidualSum] using
+        (cycleRiseBlockC3ChainRankGain d k hklt)
+  rw [hmap]
+  rw [List.sum_map_add]
+  simp [List.sum_replicate, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+
 /-- The last C3 entry of a block is at least three. -/
 lemma cycleRiseBlockTailResetWeight_ge_three {m S P : Nat} {w : List Nat}
     (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
