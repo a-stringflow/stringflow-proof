@@ -922,4 +922,52 @@ theorem suffixWord_prefix_eq_word_prefix_nonwrap
   have hwd := wordOrbit_take_drop w m start j hbL
   exact hmain.trans hwd.symm
 
+/-- The complete real-block premises instantiation for a non-wrapping
+rise block: the word structure, the `q0` interval, the head bound and
+the prefix-orbit identities are all derived from the decomposition;
+only the real reset-window size (`hhead`), the tail size (`hrs_lt`)
+and the failure-branch data (`r_s % 8`, `L`, `H_s`) remain as inputs. -/
+theorem premises_of_cycleRiseBlock
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hrnext : r + 1 < d.blockCount)
+    (j s t rj r_s L H_s : Nat)
+    (hj_pos : 1 ≤ j) (hj_le_s : j ≤ s) (hs_le : s ≤ (d.suffixWord r).length)
+    (ht : UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) j =
+      UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) (j - 1) + t)
+    (hrj : rj = StringFlow.Word.wordOrbit
+      (w.take (cycleRiseBlockTailDepth d r + j)) m)
+    (hhead : 5 ^ j ≤ 2 ^ t * rj ∧ rj < 5 ^ j)
+    (hrs_eq : r_s = StringFlow.Word.wordOrbit
+      (w.take (cycleRiseBlockTailDepth d r + s)) m)
+    (hrs_lt : r_s < 5 ^ s)
+    (hrs_mod8 : r_s % 8 = 5)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hH : H_s = 2 * s + 13 - 2 *
+      (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) s -
+        UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) (j - 1))) :
+    UnifiedCoreAudit.All36_20PremisesNoHge j
+      (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) (j - 1))
+      (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) j)
+      (cycleRiseBlockC3TailState d r)
+      (S6Audit.wordMolecule (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r)) j)
+      (S6Audit.wordMolecule (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r)) s) s
+      (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) s) r_s L H_s
+      (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r)) := by
+  have hvs := suffixWord_valid_of_cycleRiseBlock d r hr
+  have hprej := suffixWord_prefix_eq_word_prefix_nonwrap d r hr hrnext j (by omega)
+  have hpres := suffixWord_prefix_eq_word_prefix_nonwrap d r hr hrnext s hs_le
+  have hrj_local : rj = StringFlow.Word.wordOrbit ((d.suffixWord r).take j)
+      (cycleRiseBlockC3TailState d r) := by
+    rw [hrj]
+    exact hprej.symm
+  have hrs_local : r_s = StringFlow.Word.wordOrbit ((d.suffixWord r).take s)
+      (cycleRiseBlockC3TailState d r) := by
+    rw [hrs_eq]
+    exact hpres.symm
+  exact UnifiedCoreAudit.premises_of_real_orbit_head (d.suffixWord r)
+    (cycleRiseBlockC3TailState d r)
+    j s r_s L H_s t rj hvs.1 hvs.2 hj_pos hj_le_s hs_le ht hrj_local hhead
+    hrs_local hrs_lt hrs_mod8 hL hH
+
 end StringFlow.CycleBridge
