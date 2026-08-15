@@ -1794,6 +1794,120 @@ theorem cycleRiseBlockHpred_of_real_terminal
   rw [← hprev] at heq'''
   exact heq'''
 
+/-- The real-orbit half of `hterm`: the genuine predecessor identity
+`5^rt.k * rt.s + delta * 5^(L-1) - 1 = wordOrbit u' q` constructs the
+reset equation.  The remaining open input is exactly that predecessor
+identity, supplied by real orbit data; cycle closure does not replace
+it. -/
+theorem cycleRiseBlockHterm_of_real_predecessor
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hne : d.suffixWord r ≠ [])
+    (hLle : (d.suffixWord r).length ≤ w.length)
+    (t delta : Nat)
+    (ht_last : t = (d.suffixWord r).getI ((d.suffixWord r).length - 1))
+    (ht : t = 1 ∨ t = 2)
+    (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
+    (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hpred : 5 ^ rt.k * rt.s + delta * 5 ^ ((d.suffixWord r).length - 1) - 1 =
+      StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+          ((d.suffixWord r).length - 1))
+        (StringFlow.Word.wordOrbit
+          (w.take (cycleRiseBlockTailDepth d r)) m)) :
+    IsLocalResetTerminal t (d.suffixWord r).length
+      (StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+          (d.suffixWord r).length)
+        (StringFlow.Word.wordOrbit
+          (w.take (cycleRiseBlockTailDepth d r)) m)) delta rt := by
+  have hLpos : 1 ≤ (d.suffixWord r).length := List.length_pos_iff.mpr hne
+  have hb := cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary d r hr hne
+  have hlast := cycleRiseBlockSuffixLastStep d r hr hLpos hLle
+  have ht_last' : t = (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).getI
+      ((d.suffixWord r).length - 1) := by
+    rw [← hlast]
+    exact ht_last
+  let b : Nat := cycleRiseBlockTailDepth d r
+  let L : Nat := (d.suffixWord r).length
+  let u' : List Nat := (cyclicSegmentAt w b).take (L - 1)
+  let q : Nat := StringFlow.Word.wordOrbit (w.take b) m
+  have hble : b ≤ w.length := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  rcases RealOrbitLocalLemma.cycleQb8Input_cyclic_prefix_occurrence_with_incoming
+      h b L hble hLpos hLle with ⟨n, hn, hiter, hprev, hwWord⟩
+  dsimp [b, L, u', q] at hprev ⊢
+  have hw : S6Audit.orbitStepWeight (n - 1) = t := by
+    rw [hwWord, ← ht_last']
+  have hpred' : 5 ^ rt.k * rt.s + delta * 5 ^ (L - 1) - 1 =
+      S6Audit.fullOrbitIter (n - 1) := by
+    rw [hprev]
+    simpa [b, L, u', q] using hpred
+  have hreset := RealOrbitLocalLemma.ResetHeadEq_of_fullOrbit_predecessor_eq
+    n L rt.k t delta rt.s
+      (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L) q)
+    hLpos hn hiter hw ht hdelta hpred'
+  have hterm' : IsLocalResetTerminal t L
+      (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L) q) delta rt :=
+    (isLocalResetTerminal_iff_resetHeadEq t L
+      (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L) q)
+      delta rt ht hdelta).mpr hreset
+  simpa [b, L, q] using hterm'
+
+/-- The exact real-orbit input still needed for `hterm`: at every
+cyclic rise block, the genuine predecessor identity holds.  It is the
+only remaining real-orbit gap after
+`cycleRiseBlockHterm_of_real_predecessor`. -/
+def cycleQb8InputRealPredecessorIdentity : Prop :=
+  ∀ m S P : Nat, ∀ w rise c3 : List Nat,
+    CycleQb8Input m S P w rise c3 →
+    ∀ (d : CycleRiseBlockDecomposition m S P w) (r : Nat),
+      r < d.blockCount → d.suffixWord r ≠ [] →
+      (d.suffixWord r).length ≤ w.length →
+      ∀ t delta : Nat,
+        t = (d.suffixWord r).getI ((d.suffixWord r).length - 1) →
+        (t = 1 ∨ t = 2) →
+        ((t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3)) →
+        ∀ rt : S6Audit.AngelinaGilbertaRealTerminal,
+          rt.r = (5 * StringFlow.Word.wordOrbit
+            (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2 →
+          5 ^ rt.k * rt.s + delta * 5 ^ ((d.suffixWord r).length - 1) - 1 =
+            StringFlow.Word.wordOrbit
+              ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+                ((d.suffixWord r).length - 1))
+              (StringFlow.Word.wordOrbit
+                (w.take (cycleRiseBlockTailDepth d r)) m)
+
+/-- The real predecessor identity closes the real-orbit half of
+`hterm` at every cyclic rise block. -/
+theorem cycleQb8InputHtermOfRealPredecessorIdentity
+    (hpre : cycleQb8InputRealPredecessorIdentity) :
+    ∀ m S P : Nat, ∀ w rise c3 : List Nat,
+      CycleQb8Input m S P w rise c3 →
+      ∀ (d : CycleRiseBlockDecomposition m S P w) (r : Nat),
+        r < d.blockCount → d.suffixWord r ≠ [] →
+        (d.suffixWord r).length ≤ w.length →
+        ∀ t delta : Nat,
+          t = (d.suffixWord r).getI ((d.suffixWord r).length - 1) →
+          (t = 1 ∨ t = 2) →
+          ((t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3)) →
+          ∀ rt : S6Audit.AngelinaGilbertaRealTerminal,
+            rt.r = (5 * StringFlow.Word.wordOrbit
+              (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2 →
+            IsLocalResetTerminal t (d.suffixWord r).length
+              (StringFlow.Word.wordOrbit
+                ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+                  (d.suffixWord r).length)
+                (StringFlow.Word.wordOrbit
+                  (w.take (cycleRiseBlockTailDepth d r)) m)) delta rt := by
+  intro m S P w rise c3 h d r hr hne hLle t delta ht_last ht hdelta rt hrt
+  exact cycleRiseBlockHterm_of_real_predecessor h d r hr hne hLle t delta
+    ht_last ht hdelta rt
+    (hpre m S P w rise c3 h d r hr hne hLle t delta ht_last ht hdelta rt hrt)
+
 /-- The complete real-block premises instantiation for a cyclic rise
 block (wrap-invariant): the word structure, the `q0` interval, the head
 bound and the prefix-orbit identities are all derived from the
