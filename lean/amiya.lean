@@ -81,6 +81,30 @@ def hfailRankLowerBoundTarget : Prop :=
         (w.getI j = 1 ∨ w.getI j = 2) ∧
         hfailRankLowerBoundAt m w j t
 
+/-- Maximum `v2(x+1)` along a rise word. -/
+def maxRankAlong (r : Nat) : List Nat → Nat
+  | [] => twoValuation (r + 1)
+  | t :: ts => max (twoValuation (r + 1))
+    (maxRankAlong (CycleBridge.riseStep r t) ts)
+
+/-- The starting rank is controlled by the maximum along the word. -/
+lemma maxRankAlong_ge_initial (r : Nat) (ts : List Nat) :
+    twoValuation (r + 1) ≤ maxRankAlong r ts := by
+  induction ts generalizing r with
+  | nil => simp [maxRankAlong]
+  | cons t ts ih =>
+      dsimp [maxRankAlong]
+      exact le_max_left _ _
+
+/-- The endpoint rank is controlled by the maximum along the word. -/
+lemma maxRankAlong_ge_endpoint (r : Nat) (ts : List Nat) :
+    twoValuation (CycleBridge.riseRun r ts + 1) ≤ maxRankAlong r ts := by
+  induction ts generalizing r with
+  | nil => simp [maxRankAlong, CycleBridge.riseRun]
+  | cons t ts ih =>
+      dsimp [maxRankAlong]
+      exact le_max_of_le_right (ih (CycleBridge.riseStep r t))
+
 /-- A `t=1` rank threshold is exactly the `hfail_t1` valuation bound,
 once the reset equation identifies the block head. -/
 theorem hfail_t1_of_rank
