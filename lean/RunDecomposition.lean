@@ -358,4 +358,19 @@ theorem blockAdvance_pos
     exact hc0
   omega
 
+/-- The next boundary is exactly the current boundary advanced by the
+block advance, reduced modulo the period. -/
+theorem nextRiseStart_eq_add_blockAdvance
+    (w : List Nat) (P b : Nat) :
+    nextRiseStart w P b = (b + blockAdvance w P b) % P := by
+  unfold nextRiseStart blockAdvance
+  let r := blockRiseLen w b
+  let c := c3PrefixLength (cyclicSegmentAt w ((b + blockRiseLen w b) % P))
+  change ((b + r) % P + c) % P = (b + (r + c)) % P
+  have h : (b + (r + c)) % P = ((b + r) % P + c) % P := by
+    calc
+      (b + (r + c)) % P = ((b + r) + c) % P := by rw [Nat.add_assoc]
+      _ = ((b + r) % P + c) % P := by rw [Nat.mod_add_mod]
+  exact h.symm
+
 end StringFlow.CycleBridge
