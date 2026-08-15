@@ -1496,6 +1496,118 @@ theorem cycleRiseBlockRealTerminal
   exact cycleQb8Input_angelina_real_terminal h (cycleRiseBlockTailDepth d r)
     hbpos hble hprev3
 
+/-- Direct construction of the block-head predecessor identity
+(`hpred`) from the real boundary terminal.  The proof instantiates the
+real terminal, the cyclic prefix occurrence with its exact incoming
+edge, the exact word identity for the rise prefix, and the exact
+boundary-terminal identity `rt.r = 2^(w[b-1]-1) * q`.  After this
+algebraic reduction, `hpred` is exactly the word equation
+
+`wordA u' + 5^(L-1)*q = 2^(weight u' + c - 1)*q + delta*2^(weight u')*5^(L-1)`
+
+for the rise prefix `u'` of length `L-1`; that word equation is the
+single remaining step, to be supplied by the cyclic block equations of
+`CycleQb8Input` (delta-zero block structure, real orbit occurrence,
+boundary-terminal identity).  No size estimate and no C3-rank input is
+used. -/
+theorem cycleRiseBlockHpred_of_real_terminal
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hne : d.suffixWord r ≠ [])
+    (hLle : (d.suffixWord r).length ≤ w.length)
+    (t delta : Nat)
+    (ht_last : t = (d.suffixWord r).getI ((d.suffixWord r).length - 1))
+    (ht : t = 1 ∨ t = 2)
+    (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
+    (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hrt : rt.r = (5 * StringFlow.Word.wordOrbit
+      (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2) :
+    5 ^ rt.k * rt.s + delta * 5 ^ ((d.suffixWord r).length - 1) - 1 =
+      StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+          ((d.suffixWord r).length - 1))
+        (StringFlow.Word.wordOrbit
+          (w.take (cycleRiseBlockTailDepth d r)) m) := by
+  have hLpos : 1 ≤ (d.suffixWord r).length := List.length_pos_iff.mpr hne
+  have hb := cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary d r hr hne
+  have hlast := cycleRiseBlockSuffixLastStep d r hr hLpos hLle
+  have ht_last' : t = (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).getI
+      ((d.suffixWord r).length - 1) := by
+    rw [← hlast]
+    exact ht_last
+  let b : Nat := cycleRiseBlockTailDepth d r
+  let L : Nat := (d.suffixWord r).length
+  let u' : List Nat := (cyclicSegmentAt w b).take (L - 1)
+  let q : Nat := StringFlow.Word.wordOrbit (w.take b) m
+  have hble : b ≤ w.length := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  rcases RealOrbitLocalLemma.cycleQb8Input_cyclic_prefix_occurrence_with_incoming
+      h b L hble hLpos hLle with ⟨n, hn, hiter, hprev, hwWord⟩
+  dsimp [b, L, u', q] at hprev ⊢
+  rw [← hprev]
+  have hprod : 5 ^ rt.k * rt.s = rt.r + 1 := by
+    simpa [Nat.mul_comm] using rt.hprod
+  have hterminal := RealOrbitLocalLemma.cycleQb8Input_boundary_terminal_eq h b hb rt hrt
+  have hvalid_rot : StringFlow.Word.wordValid (cyclicSegmentAt w b) q := by
+    dsimp [q]
+    exact cyclicSegmentAt_valid h b
+  have hsplit : cyclicSegmentAt w b = u' ++ (cyclicSegmentAt w b).drop (L - 1) := by
+    dsimp [u']
+    exact (List.take_append_drop (L - 1) (cyclicSegmentAt w b)).symm
+  have hvalid_u' : StringFlow.Word.wordValid u' q := by
+    rw [hsplit] at hvalid_rot
+    exact (S6Audit.wordValid_append u' ((cyclicSegmentAt w b).drop (L - 1)) q).mp
+      hvalid_rot |>.1
+  have hid : 2 ^ StringFlow.wordWeight u' * StringFlow.Word.wordOrbit u' q =
+      5 ^ u'.length * q + StringFlow.Word.wordA u' :=
+    StringFlow.Word.word_orbit_identity u' q hvalid_u'
+  have hu'_len : u'.length = L - 1 := by
+    dsimp [u']
+    rw [List.length_take_of_le]
+    · rw [cyclicSegmentAt_length w b hble]
+      exact le_trans (Nat.sub_le L 1) hLle
+  have hE5 : StringFlow.Word.wordA u' + 5 ^ (L - 1) * q =
+      2 ^ ((StringFlow.wordWeight u' + w.getI (b - 1)) - 1) * q +
+        delta * 2 ^ StringFlow.wordWeight u' * 5 ^ (L - 1) := by
+    sorry
+  have heq' : 2 ^ StringFlow.wordWeight u' * StringFlow.Word.wordOrbit u' q =
+      2 ^ StringFlow.wordWeight u' * (rt.r + delta * 5 ^ (L - 1)) := by
+    rw [hterminal]
+    rw [hu'_len] at hid
+    rw [hid]
+    have hleft : 2 ^ StringFlow.wordWeight u' *
+        (2 ^ (w.getI (b - 1) - 1) * q + delta * 5 ^ (L - 1)) =
+        2 ^ ((StringFlow.wordWeight u' + w.getI (b - 1)) - 1) * q +
+          delta * 2 ^ StringFlow.wordWeight u' * 5 ^ (L - 1) := by
+      rw [Nat.mul_add]
+      rw [← Nat.mul_assoc]
+      rw [← Nat.pow_add]
+      have hc : 1 ≤ w.getI (b - 1) := by
+        have h3 : 3 ≤ w.getI (b - 1) := hb.2.2.1
+        omega
+      have hsub : (StringFlow.wordWeight u' + w.getI (b - 1)) - 1 =
+          StringFlow.wordWeight u' + (w.getI (b - 1) - 1) := by omega
+      rw [hsub]
+      rw [← Nat.mul_assoc]
+      rw [Nat.mul_comm (2 ^ StringFlow.wordWeight u') delta]
+    rw [hleft]
+    simpa [Nat.add_comm] using hE5
+  have heq'' : StringFlow.Word.wordOrbit u' q =
+      rt.r + delta * 5 ^ (L - 1) := by
+    have hpos : 0 < 2 ^ StringFlow.wordWeight u' :=
+      Nat.pow_pos (by decide : 0 < 2)
+    exact Nat.eq_of_mul_eq_mul_left hpos heq'
+  have heq''' : 5 ^ rt.k * rt.s + delta * 5 ^ (L - 1) - 1 =
+      StringFlow.Word.wordOrbit u' q := by
+    rw [heq'']
+    omega
+  dsimp [u', q, b, L] at heq'''
+  rw [← hprev] at heq'''
+  exact heq'''
+
 /-- The complete real-block premises instantiation for a cyclic rise
 block (wrap-invariant): the word structure, the `q0` interval, the head
 bound and the prefix-orbit identities are all derived from the
