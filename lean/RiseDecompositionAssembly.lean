@@ -922,24 +922,136 @@ theorem suffixWord_prefix_eq_word_prefix_nonwrap
   have hwd := wordOrbit_take_drop w m start j hbL
   exact hmain.trans hwd.symm
 
-/-- The complete real-block premises instantiation for a non-wrapping
-rise block: the word structure, the `q0` interval, the head bound and
-the prefix-orbit identities are all derived from the decomposition;
-only the real reset-window size (`hhead`), the tail size (`hrs_lt`)
-and the failure-branch data (`r_s % 8`, `L`, `H_s`) remain as inputs. -/
+/-- Advancing a cyclic prefix past the end wraps to zero:
+`wordOrbit (w.take ((k+1) % P)) m = (5*wordOrbit (w.take k) m + 1)/2^{w.getI k}`
+for `k < P`, using the cycle closure `wordOrbit w m = m`. -/
+lemma wordOrbit_take_succ_mod_of_closed
+    {m P : Nat} {w : List Nat}
+    (hw : w.length = P)
+    (hclosed : StringFlow.Word.wordOrbit w m = m)
+    (k : Nat) (hk : k < P) :
+    StringFlow.Word.wordOrbit (w.take ((k + 1) % P)) m =
+      (5 * StringFlow.Word.wordOrbit (w.take k) m + 1) / 2 ^ w.getI k := by
+  by_cases hk1 : k + 1 < P
+  · have hmod : (k + 1) % P = k + 1 := Nat.mod_eq_of_lt hk1
+    rw [hmod]
+    have hkltw : k < w.length := by rw [hw]; exact hk
+    exact wordOrbit_take_succ w m k hkltw
+  · have hkP : k + 1 = P := by omega
+    have hmod : (k + 1) % P = 0 := by
+      rw [hkP, Nat.mod_self]
+    rw [hmod]
+    simp [StringFlow.Word.wordOrbit]
+    have hkltw : k < w.length := by rw [hw]; omega
+    have htake : w.take (k + 1) = w.take k ++ [w.getI k] :=
+      UnifiedCoreAudit.take_succ_append_getI w k hkltw
+    have htakeP : w.take (k + 1) = w := by
+      rw [hkP]
+      exact List.take_of_length_le (by rw [hw])
+    have hw' : w = w.take k ++ [w.getI k] := htakeP.symm.trans htake
+    have hstep : StringFlow.Word.wordOrbit w m =
+        (5 * StringFlow.Word.wordOrbit (w.take k) m + 1) / 2 ^ w.getI k := by
+      conv_lhs => rw [hw']
+      exact S6Audit.wordOrbit_append_singleton (w.take k) m (w.getI k)
+    exact hclosed.symm.trans hstep
+
+/-- Prefixes of a real rise suffix equal the cyclic word prefixes modulo
+the period: `wordOrbit (suffix.take j) (C3TailState) =
+wordOrbit (w.take ((tailDepth + j) % P)) m`.  This covers both the
+non-wrapping and the wrapping block. -/
+theorem suffixWord_prefix_eq_word_prefix_mod
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (j : Nat) (hj : j ≤ (d.suffixWord r).length) :
+    StringFlow.Word.wordOrbit ((d.suffixWord r).take j)
+        (cycleRiseBlockC3TailState d r) =
+      StringFlow.Word.wordOrbit
+        (w.take ((cycleRiseBlockTailDepth d r + j) % P)) m := by
+  have hPpos : 0 < P := by
+    have hh := d.hhead_pos r hr
+    have hlt := d.hhead_lt r hr
+    omega
+  have hq : cycleRiseBlockC3TailState d r =
+      StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r)) m := rfl
+  induction j with
+  | zero =>
+      rw [hq]
+      have htd : cycleRiseBlockTailDepth d r ≤ P := by
+        have htd1 : 1 ≤ cycleRiseBlockTailDepth d r :=
+          cycleRiseBlockTailDepth_pos d r hr
+        have hlt := cycleRiseBlockTailDepth_lt_succ d r hr
+        omega
+      by_cases htdP : cycleRiseBlockTailDepth d r = P
+      · have hmod : (cycleRiseBlockTailDepth d r + 0) % P = 0 := by
+          rw [htdP]
+          simp
+        rw [hmod]
+        simp [StringFlow.Word.wordOrbit]
+        have htakeP : w.take P = w :=
+          List.take_of_length_le (by rw [d.hperiod])
+        rw [htdP]
+        rw [htakeP]
+        exact d.hclosed
+      · have htdlt : cycleRiseBlockTailDepth d r < P := by omega
+        have hmod : (cycleRiseBlockTailDepth d r + 0) % P =
+            cycleRiseBlockTailDepth d r := by
+          rw [Nat.add_zero]
+          exact Nat.mod_eq_of_lt htdlt
+        rw [hmod]
+        simp [StringFlow.Word.wordOrbit]
+  | succ j ih =>
+      have hj' : j ≤ (d.suffixWord r).length := by omega
+      have hih := ih hj'
+      have hjlt : j < (d.suffixWord r).length := by omega
+      have hlhs : StringFlow.Word.wordOrbit ((d.suffixWord r).take (j + 1))
+            (cycleRiseBlockC3TailState d r) =
+          (5 * StringFlow.Word.wordOrbit ((d.suffixWord r).take j)
+              (cycleRiseBlockC3TailState d r) + 1) /
+            2 ^ (d.suffixWord r).getI j := by
+        exact wordOrbit_take_succ (d.suffixWord r)
+          (cycleRiseBlockC3TailState d r) j hjlt
+      have hmodStep : (cycleRiseBlockTailDepth d r + (j + 1)) % P =
+          (((cycleRiseBlockTailDepth d r + j) % P) + 1) % P := by
+        rw [show cycleRiseBlockTailDepth d r + (j + 1) =
+            (cycleRiseBlockTailDepth d r + j) + 1 by omega]
+        rw [Nat.add_mod]
+        rw [Nat.add_mod]
+        norm_num
+      have hrhs : StringFlow.Word.wordOrbit
+            (w.take ((cycleRiseBlockTailDepth d r + (j + 1)) % P)) m =
+          (5 * StringFlow.Word.wordOrbit
+              (w.take ((cycleRiseBlockTailDepth d r + j) % P)) m + 1) /
+            2 ^ w.getI ((cycleRiseBlockTailDepth d r + j) % P) := by
+        rw [hmodStep]
+        exact wordOrbit_take_succ_mod_of_closed d.hperiod d.hclosed
+          ((cycleRiseBlockTailDepth d r + j) % P)
+          (Nat.mod_lt (cycleRiseBlockTailDepth d r + j) hPpos)
+      have hwget : (d.suffixWord r).getI j =
+          w.getI ((cycleRiseBlockTailDepth d r + j) % P) :=
+        d.hsuffix_segment r hr j hjlt
+      rw [hlhs, hrhs, hih, hwget]
+
+/-- The complete real-block premises instantiation for a cyclic rise
+block (wrap-invariant): the word structure, the `q0` interval, the head
+bound and the prefix-orbit identities are all derived from the
+decomposition; only the real reset-window size (`hhead`), the tail size
+(`hrs_lt`) and the failure-branch data (`r_s % 8`, `L`, `H_s`) remain
+as inputs. -/
 theorem premises_of_cycleRiseBlock
     {m S P : Nat} {w : List Nat}
     (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
-    (hr : r < d.blockCount) (hrnext : r + 1 < d.blockCount)
+    (hr : r < d.blockCount)
     (j s t rj r_s L H_s : Nat)
     (hj_pos : 1 ≤ j) (hj_le_s : j ≤ s) (hs_le : s ≤ (d.suffixWord r).length)
     (ht : UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) j =
       UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) (j - 1) + t)
     (hrj : rj = StringFlow.Word.wordOrbit
-      (w.take (cycleRiseBlockTailDepth d r + j)) m)
+      (w.take ((cycleRiseBlockTailDepth d r + j) % P)) m)
     (hhead : 5 ^ j ≤ 2 ^ t * rj ∧ rj < 5 ^ j)
     (hrs_eq : r_s = StringFlow.Word.wordOrbit
-      (w.take (cycleRiseBlockTailDepth d r + s)) m)
+      (w.take ((cycleRiseBlockTailDepth d r + s) % P)) m)
     (hrs_lt : r_s < 5 ^ s)
     (hrs_mod8 : r_s % 8 = 5)
     (hL : L + 4 = twoValuation (3 * r_s + 1))
@@ -955,8 +1067,8 @@ theorem premises_of_cycleRiseBlock
       (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) s) r_s L H_s
       (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r)) := by
   have hvs := suffixWord_valid_of_cycleRiseBlock d r hr
-  have hprej := suffixWord_prefix_eq_word_prefix_nonwrap d r hr hrnext j (by omega)
-  have hpres := suffixWord_prefix_eq_word_prefix_nonwrap d r hr hrnext s hs_le
+  have hprej := suffixWord_prefix_eq_word_prefix_mod d r hr j (by omega)
+  have hpres := suffixWord_prefix_eq_word_prefix_mod d r hr s hs_le
   have hrj_local : rj = StringFlow.Word.wordOrbit ((d.suffixWord r).take j)
       (cycleRiseBlockC3TailState d r) := by
     rw [hrj]
