@@ -394,4 +394,35 @@ theorem blockCountOf_le_succ_P (w : List Nat) (P b0 : Nat) :
   have h := riseRunCycleLenAux_le_fuel w P P b0 (nextRiseStart w P b0)
   omega
 
+/-- Total forward advance accumulated over the first `n` blocks. -/
+def blockTotalAdvance (w : List Nat) (P b0 : Nat) : Nat → Nat
+  | 0 => 0
+  | n + 1 =>
+      blockTotalAdvance w P b0 n +
+        blockAdvance w P (riseBoundaryIter w P b0 n)
+
+/-- The `n`-th boundary is the starting boundary advanced by the total
+block advance, reduced modulo the period. -/
+theorem riseBoundaryIter_eq_add_totalAdvance
+    (w : List Nat) (P b0 : Nat) (hb0 : b0 < P) (n : Nat) :
+    riseBoundaryIter w P b0 n =
+      (b0 + blockTotalAdvance w P b0 n) % P := by
+  induction n with
+  | zero =>
+      simp [riseBoundaryIter, blockTotalAdvance, Nat.mod_eq_of_lt hb0]
+  | succ n ih =>
+      rw [riseBoundaryIter_succ]
+      rw [nextRiseStart_eq_add_blockAdvance]
+      dsimp [blockTotalAdvance]
+      rw [ih]
+      let T := blockTotalAdvance w P b0 n
+      let A := blockAdvance w P ((b0 + T) % P)
+      change ((b0 + T) % P + A) % P = (b0 + (T + A)) % P
+      have hmod : ((b0 + T) % P + A) % P = (b0 + (T + A)) % P := by
+        calc
+          ((b0 + T) % P + A) % P = ((b0 + T) + A) % P :=
+            Nat.mod_add_mod (b0 + T) P A
+          _ = (b0 + (T + A)) % P := by rw [Nat.add_assoc]
+      exact hmod
+
 end StringFlow.CycleBridge
