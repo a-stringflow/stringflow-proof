@@ -2360,6 +2360,66 @@ theorem reset_predecessor_eq_fullOrbit_of_aligned_weight
   exact reset_predecessor_eq_fullOrbit_of_aligned_weight_of_j_pos
     n j k0 t delta s r rj hj hreset hn hiter hw
 
+/-- The exact converse of the predecessor alignment: the real
+full-orbit predecessor equation and the exact incoming weight determine
+the reset equation.  This is the algebraic core of the `hterm`
+construction: a genuine reset window is equivalent to the predecessor
+identity `5^k0*s + δ*5^(j-1) - 1 = f(n-1)`. -/
+theorem ResetHeadEq_of_fullOrbit_predecessor_eq
+    (n j k0 t delta s rj : Nat)
+    (hj : 1 ≤ j)
+    (hn : 1 ≤ n)
+    (hiter : fullOrbitIter n = rj)
+    (hw : orbitStepWeight (n - 1) = t)
+    (ht : t = 1 ∨ t = 2)
+    (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
+    (hpred : 5 ^ k0 * s + delta * 5 ^ (j - 1) - 1 = fullOrbitIter (n - 1)) :
+    ResetHeadEq s j k0 t delta rj := by
+  have hpred_mul := fullOrbit_predecessor_mul n rj hn hiter
+  have hfpos : 1 ≤ fullOrbitIter (n - 1) := by
+    have hodd : IsOdd (fullOrbitIter (n - 1)) := fullOrbitIter_odd (n - 1)
+    by_contra hnot
+    have h0 : fullOrbitIter (n - 1) = 0 := by omega
+    rw [h0] at hodd
+    norm_num [IsOdd] at hodd
+  have hX : 5 * (5 ^ k0 * s + delta * 5 ^ (j - 1) - 1) + 1 =
+      5 ^ (k0 + 1) * s + delta * 5 ^ j - 4 := by
+    have hpow1 : 5 ^ (k0 + 1) * s = 5 * (5 ^ k0 * s) := by
+      rw [Nat.pow_succ]
+      ring
+    have hpow2 : delta * 5 ^ j = 5 * (delta * 5 ^ (j - 1)) := by
+      have hj_eq : j = (j - 1) + 1 := by omega
+      conv_lhs => rw [hj_eq, Nat.pow_succ]
+      ring
+    rw [hpow1, hpow2]
+    omega
+  have hmain : 2 ^ t * rj = 5 ^ (k0 + 1) * s + delta * 5 ^ j - 4 := by
+    rw [hw] at hpred_mul
+    rw [← hpred] at hpred_mul
+    rw [hX] at hpred_mul
+    exact hpred_mul
+  rcases ht with ht1 | ht2
+  · subst ht1
+    have hd1 : delta = 1 := hdelta.1 rfl
+    subst hd1
+    left
+    constructor
+    · rfl
+    · constructor
+      · rfl
+      · have hmain' : 2 * rj = 5 ^ (k0 + 1) * s + 5 ^ j - 4 := by
+          simpa using hmain
+        omega
+  · subst ht2
+    right
+    constructor
+    · rfl
+    · constructor
+      · exact hdelta.2 rfl
+      · have hmain' : 4 * rj = 5 ^ (k0 + 1) * s + delta * 5 ^ j - 4 := by
+          simpa using hmain
+        omega
+
 /-- Exact real-predecessor split for a weakly reachable `t=1` window.
 In the aligned branch the reset predecessor is the actual full-orbit
 predecessor; the only alternative is the rank-two/high-weight branch. -/
