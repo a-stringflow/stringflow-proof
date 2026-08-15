@@ -176,7 +176,11 @@ def failureWindowExistenceOfUnifiedCore : Prop :=
 
 ## 8. 当前剩余 sorry
 
-- `UnifiedCoreAudit.unified_core_final_no_hge`：唯一统一核心 `sorry`；
+- 统一核心最终估值不等式的 pure 块版本：已由
+  `PureCore.unified_core_final_no_hge_pure` 闭合，无 `sorry`；完整
+  real-orbit 版本 `unified_core_final_no_hge` 仍未闭合，剩余是真实块词到
+  `All36_20PremisesNoHge` 的实例化，以及 decisive-window / failure-window
+  桥；
 - `FinalTheorem.five_x_plus_one_diverges_at_7`：最终装配占位 `sorry`。
 
 未闭合前，不宣称发散桥或 `7` 发散闭合。

@@ -16,15 +16,17 @@ This file formalizes the derivation chain around the unified core
 
 without assuming the `H_ge : 3 <= H_s` premise of `S6Audit.All36_20Premises`.
 It is an audit file: every non-final step is proved or explicitly reported
-as missing, and exactly one theorem carries `by sorry`, namely the final
-valuation inequality of document 36.20.
+as missing. The pure-block valuation inequality of document 36.20 was moved
+to `PureCore.unified_core_final_no_hge_pure` and is closed there without
+`sorry`; the full real-orbit `unified_core_final_no_hge` is not yet a
+theorem and remains open pending the real-word premises wiring.
 
 Status convention:
 - "proved" means the theorem compiles without `sorry` or `axiom`;
 - "missing premise" means the theorem is true only after adding the named
   definitional link that is not present in the statement as written;
-- "open" means the theorem is the single final open core and is marked
-  with `by sorry`.
+- "open" means the theorem is still unproved; a final-core entry marked
+  "closed" refers to the corresponding theorem in `PureCore`.
 -/
 
 namespace UnifiedCoreAudit
@@ -3343,9 +3345,9 @@ theorem local_lemma_final_no_hge
     simpa [Nat.add_assoc] using hB3
   exact rj0_ge_of_size_conditions_no_hge j Wp Wj q Aj A_s s W_s r_s L H_s weight hPrem (by omega) hBase2 hPow3
 
-/- The final core theorems moved to `UnifiedCoreBridge`, where the
-d-segment exclusions are visible.  See
-`UnifiedCoreBridge.unified_core_final_no_hge`. -/
+/- The final core valuation inequality is closed in `PureCore`; the
+d-segment exclusions are visible in `UnifiedCoreBridge`.  See
+`PureCore.unified_core_final_no_hge_pure`. -/
 
 /-!
 # Status table
@@ -3408,7 +3410,7 @@ d-segment exclusions are visible.  See
 | `UnifiedCoreBridge.d3_*_no_pow_mod32/64` (10 branches) | proved | 10 of the 21 no-solution `d=3` branches are excluded by the mod-`2^k` power-period set (`C mod 2^k` is not a power of `5`); zero `sorry`, only `propext / Classical.choice / Quot.sound` |
 | `UnifiedCoreBridge.d3_*_no_pow` (11 branches) | proved | the remaining 11 `d=3` branches are excluded by CRT: mod-`2^k` fixes `j % 2^(k-2)`, then the mod-`m` period table (`m∈{31,61,93,109}`) has no `s`; zero `sorry`, only `propext / Classical.choice / Quot.sound` |
 | `UnifiedCoreBridge.dge4_e3_j17_t1_corrected_excluded` / `dge4_e3_j17_t2_delta3_corrected_excluded` | proved | d≥4 `e=3,j=17` branches still excluded under corrected residues: `x≡133 (mod 160)` vs required `53`, and `x≡263 (mod 320)` vs required `183` |
-| `unified_core_final_no_hge` | **open** | no-`H_ge` premises + `r=(Aj+5^j q)/2^Wj` + `FullOrbitFrom7 r` + explicit reset premise `hReset : ∃ s0 k t δ r_prev, ResetHeadEq s0 j k t δ r ∧ s0*5^k = r_prev+1` + `2 <= H_s`; depth-`≤15` branch closed via `unified_core_final_no_hge_le15`, the single `sorry` is the depth-`≥16` branch; `d=1`, `d=2`, `d=3` and `d≥4` corrected exclusions are formalized (`d=2` via the full-orbit size bound); the bridge works for every `k` via `candidateX_of_reset_and_terminal_general` + `terminal_chain_identity_of_full_orbit_d`, `hr` is proved from the real-orbit segment (`previous_even_terminal_of_full_orbit_segment`), and the `k≥1` branch is excluded by `kge1_excluded_by_segment_step`; `hprod` is now an explicit arithmetic premise, not a `GeneralOrbitFrom7` premise; the remaining open items are instantiating the `d≥2` candidate family from the real block word and wiring the `m2>0` tail exclusion |
+| `unified_core_final_no_hge` | **open (full version)** | only the pure-block inequality is closed (`PureCore.unified_core_final_no_hge_pure`); the full real-orbit theorem with real block word premises is not yet a theorem; only the depth-`≤15` branch is proved (`unified_core_final_no_hge_le15`); remaining: instantiate `All36_20PremisesNoHge` from a real block word and the decisive-window / failure-window bridges |
 | `failure_implies_rj_mod_64` | **invalid as stated** | 36.29/36.30.5 core: the tail congruence contradicts the claimed `r % 64 = 33`; the true `m2=0` residue is `r % 16 = 5` |
 | `FinitePrefix.fullOrbit_first_t_ge3_is_exactly_3` | proved | `lean/FinitePrefix.lean`: explicit 17-state expansion by `simp [StringFlow.twoValuation_succ]`, zero `native_decide`; closes 36.30.23 at math level |
 | `UnifiedCoreBridge` | encoded | `lean/UnifiedCoreBridge.lean`: `candidateX`, `candidateRj`, `orbitState`, `orbitStepWeight`; step 1 of the assembly plan |
@@ -3487,8 +3489,9 @@ Minimum failing premises found so far:
    valuation inequality `v2(5^(L+3)*w+1) <= H_s-2`.
 3. `unified_core_final_no_hge` now carries the explicit real-orbit
    reachability `FullOrbitFrom7 r` (`r=(Aj+5^j q)/2^Wj`) and the domain
-   premise `2 <= H_s`; it is the single open valuation inequality and the
-   unique `sorry` in this file.  Document 36.29 (2026-08-12) has now
+   premise `2 <= H_s`; the pure-block valuation inequality is closed as
+   `PureCore.unified_core_final_no_hge_pure`, but the full real-orbit
+   theorem itself is not yet closed.  Document 36.29 (2026-08-12) has now
    rewritten the tail as an exact full-orbit decomposition: trailing
    `t=1` steps strip to `L_eff=L+m1`, and a final `t=2` run of length
    `m2` gives `r_a+1=2^(2*m2+1)*u` with
@@ -3537,8 +3540,11 @@ Minimum failing premises found so far:
    the premises-to-parameterization bridge for `d≥2`, the word-level
    `hr` wiring (`previous_terminal_hr_of_word_and_segment` is proved;
    the word decomposition `w = w' ++ [1]` from the real block word is
-   the remaining input), and the `m2>0` tail exclusion.  The theorem
-   above remains `by sorry` and no Lean closure is claimed.
+   the remaining input), and the `m2>0` tail exclusion.  The pure-block
+   valuation inequality is closed in `PureCore.unified_core_final_no_hge_pure`;
+   the full real-orbit `unified_core_final_no_hge` is not yet a theorem,
+   and the remaining work is the real-block premises wiring and the
+   decisive-window / failure-window bridges.
 -/
 
 end UnifiedCoreAudit
