@@ -1561,14 +1561,35 @@ theorem cycleRiseBlockHpred_of_real_terminal
     rw [hsplit] at hvalid_rot
     exact (S6Audit.wordValid_append u' ((cyclicSegmentAt w b).drop (L - 1)) q).mp
       hvalid_rot |>.1
+  -- The rise-prefix word equation is exactly
+  -- `cycleQb8Input_cyclic_local_block_data` instantiated at length
+  -- `L-1` (the cyclic block equation of the rise prefix `u'`).
   have hid : 2 ^ StringFlow.wordWeight u' * StringFlow.Word.wordOrbit u' q =
-      5 ^ u'.length * q + StringFlow.Word.wordA u' :=
-    StringFlow.Word.word_orbit_identity u' q hvalid_u'
+      5 ^ (L - 1) * q + StringFlow.Word.wordA u' := by
+    by_cases hL1 : L = 1
+    · subst L
+      dsimp [u', q]
+      simp [hL1, StringFlow.Word.wordOrbit, StringFlow.Word.wordA, StringFlow.wordWeight]
+    · have hLpos' : 1 ≤ L - 1 := by omega
+      have hLle' : L - 1 ≤ w.length := le_trans (Nat.sub_le L 1) hLle
+      rcases cycleQb8Input_cyclic_local_block_data h b (L - 1) hb hLpos' hLle' with
+        ⟨Aj', Wp', Wj', t', hAj', hWj', hWp', ht0', hW', hid', hdiv', hrjform'⟩
+      change 2 ^ Wj' * StringFlow.Word.wordOrbit u' q =
+          Aj' + 5 ^ (L - 1) * q at hid'
+      rw [hAj', hWj'] at hid'
+      simpa [u', q, Nat.add_comm] using hid'
   have hu'_len : u'.length = L - 1 := by
     dsimp [u']
     rw [List.length_take_of_le]
     · rw [cyclicSegmentAt_length w b hble]
       exact le_trans (Nat.sub_le L 1) hLle
+  -- Remaining real step.  The rise-prefix word equation above is the
+  -- exact instance of `cycleQb8Input_cyclic_local_block_data` at
+  -- length `L-1` (the cyclic block equation of `u'`).  After it and
+  -- the boundary-terminal identity `rt.r = 2^(c-1)*q`, the remaining
+  -- equation E5 is equivalent to the predecessor identity itself,
+  -- `o_local(L-1) = rt.r + delta*5^(L-1)`; the delta-zero block
+  -- structure of the cyclic word is the missing input.
   have hE5 : StringFlow.Word.wordA u' + 5 ^ (L - 1) * q =
       2 ^ ((StringFlow.wordWeight u' + w.getI (b - 1)) - 1) * q +
         delta * 2 ^ StringFlow.wordWeight u' * 5 ^ (L - 1) := by
@@ -1576,7 +1597,6 @@ theorem cycleRiseBlockHpred_of_real_terminal
   have heq' : 2 ^ StringFlow.wordWeight u' * StringFlow.Word.wordOrbit u' q =
       2 ^ StringFlow.wordWeight u' * (rt.r + delta * 5 ^ (L - 1)) := by
     rw [hterminal]
-    rw [hu'_len] at hid
     rw [hid]
     have hleft : 2 ^ StringFlow.wordWeight u' *
         (2 ^ (w.getI (b - 1) - 1) * q + delta * 5 ^ (L - 1)) =
