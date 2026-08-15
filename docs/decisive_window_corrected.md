@@ -184,3 +184,20 @@ def failureWindowExistenceOfUnifiedCore : Prop :=
 - `FinalTheorem.five_x_plus_one_diverges_at_7`：最终装配占位 `sorry`。
 
 未闭合前，不宣称发散桥或 `7` 发散闭合。
+
+## 9. 失败窗口结构层状态（2026-08-15）
+
+失败窗口路线的结构组装已闭合：`RiseDecompositionAssembly` 提供
+`cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary`、
+`cycleRiseBlockSuffixWord_eq_cyclic_take`、
+`cycleRiseBlockSuffixHall`、`cycleRiseBlockSuffixLastStep`、
+`cycleRiseBlockSuffixStopC3`/`cycleRiseBlockSuffixStopOr`，
+`RealOrbitLocalLemma.ResetHeadEq_of_fullOrbit_predecessor_eq` 给出
+`hterm` 的代数逆向，`cyclicDepthFailureWindow_of_cycleRiseBlock` 组装
+完全循环失败窗口，`cycleRiseBlockWindowFalse` 用出边 C3 rank-two
+恒等式直接否定已组装的失败窗口。
+
+剩余开放内容不变：`hterm`（真实终端到 `ResetHeadEq` 的构造）、
+`hfail_t1/t2`（失败下界）必须由真实轨道可达性与 PMI 供给；
+`rjRankT1LargeBound`/`rjRankT2LargeBound` 的大深度界仍需精确结构，
+不能用小深度尺寸估计替代。

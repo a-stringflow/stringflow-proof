@@ -3959,6 +3959,15 @@ d-segment exclusions are visible in `UnifiedCoreBridge`.  See
 | `UnifiedCoreBridge.blockState_next_mod5_of_premises` / `blockState_mod5_of_premises` | proved | every block state from a full-orbit block head to the tail is `3` or `4` modulo `5`; new word-rigidity constraint for the m2>0 audit |
 | `UnifiedCoreBridge.tail_failure_m2_pos_audit_mod5` | proved | combined `m2>0` audit: `r_a` is full-orbit, `r_a%5∈{3,4}`, `u mod 8` fixed by `m2` parity, and the high 2-adic window holds |
 | directed legal-word check (length <= 20) | evidence, not proof | 130,322 legal fixed-`q` blocks satisfy the no-`H_ge` premises with `2 <= H_s`; 0 violate the final inequality; 3 have real-orbit heads |
+| `RiseDecompositionAssembly.cycleRiseBlockSuffixEndpoint_eq_nextHead` | proved | the endpoint of a cyclic rise block's rise suffix is the next block-head state; the wrapping block is normalized modulo the period (definition `cycleRiseBlockNextHeadState` corrected to `% P`) |
+| `RiseDecompositionAssembly.premises_of_cycleRiseBlock_of_reset_window` | proved | cyclic rise-block premises instantiation with the head-size interval supplied by genuine `ResetHeadEq`/`ResetWindowReachability`; only tail-size and failure-branch inputs remain |
+| `RiseDecompositionAssembly.cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary` | proved | the end of a block's C3 chain is a genuine cyclic C3-to-rise boundary (last C3 entry ≥3, first rise entry 1/2) |
+| `RiseDecompositionAssembly.cycleRiseBlockSuffixWord_eq_cyclic_take` | proved | a block's rise suffix equals the prefix of the cyclic rotation at its C3-tail depth, entry by entry |
+| `RiseDecompositionAssembly.cycleRiseBlockSuffixStopC3` / `cycleRiseBlockSuffixStopOr` | proved | the entry after a block's rise suffix is a C3 entry (wrap-invariant maximality stop) |
+| `RiseDecompositionAssembly.cycleRiseBlockSuffixHall` / `cycleRiseBlockSuffixLastStep` | proved | every rise-suffix entry is 1 or 2, and the last entry matches the cyclic rotation |
+| `RealOrbitLocalLemma.ResetHeadEq_of_fullOrbit_predecessor_eq` | proved | the exact converse of the predecessor alignment: real full-orbit predecessor equation + exact incoming weight construct `ResetHeadEq`; the algebraic core of the `hterm` construction |
+| `RiseDecompositionAssembly.cyclicDepthFailureWindow_of_cycleRiseBlock` | proved | fully cyclic failure window assembled from a rise block; only the genuine reset terminal (`hrt`/`hterm`/`hk`/`hslt`) and the failure lower bounds remain as inputs |
+| `RiseDecompositionAssembly.cycleRiseBlockWindowFalse` | proved | a fully sourced failure window at a cyclic rise block is impossible via the outgoing-C3 rank-two identity; no decisive window bound or large-depth estimate is needed |
 
 Minimum failing premises found so far:
 1. `H_ge_iff_capacity` needs the definitional link `W_s - Wp = (s-j+1)+H2`;

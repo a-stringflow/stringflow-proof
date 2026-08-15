@@ -136,7 +136,33 @@ end StringFlow.DwdbDiv
 - `UnifiedCoreAudit.unified_core_final_no_hge`
 - `FinalTheorem.five_x_plus_one_diverges_at_7`
 
-仓库中剩余 `sorry` 语句是
-`UnifiedCoreAudit.unified_core_final_no_hge` 与
-`FinalTheorem.five_x_plus_one_diverges_at_7`；`DwdbDiv` 不引用
-任何 `sorry`。
+仓库中实际剩余的 `sorry` 语句只有
+`FinalTheorem.five_x_plus_one_diverges_at_7`；
+`UnifiedCoreAudit.unified_core_final_no_hge` 不是已声明的定理，
+它只是状态表中的开放条目；`DwdbDiv` 不引用任何 `sorry`。
+
+## 6. 失败窗口路线当前已闭合的结构层（2026-08-15）
+
+- `cycleRiseBlockSuffixEndpoint_eq_nextHead`：rise 后缀端点是下一块
+  块首状态，回绕块按周期归一化；`cycleRiseBlockNextHeadState` 定义
+  修正为 `% P`。
+- `cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary`：
+  块 C3 链末端是真实循环 C3-to-rise 边界。
+- `cycleRiseBlockSuffixWord_eq_cyclic_take` / `cycleRiseBlockSuffixHall`
+  / `cycleRiseBlockSuffixLastStep` / `cycleRiseBlockSuffixStopC3` /
+  `cycleRiseBlockSuffixStopOr`：rise 后缀与循环旋转段逐项一致、每步
+  1/2、末步一致、后接 C3 停止条件。
+- `premises_of_cycleRiseBlock_of_reset_window`：循环 rise 块的
+  `All36_20PremisesNoHge` 实例化，`hhead` 由真实
+  `ResetHeadEq`/`ResetWindowReachability` 供给。
+- `ResetHeadEq_of_fullOrbit_predecessor_eq`：真实前驱方程 + 精确入步
+  权逆向构造 `ResetHeadEq`，是 `hterm` 的代数核心。
+- `cyclicDepthFailureWindow_of_cycleRiseBlock`：由 rise 块组装完全
+  循环失败窗口，只差真实重置终端（`hrt`/`hterm`/`hk`/`hslt`）与
+  失败下界（`hfail_t1`/`hfail_t2`）。
+- `cycleRiseBlockWindowFalse`：组装出的失败窗口立即被出边 C3 rank-two
+  恒等式否定，不需要 decisive window 上界与大深度估计。
+
+这些结构层全部编译通过、零 `sorry`。剩余开放项仍是
+`hterm`/`hfail` 的真实构造、`rjRankT1LargeBound`/`rjRankT2LargeBound`、
+完整 `unified_core_final_no_hge` 实例化与最终组装。
