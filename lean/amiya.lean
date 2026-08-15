@@ -15,6 +15,41 @@ def blockWordFrom (w : List Nat) (j : Nat) : List Nat :=
 def blockEndFrom (w : List Nat) (j : Nat) : Nat :=
   j + (blockWordFrom w j).length
 
+/-- Per-block tail capacity: rank plus rise charge stays inside the
+tail budget. -/
+def tailPerBlockCapacity {m S P : Nat} {w : List Nat}
+    (d : CycleBridge.CycleRiseBlockDecomposition m S P w) : Prop :=
+  ∀ r : Nat, r < d.blockCount →
+    CycleBridge.cycleRiseBlockTailRank d r +
+        CycleBridge.cycleRiseBlockCharge d r ≤
+      2 * (CycleBridge.cycleRiseBlockTailDepth d r -
+          CycleBridge.cycleRiseBlockTailResetWeight d r) + 12
+
+/-- Per-block tail capacity plus the local rise balance sums exactly to
+the weak global comparison.  Therefore the strict global comparison (6)
+cannot be concluded from `realOrbitChargeBound`; the missing merge is a
+genuinely separate input, not a corollary. -/
+theorem tailPerBlockCapacity_implies_weak_global_comparison
+    {m S P : Nat} {w : List Nat}
+    (d : CycleBridge.CycleRiseBlockDecomposition m S P w)
+    (hcap : tailPerBlockCapacity d) :
+    2 * CycleBridge.cycleRiseBlockH2Sum d ≤
+      CycleBridge.cycleRiseBlockTailAvoidBudgetSum d := by
+  dsimp [CycleBridge.cycleRiseBlockH2Sum,
+    CycleBridge.cycleRiseBlockTailAvoidBudgetSum]
+  rw [← StringFlow.PMI.sum_map_mul_left (List.range d.blockCount) 2
+    (fun r => CycleBridge.riseCountTwo (d.suffixWord r))]
+  refine List.sum_le_sum ?_
+  intro r hr
+  have hrlt : r < d.blockCount := List.mem_range.mp hr
+  have hbal : 2 * CycleBridge.riseCountTwo (d.suffixWord r) ≤
+      CycleBridge.cycleRiseBlockTailRank d r +
+        CycleBridge.cycleRiseBlockCharge d r := by
+    simpa [CycleBridge.cycleRiseBlockTailRank] using
+      CycleBridge.cycleRiseBlockBalance d r hrlt
+  have hc := hcap r hrlt
+  omega
+
 /-- A `t=1` rank threshold is exactly the `hfail_t1` valuation bound,
 once the reset equation identifies the block head. -/
 theorem hfail_t1_of_rank
