@@ -529,6 +529,99 @@ theorem c3PrefixLength_stop
         have hlt : t < 3 := Nat.lt_of_not_ge hnot
         interval_cases t <;> simp at htp ⊢
 
+/-- The `k`-th entry of a reversed list is the entry mirrored from the
+end of the original list. -/
+lemma reverse_getI_of_lt (l : List Nat) (k : Nat) (hk : k < l.length) :
+    l.reverse.getI k = l.getI (l.length - 1 - k) := by
+  have hk' : k < l.reverse.length := by simpa using hk
+  rw [List.getI_eq_getElem (l := l.reverse) (n := k) hk']
+  rw [List.getI_eq_getElem (l := l) (n := l.length - 1 - k) (by omega)]
+  exact List.getElem_reverse hk'
+
+/-- Length of the maximal C3 run ending immediately before position
+`b` in the cyclic word.  This is the C3 chain of the cyclic block whose
+rise run starts at `b`. -/
+def c3SuffixLengthAt (w : List Nat) (b : Nat) : Nat :=
+  c3PrefixLength ((w.take b).reverse)
+
+/-- A C3 entry immediately before `b` makes the C3 run ending there
+nonempty. -/
+theorem c3SuffixLengthAt_pos_of_head
+    (w : List Nat) (b : Nat) (hb : 1 ≤ b)
+    (hprev : 3 ≤ w.getI (b - 1)) :
+    0 < c3SuffixLengthAt w b := by
+  unfold c3SuffixLengthAt
+  apply c3PrefixLength_pos_of_head
+  have hlt : b - 1 < w.length := by
+    by_contra hnot
+    have hge : w.length ≤ b - 1 := Nat.le_of_not_gt hnot
+    have hzero : w.getI (b - 1) = 0 := by
+      simpa using (List.getI_eq_default (l := w) (n := b - 1) hge)
+    omega
+  have hbw : b ≤ w.length := by omega
+  have hlen : 1 ≤ (w.take b).length := by
+    rw [List.length_take_of_le hbw]
+    exact hb
+  rw [reverse_getI_of_lt (w.take b) 0 hlen]
+  have hsub : (w.take b).length - 1 - 0 = b - 1 := by
+    rw [List.length_take_of_le hbw]
+    omega
+  rw [hsub]
+  have hlt2 : b - 1 < (w.take b).length := by
+    rw [List.length_take_of_le hbw]
+    omega
+  have htake : (w.take b).getI (b - 1) = w.getI (b - 1) := by
+    rw [List.getI_eq_getElem (l := w.take b) (n := b - 1) hlt2]
+    rw [List.getI_eq_getElem (l := w) (n := b - 1) hlt]
+    exact List.getElem_take (xs := w) (j := b) (i := b - 1)
+  rw [htake]
+  exact hprev
+
+/-- The C3 run ending before `b` is not longer than `b`. -/
+theorem c3SuffixLengthAt_le
+    (w : List Nat) (b : Nat) (hb : b ≤ w.length) :
+    c3SuffixLengthAt w b ≤ b := by
+  unfold c3SuffixLengthAt
+  have hlen : ((w.take b).reverse).length = b := by
+    rw [List.length_reverse, List.length_take_of_le hb]
+  calc
+    c3PrefixLength ((w.take b).reverse) ≤
+        ((w.take b).reverse).length := c3PrefixLength_le _
+    _ = b := hlen
+
+/-- Every entry of the C3 run ending before `b` is a C3 step. -/
+theorem c3SuffixLengthAt_mem
+    (w : List Nat) (b : Nat) (hb : b ≤ w.length) (k : Nat)
+    (hk : k < c3SuffixLengthAt w b) :
+    3 ≤ w.getI (b - 1 - k) := by
+  unfold c3SuffixLengthAt at hk
+  have hmem := c3PrefixLength_mem ((w.take b).reverse) k hk
+  have hlenRev : ((w.take b).reverse).length = b := by
+    rw [List.length_reverse, List.length_take_of_le hb]
+  have hlenTake : (w.take b).length = b := List.length_take_of_le hb
+  have hlen : k < (w.take b).length := by
+    have hle' : k < b := lt_of_lt_of_le hk (by
+      calc
+        c3PrefixLength ((w.take b).reverse) ≤
+            ((w.take b).reverse).length := c3PrefixLength_le _
+        _ = b := hlenRev)
+    rwa [hlenTake]
+  rw [reverse_getI_of_lt (w.take b) k hlen] at hmem
+  have hsub : (w.take b).length - 1 - k = b - 1 - k := by
+    simpa [hlenTake]
+  rw [hsub] at hmem
+  have hkltb : k < b := by simpa [hlenTake] using hlen
+  have hlt : b - 1 - k < w.length := by omega
+  have hlt2 : b - 1 - k < (w.take b).length := by
+    rw [hlenTake]
+    omega
+  have htake : (w.take b).getI (b - 1 - k) = w.getI (b - 1 - k) := by
+    rw [List.getI_eq_getElem (l := w.take b) (n := b - 1 - k) hlt2]
+    rw [List.getI_eq_getElem (l := w) (n := b - 1 - k) hlt]
+    exact List.getElem_take (xs := w) (j := b) (i := b - 1 - k)
+  rw [htake] at hmem
+  exact hmem
+
 /-- The cyclic version of the block-boundary interface.  This is the
 block-selection precondition; it deliberately allows `b = w.length`. -/
 theorem cycleQb8Input_exists_c3_rise_run :
