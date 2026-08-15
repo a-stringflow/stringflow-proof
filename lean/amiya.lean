@@ -43,6 +43,34 @@ theorem hfail_t2_of_rank
     omega
   simpa [BlockAutomaton.t2WindowValue] using htarget
 
+/-- The `hfail_t1` valuation lower bound gives back the exact block-head
+rank threshold. -/
+theorem hfail_t1_rank_of_hfail
+    (j k0 s rj : Nat)
+    (hreset : S6Audit.ResetHeadEq s j k0 1 1 rj)
+    (hfail : 2 * j + 12 ≤ twoValuation (5 ^ (k0 + 1) * s + 5 ^ j - 2)) :
+    2 * j + 11 ≤ twoValuation (rj + 1) := by
+  have hval := RealOrbitLocalLemma.t1WindowValue_eq_twoValuation_rj_plus_one
+    j k0 s rj hreset
+  have hf : 2 * j + 12 ≤ BlockAutomaton.t1WindowValue j k0 s := by
+    simpa [BlockAutomaton.t1WindowValue] using hfail
+  rw [hval] at hf
+  omega
+
+/-- The `hfail_t2` valuation lower bound gives back the exact block-head
+rank threshold. -/
+theorem hfail_t2_rank_of_hfail
+    (j k0 δ s rj : Nat)
+    (hreset : S6Audit.ResetHeadEq s j k0 2 δ rj)
+    (hfail : 2 * j + 11 ≤ twoValuation (5 ^ (k0 + 1) * s + δ * 5 ^ j)) :
+    2 * j + 9 ≤ twoValuation (rj + 1) := by
+  have hval := RealOrbitLocalLemma.t2WindowValue_eq_twoValuation_rj_plus_one
+    j k0 δ s rj hreset
+  have hf : 2 * j + 11 ≤ BlockAutomaton.t2WindowValue j k0 δ s := by
+    simpa [BlockAutomaton.t2WindowValue] using hfail
+  rw [hval] at hf
+  omega
+
 /-- The `t=1` failure lower bound follows from a local hident block and
 the corresponding block-head rank threshold. -/
 theorem hfail_t1_of_local_block_rank
