@@ -105,6 +105,49 @@ lemma maxRankAlong_ge_endpoint (r : Nat) (ts : List Nat) :
       dsimp [maxRankAlong]
       exact le_max_of_le_right (ih (CycleBridge.riseStep r t))
 
+/-- Every rise-suffix endpoint of a cyclic rise decomposition has rank
+exactly two, including the wrapping endpoint. -/
+theorem cycleRiseBlockSuffixEndpointRank_two_all
+    {m S P : Nat} {w : List Nat}
+    (d : CycleBridge.CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    CycleBridge.cycleRiseBlockSuffixEndpointRank d r = 2 := by
+  by_cases hrnext : r + 1 < d.blockCount
+  · exact CycleBridge.cycleRiseBlockSuffixEndpointRank_eq_two d r hr hrnext
+  · have hpos : 0 < d.blockCount := lt_of_le_of_lt (Nat.zero_le r) hr
+    have hstate := CycleBridge.cycleRiseBlockSuffixEndpoint_eq_nextHead d r hr
+    have hnext : CycleBridge.cycleRiseBlockNextHeadState d r =
+        StringFlow.Word.wordOrbit (w.take (d.headDepth 0)) m := by
+      dsimp [CycleBridge.cycleRiseBlockNextHeadState, CycleBridge.cycleRiseBlockNextHeadDepth]
+      rw [if_neg hrnext]
+      have hmod0 : (d.headDepth 0 + P) % P = d.headDepth 0 := by
+        rw [Nat.add_mod_right]
+        exact Nat.mod_eq_of_lt (d.hhead_lt 0 hpos)
+      rw [hmod0]
+    have hrank : twoValuation (CycleBridge.cycleRiseBlockNextHeadState d r + 1) = 2 := by
+      rw [hnext]
+      exact CycleBridge.cycleRiseBlockHeadRank_two d 0 hpos
+    simp [CycleBridge.cycleRiseBlockSuffixEndpointRank, hstate, hrank]
+
+/-- Endpoint rank exactly two gives the exact tail-rank lower bound
+`2 + 2*N - F ≤ v2(r0+1)` for every cyclic rise block. -/
+theorem cycleRiseBlockTailRank_lower_of_endpoint_two
+    {m S P : Nat} {w : List Nat}
+    (d : CycleBridge.CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    2 + 2 * CycleBridge.riseCountTwo (d.suffixWord r) -
+        CycleBridge.cycleRiseBlockCharge d r ≤
+      CycleBridge.cycleRiseBlockTailRank d r := by
+  have hend := CycleBridge.cycleRiseBlockEndpointRank_le d r hr
+  have htwo := cycleRiseBlockSuffixEndpointRank_two_all d r hr
+  have hle : 2 + 2 * CycleBridge.riseCountTwo (d.suffixWord r) ≤
+      CycleBridge.cycleRiseBlockTailRank d r +
+        CycleBridge.cycleRiseBlockCharge d r := by
+    have hend0 := hend
+    rw [htwo] at hend0
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hend0
+  omega
+
 /-- A `t=1` rank threshold is exactly the `hfail_t1` valuation bound,
 once the reset equation identifies the block head. -/
 theorem hfail_t1_of_rank
