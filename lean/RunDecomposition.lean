@@ -86,4 +86,123 @@ theorem blockCover_le
     rw [hwget] at hc3at
     omega
 
+/-- The C3 segment of the block ending at boundary `b`: the maximal C3
+run immediately before `b`. -/
+def blockC3Word (w : List Nat) (b : Nat) : List Nat :=
+  (w.take b).drop (b - blockC3Len w b)
+
+/-- The rise segment of the block starting at boundary `b`. -/
+def blockSuffixWord (w : List Nat) (b : Nat) : List Nat :=
+  (cyclicSegmentAt w b).take (blockRiseLen w b)
+
+/-- Depth of the block head: the start of the C3 segment. -/
+def blockHeadDepth (w : List Nat) (b : Nat) : Nat :=
+  b - blockC3Len w b
+
+/-- The C3 segment has exactly the C3-run length. -/
+theorem blockC3Word_length
+    (w : List Nat) (b : Nat) (hb : b ≤ w.length) :
+    (blockC3Word w b).length = blockC3Len w b := by
+  unfold blockC3Word
+  have hle : blockC3Len w b ≤ b := c3SuffixLengthAt_le w b hb
+  have htake : (w.take b).length = b := List.length_take_of_le hb
+  rw [List.length_drop, htake]
+  omega
+
+/-- The `k`-th entry of the C3 segment is the word entry at the
+corresponding position. -/
+theorem blockC3Word_getI
+    (w : List Nat) (b : Nat) (hb : b ≤ w.length) (k : Nat)
+    (hk : k < blockC3Len w b) :
+    (blockC3Word w b).getI k = w.getI (b - blockC3Len w b + k) := by
+  unfold blockC3Word
+  have hk' : k < ((w.take b).drop (b - blockC3Len w b)).length := by
+    rw [List.length_drop]
+    have htake : (w.take b).length = b := List.length_take_of_le hb
+    rw [htake]
+    have hc3le : blockC3Len w b ≤ b := c3SuffixLengthAt_le w b hb
+    omega
+  rw [List.getI_eq_getElem (l := (w.take b).drop (b - blockC3Len w b)) (n := k) hk']
+  have hdrop := List.getElem_drop
+    (xs := w.take b) (i := b - blockC3Len w b) (j := k) (h := hk')
+  rw [hdrop]
+  have hlt : b - blockC3Len w b + k < (w.take b).length := by
+    rw [List.length_take_of_le hb]
+    have hc3le : blockC3Len w b ≤ b := c3SuffixLengthAt_le w b hb
+    omega
+  have htake := List.getElem_take
+    (xs := w) (j := b) (i := b - blockC3Len w b + k) (h := hlt)
+  rw [htake]
+  have hltw : b - blockC3Len w b + k < w.length := by
+    rw [List.length_take_of_le hb] at hlt
+    omega
+  rw [List.getI_eq_getElem (l := w) (n := b - blockC3Len w b + k) hltw]
+
+/-- The rise segment has exactly the rise-run length. -/
+theorem blockSuffixWord_length (w : List Nat) (b : Nat) :
+    (blockSuffixWord w b).length = blockRiseLen w b := by
+  unfold blockSuffixWord
+  exact List.length_take_of_le (risePrefixLength_le (cyclicSegmentAt w b))
+
+/-- The `k`-th entry of the rise segment is the cyclic word entry. -/
+theorem blockSuffixWord_getI
+    (w : List Nat) (b : Nat) (hb : b ≤ w.length) (k : Nat)
+    (hk : k < blockRiseLen w b) :
+    (blockSuffixWord w b).getI k = w.getI ((b + k) % w.length) := by
+  unfold blockSuffixWord
+  have hk' : k < ((cyclicSegmentAt w b).take (blockRiseLen w b)).length := by
+    dsimp [blockRiseLen]
+    rw [List.length_take_of_le (risePrefixLength_le (cyclicSegmentAt w b))]
+    exact hk
+  rw [List.getI_eq_getElem
+    (l := (cyclicSegmentAt w b).take (blockRiseLen w b)) (n := k) hk']
+  have htake := List.getElem_take
+    (xs := cyclicSegmentAt w b) (j := blockRiseLen w b) (i := k) (h := hk')
+  rw [htake]
+  have hilt : k < w.length := by
+    have hle := risePrefixLength_le (cyclicSegmentAt w b)
+    have hseg := cyclicSegmentAt_length w b hb
+    have hklt : k < risePrefixLength (cyclicSegmentAt w b) := by
+      simpa [blockRiseLen] using hk
+    omega
+  have hmod := cyclicSegmentAt_getI_mod w b k hb hilt
+  have hiltSeg : k < (cyclicSegmentAt w b).length := by
+    rwa [cyclicSegmentAt_length w b hb]
+  rw [← List.getI_eq_getElem (l := cyclicSegmentAt w b) (n := k) hiltSeg]
+  rw [hmod]
+
+/-- The block head is a valid non-wrapping word depth. -/
+theorem blockHeadDepth_lt_P
+    (w : List Nat) (P b : Nat) (hw : w.length = P) (hb : b ≤ w.length)
+    (hb1 : 1 ≤ b) (hprev : 3 ≤ w.getI (b - 1)) :
+    blockHeadDepth w b < P := by
+  unfold blockHeadDepth
+  have hc3pos : 0 < blockC3Len w b := c3SuffixLengthAt_pos_of_head w b hb1 hprev
+  have hc3le : blockC3Len w b ≤ b := c3SuffixLengthAt_le w b hb
+  rw [← hw]
+  omega
+
+/-- Because the cycle starts with a rise step, the block head is at
+least one. -/
+theorem blockHeadDepth_pos_of_rise_start
+    (w : List Nat) (b : Nat) (hb : b ≤ w.length) (hb1 : 1 ≤ b)
+    (hprev : 3 ≤ w.getI (b - 1))
+    (hrise0 : w.getI 0 = 1 ∨ w.getI 0 = 2) :
+    1 ≤ blockHeadDepth w b := by
+  unfold blockHeadDepth
+  have hc3le : blockC3Len w b ≤ b := c3SuffixLengthAt_le w b hb
+  by_contra hnot
+  have hle0 : b - blockC3Len w b = 0 := by omega
+  have hb_eq : b = blockC3Len w b := by omega
+  have hpos : 0 < blockC3Len w b := c3SuffixLengthAt_pos_of_head w b hb1 hprev
+  have hk : blockC3Len w b - 1 < blockC3Len w b := by omega
+  have hmem := c3SuffixLengthAt_mem w b hb (blockC3Len w b - 1) hk
+  have hindex : b - 1 - (blockC3Len w b - 1) = 0 := by omega
+  rw [hindex] at hmem
+  rcases hrise0 with h1 | h2
+  · rw [h1] at hmem
+    omega
+  · rw [h2] at hmem
+    omega
+
 end StringFlow.CycleBridge
