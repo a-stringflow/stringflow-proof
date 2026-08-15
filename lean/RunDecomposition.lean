@@ -205,4 +205,34 @@ theorem blockHeadDepth_pos_of_rise_start
   · rw [h2] at hmem
     omega
 
+/-- The sequence of rise-run starts obtained by iterating the next
+boundary map. -/
+def riseBoundaryIter (w : List Nat) (P : Nat) (b : Nat) : Nat → Nat
+  | 0 => b
+  | n + 1 => nextRiseStart w P (riseBoundaryIter w P b n)
+
+/-- Number of rise-run starts in one full cyclic tour: `1` plus the
+number of further steps needed to return to the starting boundary. -/
+def riseRunCycleLenAux (w : List Nat) (P fuel b0 b : Nat) : Nat :=
+  match fuel with
+  | 0 => 0
+  | fuel + 1 =>
+      if b = b0 then 0
+      else 1 + riseRunCycleLenAux w P fuel b0 (nextRiseStart w P b)
+
+/-- Number of cyclic blocks starting at boundary `b0`. -/
+def riseRunCycleLen (w : List Nat) (P b0 : Nat) : Nat :=
+  1 + riseRunCycleLenAux w P P b0 (nextRiseStart w P b0)
+
+/-- `blockCountOf` is the number of rise runs in the cyclic
+decomposition starting at `b0`. -/
+def blockCountOf (w : List Nat) (P b0 : Nat) : Nat :=
+  riseRunCycleLen w P b0
+
+/-- The next boundary is a valid modular position. -/
+theorem nextRiseStart_lt {P : Nat} (hP : 0 < P) (w : List Nat) (b : Nat) :
+    nextRiseStart w P b < P := by
+  unfold nextRiseStart
+  exact Nat.mod_lt _ hP
+
 end StringFlow.CycleBridge
