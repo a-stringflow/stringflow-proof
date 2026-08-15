@@ -1033,6 +1033,72 @@ theorem suffixWord_prefix_eq_word_prefix_mod
         d.hsuffix_segment r hr j hjlt
       rw [hlhs, hrhs, hih, hwget]
 
+/-- The endpoint of the rise suffix of a cyclic rise block is the
+state at the next cyclic block head, with the final block wrapping.  In
+the wrapping block the suffix covers the tail of `w` plus the prefix of
+length `headDepth 0`, so the endpoint is the block-`0` head state
+`wordOrbit (w.take (headDepth 0)) m`, not the periodic-start state. -/
+theorem cycleRiseBlockSuffixEndpoint_eq_nextHead
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    cycleRiseBlockSuffixEndpointState d r =
+      cycleRiseBlockNextHeadState d r := by
+  let len := (d.suffixWord r).length
+  have hpre := suffixWord_prefix_eq_word_prefix_mod d r hr len (le_rfl)
+  have hpre' : StringFlow.Word.wordOrbit (d.suffixWord r)
+        (cycleRiseBlockC3TailState d r) =
+      StringFlow.Word.wordOrbit
+        (w.take ((cycleRiseBlockTailDepth d r + len) % P)) m := by
+    dsimp [len] at hpre ⊢
+    rw [List.take_of_length_le (le_refl (d.suffixWord r).length)] at hpre
+    exact hpre
+  have hsuff : cycleRiseBlockSuffixEndpointState d r =
+      StringFlow.Word.wordOrbit
+        (w.take ((cycleRiseBlockTailDepth d r + len) % P)) m := by
+    dsimp [cycleRiseBlockSuffixEndpointState, len]
+    rw [riseRun_eq_wordOrbit]
+    exact hpre'
+  by_cases hrnext : r + 1 < d.blockCount
+  · have hnext' : cycleRiseBlockTailDepth d r + len = d.headDepth (r + 1) := by
+      have h := d.hnext r hr
+      dsimp [cycleRiseBlockTailDepth, len]
+      rw [if_pos hrnext] at h
+      exact h.symm
+    have hmod : (cycleRiseBlockTailDepth d r + len) % P =
+        d.headDepth (r + 1) := by
+      rw [hnext']
+      exact Nat.mod_eq_of_lt (d.hhead_lt (r + 1) hrnext)
+    have hrhs : cycleRiseBlockNextHeadState d r =
+        StringFlow.Word.wordOrbit (w.take (d.headDepth (r + 1))) m := by
+      dsimp [cycleRiseBlockNextHeadState, cycleRiseBlockNextHeadDepth]
+      rw [if_pos hrnext]
+      rw [Nat.mod_eq_of_lt (d.hhead_lt (r + 1) hrnext)]
+    rw [hsuff, hmod, hrhs]
+  · have hpos : 0 < d.blockCount := by omega
+    have hnext' : cycleRiseBlockTailDepth d r + len = d.headDepth 0 + P := by
+      have h := d.hnext r hr
+      dsimp [cycleRiseBlockTailDepth, len]
+      rw [if_neg hrnext] at h
+      exact h.symm
+    have h0lt : d.headDepth 0 < P := d.hhead_lt 0 hpos
+    have hmod : (cycleRiseBlockTailDepth d r + len) % P = d.headDepth 0 := by
+      rw [hnext']
+      have hmod0 : (d.headDepth 0 + P) % P = d.headDepth 0 % P := by
+        rw [Nat.add_mod, Nat.mod_self]
+        simp
+      rw [hmod0]
+      exact Nat.mod_eq_of_lt h0lt
+    have hrhs : cycleRiseBlockNextHeadState d r =
+        StringFlow.Word.wordOrbit (w.take (d.headDepth 0)) m := by
+      dsimp [cycleRiseBlockNextHeadState, cycleRiseBlockNextHeadDepth]
+      rw [if_neg hrnext]
+      have hmod0 : (d.headDepth 0 + P) % P = d.headDepth 0 % P := by
+        rw [Nat.add_mod, Nat.mod_self]
+        simp
+      rw [hmod0, Nat.mod_eq_of_lt h0lt]
+    rw [hsuff, hmod, hrhs]
+
 /-- The complete real-block premises instantiation for a cyclic rise
 block (wrap-invariant): the word structure, the `q0` interval, the head
 bound and the prefix-orbit identities are all derived from the

@@ -287,11 +287,13 @@ def cycleRiseBlockNextHeadDepth {m S P : Nat} {w : List Nat}
   if r + 1 < d.blockCount then d.headDepth (r + 1)
   else d.headDepth 0 + P
 
-/-- Concrete state at the next cyclic block head. -/
+/-- Concrete state at the next cyclic block head.  The depth is taken
+modulo the period, so the wrapping block lands on the block-`0` head
+state rather than on the periodic-start state. -/
 def cycleRiseBlockNextHeadState {m S P : Nat} {w : List Nat}
     (d : CycleRiseBlockDecomposition m S P w) (r : Nat) : Nat :=
   StringFlow.Word.wordOrbit
-    (w.take (cycleRiseBlockNextHeadDepth d r)) m
+    (w.take (cycleRiseBlockNextHeadDepth d r % P)) m
 
 /-- For a non-wrapping block, the recorded suffix is the actual dropped
 word segment after the C3 chain. -/
