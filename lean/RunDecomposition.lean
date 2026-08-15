@@ -606,4 +606,12 @@ theorem blockAdvance_two_le_le_P
   · exact blockAdvance_pos w P b hw hb hb1 hpos hprev hnext
   · exact blockAdvance_le_P w P b hw hb hb1 hpos hprev hnext
 
+/-- The total advance strictly increases at every block. -/
+theorem blockTotalAdvance_lt_succ
+    (w : List Nat) (P b0 : Nat) (n : Nat)
+    (hpos : 2 ≤ blockAdvance w P (riseBoundaryIter w P b0 n)) :
+    blockTotalAdvance w P b0 n < blockTotalAdvance w P b0 (n + 1) := by
+  simp [blockTotalAdvance]
+  omega
+
 end StringFlow.CycleBridge
