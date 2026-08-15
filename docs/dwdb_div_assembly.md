@@ -105,6 +105,10 @@ end StringFlow.DwdbDiv
    `j,k0,t`）；旧
    `decisiveWindowValuationBound` 已被
    `decisiveWindowValuationBound_contradiction` 否定并作废。
+   当前剩余精确化为 `RealOrbitLocalLemma.rjRankT1LargeBound` /
+   `rjRankT2LargeBound`；小深度部分（`j≤34` / `j≤27`）已闭合，
+   闭掉两个大深度剩余后可直接调用
+   `RealOrbitLocalLemma.decisiveWindowValuationBoundCorrected_of_rjRankBounds`。
 2. 闭合 `failureWindowExistence`，即对每个
    `CycleQb8Input` 构造满足 `hinput`、`j<P`、`hreset`、`hreach`
    的失败块首。
@@ -126,6 +130,7 @@ end StringFlow.DwdbDiv
 - `CycleBridge.qb8_of_orbit_cycle`
 - `CycleBridge.cycle_closed_imp_failure_window`
 - `BlockAutomaton.decisiveWindowValuationBoundCorrected`（证明开放）
+- `RealOrbitLocalLemma.rjRankT1LargeBound` / `rjRankT2LargeBound`
 - `DwdbDiv.decisiveWindowValuationBoundCorrected_of_unified_core`
 - `DwdbDiv.failureWindowExistenceOfUnifiedCore`
 - `UnifiedCoreAudit.unified_core_final_no_hge`
