@@ -521,9 +521,7 @@ lemma cyclicSegmentAt_drop_take
 /-- The forward advance of one block never exceeds the period. -/
 theorem blockAdvance_le_P
     (w : List Nat) (P : Nat) (b : Nat) (hw : w.length = P)
-    (hb : b ≤ w.length) (hb1 : 1 ≤ b)
-    (_hpos : ∀ x, x ∈ w → 1 ≤ x)
-    (hprev : 3 ≤ w.getI (b - 1))
+    (hb : b ≤ w.length) (_hpos : ∀ x, x ∈ w → 1 ≤ x)
     (hnext : w.getI (b % w.length) = 1 ∨ w.getI (b % w.length) = 2) :
     blockAdvance w P b ≤ P := by
   unfold blockAdvance
@@ -535,7 +533,13 @@ theorem blockAdvance_le_P
     have hz : w.getI 0 = 0 := by
       have hge : w.length ≤ 0 := by omega
       simpa using (List.getI_eq_default (l := w) (n := 0) hge)
-    omega
+    have hnext' : w.getI 0 = 1 ∨ w.getI 0 = 2 := by
+      simpa [hw0] using hnext
+    rcases hnext' with h1 | h2
+    · rw [h1] at hz
+      omega
+    · rw [h2] at hz
+      omega
   let mid := (b + blockRiseLen w b) % w.length
   have hmidle : mid ≤ w.length := le_of_lt (Nat.mod_lt _ hlenpos)
   have hc3le : c3PrefixLength (cyclicSegmentAt w mid) ≤
@@ -550,7 +554,7 @@ theorem blockAdvance_le_P
         simpa [hw] using blockRiseLen_le_P w P b hw hb
       have hposR : 0 < blockRiseLen w b :=
         blockRiseLen_pos_of_boundary w b hb hnext
-      omega
+      exact Nat.sub_lt hlenpos hposR
     have hmod := cyclicSegmentAt_getI_mod w mid
       (w.length - blockRiseLen w b) hmidle hilt
     have hidx : (mid + (w.length - blockRiseLen w b)) % w.length =
@@ -604,7 +608,7 @@ theorem blockAdvance_two_le_le_P
     2 ≤ blockAdvance w P b ∧ blockAdvance w P b ≤ P := by
   constructor
   · exact blockAdvance_pos w P b hw hb hb1 hpos hprev hnext
-  · exact blockAdvance_le_P w P b hw hb hb1 hpos hprev hnext
+  · exact blockAdvance_le_P w P b hw hb hpos hnext
 
 /-- The total advance strictly increases at every block. -/
 theorem blockTotalAdvance_lt_succ
@@ -612,6 +616,529 @@ theorem blockTotalAdvance_lt_succ
     (hpos : 2 ≤ blockAdvance w P (riseBoundaryIter w P b0 n)) :
     blockTotalAdvance w P b0 n < blockTotalAdvance w P b0 (n + 1) := by
   simp [blockTotalAdvance]
+  omega
+
+/-- `(x % P + P - 1)` is congruent to `x + P - 1` modulo `P`. -/
+lemma mod_add_sub_one {P : Nat} (hP : 0 < P) (x : Nat) :
+    (x % P + (P - 1)) % P = (x + (P - 1)) % P := by
+  have hsub : (P - 1) % P = P - 1 := Nat.mod_eq_of_lt (by omega)
+  simpa [hsub] using (Nat.mod_add_mod x P (P - 1))
+
+/-- A cyclic rise-run start: `b` is a position modulo the period whose
+entry is a rise step and whose previous cyclic entry is a C3 step. -/
+def IsCyclicBoundary (w : List Nat) (P : Nat) (b : Nat) : Prop :=
+  b < P ∧
+  3 ≤ w.getI ((b + P - 1) % P) ∧
+  (w.getI (b % P) = 1 ∨ w.getI (b % P) = 2)
+
+/-- The last entry of the cyclic segment starting at zero is the last
+entry of the word. -/
+lemma cyclicSegmentAt_last_getI_wrap
+    (w : List Nat) (P : Nat) (hw : w.length = P) (hP : 0 < P) :
+    (cyclicSegmentAt w 0).getI (w.length - 1) = w.getI (w.length - 1) := by
+  have hilt : w.length - 1 < w.length := by omega
+  have hmod := cyclicSegmentAt_getI_mod w 0 (w.length - 1) (by simp) hilt
+  have hidx : (0 + (w.length - 1)) % w.length = w.length - 1 := by
+    rw [Nat.zero_add]
+    exact Nat.mod_eq_of_lt hilt
+  simpa [hidx] using hmod
+
+/-- After a maximal rise run starting at zero, the next cyclic entry
+is a C3 step. -/
+theorem c3AfterRise_pos_wrap
+    (w : List Nat) (P : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hprev0 : 3 ≤ w.getI (P - 1)) :
+    1 ≤ c3PrefixLength
+      (cyclicSegmentAt w (blockRiseLen w 0 % w.length)) := by
+  have hlenpos : 0 < w.length := by rw [hw]; exact hP
+  have hseg : (cyclicSegmentAt w 0).length = w.length :=
+    cyclicSegmentAt_length w 0 (by simp)
+  have hrise_le : blockRiseLen w 0 ≤ w.length := by
+    unfold blockRiseLen
+    calc
+      risePrefixLength (cyclicSegmentAt w 0) ≤
+          (cyclicSegmentAt w 0).length := risePrefixLength_le _
+      _ = w.length := hseg
+  have hne : blockRiseLen w 0 ≠ w.length := by
+    intro heq
+    have hlast := cyclicSegmentAt_last_getI_wrap w P hw hP
+    have hposR : 0 < blockRiseLen w 0 := by omega
+    have heq' : risePrefixLength (cyclicSegmentAt w 0) = w.length := by
+      simpa [blockRiseLen] using heq
+    have hmemArg : w.length - 1 < risePrefixLength (cyclicSegmentAt w 0) := by
+      have hlt : w.length - 1 < w.length := by omega
+      rwa [heq']
+    have hmem := risePrefixLength_mem (cyclicSegmentAt w 0) (w.length - 1) hmemArg
+    rw [hlast] at hmem
+    have hprev0' : 3 ≤ w.getI (w.length - 1) := by
+      rw [← hw] at hprev0
+      simpa using hprev0
+    rcases hmem with h1 | h2
+    · rw [h1] at hprev0'
+      omega
+    · rw [h2] at hprev0'
+      omega
+  have hstoplt : blockRiseLen w 0 < (cyclicSegmentAt w 0).length := by
+    rw [hseg]
+    exact lt_of_le_of_ne hrise_le hne
+  have hposSeg : ∀ x, x ∈ cyclicSegmentAt w 0 → 1 ≤ x := by
+    intro x hx
+    exact hpos x (cyclicSegmentAt_mem (w := w) (b := 0) hx)
+  have hstop := risePrefixLength_stop (cyclicSegmentAt w 0) hposSeg hstoplt
+  let mid := blockRiseLen w 0 % w.length
+  have hmidle : mid ≤ w.length := le_of_lt (Nat.mod_lt _ hlenpos)
+  have hhead := cyclicSegmentAt_head w mid hmidle
+  have hmidmod : mid % w.length = mid := Nat.mod_eq_of_lt (Nat.mod_lt _ hlenpos)
+  have hilt : blockRiseLen w 0 < w.length := by
+    rw [hseg] at hstoplt
+    exact hstoplt
+  have hmod := cyclicSegmentAt_getI_mod w 0 (blockRiseLen w 0) (by simp) hilt
+  have hsegget : (cyclicSegmentAt w 0).getI (blockRiseLen w 0) =
+      (cyclicSegmentAt w mid).getI 0 := by
+    rw [hmod, hhead, hmidmod]
+    congr 1
+    rw [Nat.zero_add]
+  have h3 : 3 ≤ (cyclicSegmentAt w mid).getI 0 := by
+    rwa [← hsegget]
+  apply c3PrefixLength_pos_of_head (cyclicSegmentAt w mid)
+  exact h3
+
+/-- The cyclic block starting at zero advances by at least two
+positions. -/
+theorem blockAdvance_pos_wrap
+    (w : List Nat) (P : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hprev0 : 3 ≤ w.getI (P - 1))
+    (hnext : w.getI (0 % w.length) = 1 ∨ w.getI (0 % w.length) = 2) :
+    2 ≤ blockAdvance w P 0 := by
+  unfold blockAdvance
+  have hr : 1 ≤ blockRiseLen w 0 :=
+    blockRiseLen_pos_of_boundary w 0 (by simp) hnext
+  have hc0 := c3AfterRise_pos_wrap w P hw hP hpos hprev0
+  have hc : 1 ≤ c3PrefixLength
+      (cyclicSegmentAt w ((0 + blockRiseLen w 0) % P)) := by
+    rw [hw] at hc0
+    simpa [Nat.zero_add] using hc0
+  omega
+
+/-- Every block starting at a cyclic boundary advances at least two
+positions. -/
+theorem blockAdvance_two_le_of_cyclic_boundary
+    (w : List Nat) (P : Nat) (b : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hbnd : IsCyclicBoundary w P b) :
+    2 ≤ blockAdvance w P b := by
+  rcases hbnd with ⟨hbP, hprev, hnext⟩
+  by_cases hb0 : b = 0
+  · subst b
+    have hprev0 : 3 ≤ w.getI (P - 1) := by
+      have hm : (0 + P - 1) % P = P - 1 := by
+        have hlt : P - 1 < P := by omega
+        rw [Nat.zero_add]
+        exact Nat.mod_eq_of_lt hlt
+      simpa [hm] using hprev
+    exact blockAdvance_pos_wrap w P hw hP hpos hprev0 hnext
+  · have hb1 : 1 ≤ b := by omega
+    have hb : b ≤ w.length := by rw [hw]; omega
+    have hprev' : 3 ≤ w.getI (b - 1) := by
+      have hm : (b + P - 1) % P = b - 1 := by
+        have hsub : b + P - 1 = (b - 1) + P := by omega
+        rw [hsub, Nat.add_mod_right]
+        exact Nat.mod_eq_of_lt (by omega)
+      simpa [hm] using hprev
+    have hnext' : w.getI (b % w.length) = 1 ∨ w.getI (b % w.length) = 2 := by
+      simpa [← hw] using hnext
+    exact (blockAdvance_two_le_le_P w P b hw hb hb1 hpos hprev' hnext').1
+
+/-- Every block starting at a cyclic boundary advances at most the
+period. -/
+theorem blockAdvance_le_P_of_cyclic_boundary
+    (w : List Nat) (P : Nat) (b : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hbnd : IsCyclicBoundary w P b) :
+    blockAdvance w P b ≤ P := by
+  rcases hbnd with ⟨hbP, _hprev, hnext⟩
+  have hb : b ≤ w.length := by rw [hw]; omega
+  have hnext' : w.getI (b % w.length) = 1 ∨ w.getI (b % w.length) = 2 := by
+    simpa [← hw] using hnext
+  exact blockAdvance_le_P w P b hw hb hpos hnext'
+
+/-- No position strictly inside a block can itself be a cyclic
+boundary: inside the rise run the predecessor is still a rise step,
+and inside the C3 run the entry is a C3 step. -/
+theorem blockInterior_not_cyclic_boundary
+    (w : List Nat) (P : Nat) (b : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hb : b ≤ w.length) (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hbnd : IsCyclicBoundary w P b) (hj1 : 1 ≤ j) (hj2 : j < blockAdvance w P b) :
+    ¬ IsCyclicBoundary w P ((b + j) % P) := by
+  intro hbad
+  rcases hbad with ⟨_hbadlt, hbadprev, hbadnext⟩
+  have hlenpos : 0 < w.length := by rw [hw]; exact hP
+  have hbndle : blockAdvance w P b ≤ P :=
+    blockAdvance_le_P_of_cyclic_boundary w P b hw hP hpos hbnd
+  have hjl : j < w.length := by
+    rw [hw]
+    omega
+  have hjl1 : j - 1 < w.length := by omega
+  by_cases hrise : j < blockRiseLen w b
+  · have hmemj := risePrefixLength_mem (cyclicSegmentAt w b) j
+      (by simpa [blockRiseLen] using hrise)
+    have hmemj1 : (cyclicSegmentAt w b).getI (j - 1) = 1 ∨
+        (cyclicSegmentAt w b).getI (j - 1) = 2 := by
+      have hjl' : j - 1 < blockRiseLen w b := by omega
+      exact risePrefixLength_mem (cyclicSegmentAt w b) (j - 1)
+        (by simpa [blockRiseLen] using hjl')
+    have hgetj := cyclicSegmentAt_getI_mod w b j hb hjl
+    have hgetj1 := cyclicSegmentAt_getI_mod w b (j - 1) hb hjl1
+    have hmod : ((b + j) % w.length + (w.length - 1)) % w.length =
+        (b + (j - 1)) % w.length := by
+      have hx := mod_add_sub_one hlenpos (b + j)
+      rw [hx]
+      have hsum : b + j + (w.length - 1) = (b + (j - 1)) + w.length := by omega
+      rw [hsum, Nat.add_mod_right]
+    have hprevbad : 3 ≤ w.getI ((b + (j - 1)) % w.length) := by
+      have hbadprev' : 3 ≤ w.getI (((b + j) % w.length + (w.length - 1)) % w.length) := by
+        have hre : ((b + j) % P + P - 1) % P =
+            ((b + j) % P + (P - 1)) % P := by
+          congr 1
+          omega
+        rw [hre] at hbadprev
+        simpa [← hw] using hbadprev
+      rwa [hmod] at hbadprev'
+    have hprev12 : w.getI ((b + (j - 1)) % w.length) = 1 ∨
+        w.getI ((b + (j - 1)) % w.length) = 2 := by
+      simpa [← hgetj1] using hmemj1
+    rcases hprev12 with h1 | h2
+    · rw [h1] at hprevbad
+      omega
+    · rw [h2] at hprevbad
+      omega
+  · have hrle : blockRiseLen w b ≤ j := Nat.le_of_not_gt hrise
+    let seg := cyclicSegmentAt w ((b + blockRiseLen w b) % P)
+    have hc3lt : j - blockRiseLen w b < c3PrefixLength seg := by
+      dsimp [seg]
+      have hj2' : j < blockRiseLen w b +
+          c3PrefixLength (cyclicSegmentAt w ((b + blockRiseLen w b) % P)) := by
+        simpa [blockAdvance] using hj2
+      omega
+    have hsegle : (b + blockRiseLen w b) % P ≤ w.length := by
+      rw [hw]
+      exact le_of_lt (Nat.mod_lt _ hP)
+    have hilt : j - blockRiseLen w b < w.length := by
+      have hcle : c3PrefixLength seg ≤ w.length := by
+        have hseg' := cyclicSegmentAt_length w ((b + blockRiseLen w b) % P) hsegle
+        calc
+          c3PrefixLength seg ≤ seg.length := c3PrefixLength_le _
+          _ = w.length := hseg'
+      omega
+    have hmem := c3PrefixLength_mem seg (j - blockRiseLen w b) hc3lt
+    have hget := cyclicSegmentAt_getI_mod w ((b + blockRiseLen w b) % P)
+      (j - blockRiseLen w b) hsegle hilt
+    have hge3' : 3 ≤ w.getI (((b + blockRiseLen w b) % P +
+        (j - blockRiseLen w b)) % w.length) := by
+      dsimp [seg] at hmem hget
+      rwa [hget] at hmem
+    have hge3 : 3 ≤ w.getI (((b + blockRiseLen w b) % P +
+        (j - blockRiseLen w b)) % P) := by
+      simpa [hw] using hge3'
+    have hmod : ((b + blockRiseLen w b) % P + (j - blockRiseLen w b)) % P =
+        (b + j) % P := by
+      have hsum : (b + blockRiseLen w b) + (j - blockRiseLen w b) = b + j := by omega
+      calc
+        ((b + blockRiseLen w b) % P + (j - blockRiseLen w b)) % P
+            = (b + blockRiseLen w b + (j - blockRiseLen w b)) % P :=
+              Nat.mod_add_mod (b + blockRiseLen w b) P (j - blockRiseLen w b)
+        _ = (b + j) % P := by rw [hsum]
+    have hge3'' : 3 ≤ w.getI ((b + j) % P) := by
+      rwa [hmod] at hge3
+    have hbadnext' : w.getI ((b + j) % P) = 1 ∨ w.getI ((b + j) % P) = 2 := by
+      simpa using hbadnext
+    rcases hbadnext' with h1 | h2
+    · rw [h1] at hge3''
+      omega
+    · rw [h2] at hge3''
+      omega
+
+/-- The successor of a cyclic boundary is again a cyclic boundary. -/
+theorem nextRiseStart_is_cyclic_boundary
+    (w : List Nat) (P : Nat) (b : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hbnd : IsCyclicBoundary w P b) :
+    IsCyclicBoundary w P (nextRiseStart w P b) := by
+  rcases hbnd with ⟨hbP, hprev, hnext⟩
+  have hb : b ≤ w.length := by rw [hw]; omega
+  have hlenpos : 0 < w.length := by rw [hw]; exact hP
+  let mid := (b + blockRiseLen w b) % w.length
+  have hmidle : mid ≤ w.length := le_of_lt (Nat.mod_lt _ hlenpos)
+  have hc3pos : 1 ≤ c3PrefixLength (cyclicSegmentAt w mid) := by
+    dsimp [mid]
+    by_cases hb0 : b = 0
+    · subst b
+      have hprev0 : 3 ≤ w.getI (P - 1) := by
+        have hm : (0 + P - 1) % P = P - 1 := by
+          have hlt : P - 1 < P := by omega
+          rw [Nat.zero_add]
+          exact Nat.mod_eq_of_lt hlt
+        simpa [hm] using hprev
+      have hc := c3AfterRise_pos_wrap w P hw hP hpos hprev0
+      simpa [Nat.zero_add] using hc
+    · have hb1 : 1 ≤ b := by omega
+      have hprev' : 3 ≤ w.getI (b - 1) := by
+        have hm : (b + P - 1) % P = b - 1 := by
+          have hsub : b + P - 1 = (b - 1) + P := by omega
+          rw [hsub, Nat.add_mod_right]
+          exact Nat.mod_eq_of_lt (by omega)
+        simpa [hm] using hprev
+      have hc := c3AfterRise_pos w b hb hb1 hpos hprev'
+      simpa using hc
+  let c := c3PrefixLength (cyclicSegmentAt w mid)
+  have hc3ge1 : 1 ≤ c := by simpa [c] using hc3pos
+  have hc3lt : c < w.length := by
+    have hcle : c ≤ (cyclicSegmentAt w mid).length := c3PrefixLength_le _
+    have hseg : (cyclicSegmentAt w mid).length = w.length :=
+      cyclicSegmentAt_length w mid hmidle
+    have hcle' : c ≤ w.length := by omega
+    by_contra hnot
+    have hceq : c = w.length := le_antisymm hcle' (Nat.le_of_not_gt hnot)
+    let idx := (b + w.length - mid) % w.length
+    have hidxlt : idx < w.length := Nat.mod_lt _ hlenpos
+    have hidxltc : idx < c := by
+      dsimp [idx]
+      rw [hceq]
+      exact Nat.mod_lt _ hlenpos
+    have hmem := c3PrefixLength_mem (cyclicSegmentAt w mid) idx hidxltc
+    have hget := cyclicSegmentAt_getI_mod w mid idx hmidle hidxlt
+    have hmidlt : mid < w.length := Nat.mod_lt _ hlenpos
+    have hmod : (mid + idx) % w.length = b % w.length := by
+      dsimp [idx]
+      have hsum : mid + (b + w.length - mid) = b + w.length := by omega
+      calc
+        (mid + ((b + w.length - mid) % w.length)) % w.length
+            = (mid + (b + w.length - mid)) % w.length := by
+              simpa [Nat.mod_eq_of_lt hmidlt] using
+                (Nat.mod_add_mod mid w.length (b + w.length - mid))
+        _ = (b + w.length) % w.length := by
+          rw [hsum]
+        _ = b % w.length := by rw [Nat.add_mod_right]
+    have hge : 3 ≤ w.getI (b % w.length) := by
+      have hwget : w.getI ((mid + idx) % w.length) = w.getI (b % w.length) := by
+        rw [hmod]
+      have hge' : 3 ≤ w.getI ((mid + idx) % w.length) := by
+        rwa [hget] at hmem
+      rwa [← hwget]
+    have hgeP : 3 ≤ w.getI (b % P) := by
+      simpa [hw] using hge
+    rcases hnext with h1 | h2
+    · rw [h1] at hgeP
+      omega
+    · rw [h2] at hgeP
+      omega
+  have hposSeg : ∀ x, x ∈ cyclicSegmentAt w mid → 1 ≤ x := by
+    intro x hx
+    exact hpos x (cyclicSegmentAt_mem (w := w) (b := mid) hx)
+  have hc3ltSeg : c < (cyclicSegmentAt w mid).length := by
+    rw [cyclicSegmentAt_length w mid hmidle]
+    exact hc3lt
+  have hstop := c3PrefixLength_stop (cyclicSegmentAt w mid) hposSeg hc3ltSeg
+  let q := (mid + c) % w.length
+  have hqlt : q < w.length := Nat.mod_lt _ hlenpos
+  have hqnext : w.getI (q % w.length) = 1 ∨ w.getI (q % w.length) = 2 := by
+    have hget := cyclicSegmentAt_getI_mod w mid c hmidle hc3lt
+    have hwget : w.getI (q % w.length) = (cyclicSegmentAt w mid).getI c := by
+      simpa [q] using hget.symm
+    rwa [← hwget] at hstop
+  have hqprev : 3 ≤ w.getI ((q + w.length - 1) % w.length) := by
+    have hmem := c3PrefixLength_mem (cyclicSegmentAt w mid) (c - 1) (by omega)
+    have hiltc1 : c - 1 < w.length := by omega
+    have hget := cyclicSegmentAt_getI_mod w mid (c - 1) hmidle hiltc1
+    have hge : 3 ≤ w.getI ((mid + (c - 1)) % w.length) := by
+      rwa [hget] at hmem
+    have hmod : (mid + (c - 1)) % w.length = (q + w.length - 1) % w.length := by
+      dsimp [q]
+      have hre : ((mid + c) % w.length + w.length - 1) % w.length =
+          ((mid + c) % w.length + (w.length - 1)) % w.length := by
+        congr 1
+        omega
+      have hx := mod_add_sub_one hlenpos (mid + c)
+      rw [hre, hx]
+      have hsum' : mid + c + (w.length - 1) = (mid + (c - 1)) + w.length := by omega
+      rw [hsum', Nat.add_mod_right]
+    rwa [hmod] at hge
+  have hqltP : q < P := by rwa [hw] at hqlt
+  have hqprevP : 3 ≤ w.getI ((q + P - 1) % P) := by
+    rwa [hw] at hqprev
+  have hqnextP : w.getI (q % P) = 1 ∨ w.getI (q % P) = 2 := by
+    rwa [hw] at hqnext
+  have hqeq : q = nextRiseStart w P b := by
+    dsimp [q, mid, c]
+    unfold nextRiseStart
+    rw [hw]
+  rw [← hqeq]
+  exact ⟨hqltP, hqprevP, hqnextP⟩
+
+/-- Every iterate of the boundary map from a cyclic boundary is again
+a cyclic boundary. -/
+theorem riseBoundaryIter_is_cyclic_boundary
+    (w : List Nat) (P b0 : Nat) (k : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hbnd : IsCyclicBoundary w P b0) (hk : k < P) :
+    IsCyclicBoundary w P (riseBoundaryIter w P b0 k) := by
+  induction k with
+  | zero =>
+      simpa [riseBoundaryIter] using hbnd
+  | succ k ih =>
+      have hk' : k < P := by omega
+      simpa [riseBoundaryIter] using
+        nextRiseStart_is_cyclic_boundary w P (riseBoundaryIter w P b0 k)
+          hw hP hpos (ih hk')
+
+/-- Iterating from the successor is the same as iterating one more
+step from the starting boundary. -/
+theorem riseBoundaryIter_succ_compose (w : List Nat) (P b : Nat) (n : Nat) :
+    riseBoundaryIter w P (nextRiseStart w P b) n =
+      riseBoundaryIter w P b (n + 1) := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+      simp [riseBoundaryIter, ih]
+
+/-- If the boundary iteration reaches the starting boundary within
+`n` steps, the cycle-length counter stops no later than step `n`. -/
+theorem riseRunCycleLenAux_le_of_hit
+    (w : List Nat) (P fuel b0 b : Nat) (n : Nat)
+    (hn : n ≤ fuel) (hit : riseBoundaryIter w P b n = b0) :
+    riseRunCycleLenAux w P fuel b0 b ≤ n := by
+  induction n generalizing fuel b with
+  | zero =>
+      have hb : b = b0 := by
+        simpa [riseBoundaryIter] using hit
+      induction fuel with
+      | zero => simp [riseRunCycleLenAux]
+      | succ fuel ihf => simp [riseRunCycleLenAux, hb]
+  | succ n ih =>
+      by_cases hb : b = b0
+      · induction fuel with
+        | zero => simp [riseRunCycleLenAux]
+        | succ fuel ihf => simp [riseRunCycleLenAux, hb]
+      · cases fuel with
+        | zero => omega
+        | succ fuel =>
+            have hstep : riseBoundaryIter w P (nextRiseStart w P b) n = b0 := by
+              rw [riseBoundaryIter_succ_compose w P b n]
+              exact hit
+            have hle : n ≤ fuel := by omega
+            have hih := ih fuel (nextRiseStart w P b) hle hstep
+            have haux : riseRunCycleLenAux w P (fuel + 1) b0 b =
+                1 + riseRunCycleLenAux w P fuel b0 (nextRiseStart w P b) := by
+              simp [riseRunCycleLenAux, hb]
+            rw [haux]
+            omega
+
+/-- The cyclic boundary tour returns to its starting boundary within
+`P` steps, so the number of rise blocks is at most the period. -/
+theorem blockCountOf_le_P
+    (w : List Nat) (P b0 : Nat) (hw : w.length = P) (hP : 0 < P)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hbnd : IsCyclicBoundary w P b0) :
+    blockCountOf w P b0 ≤ P := by
+  have hb0P : b0 < P := hbnd.1
+  have hbndAt : ∀ k : Nat, k < P →
+      IsCyclicBoundary w P (riseBoundaryIter w P b0 k) := by
+    intro k hk
+    exact riseBoundaryIter_is_cyclic_boundary w P b0 k hw hP hpos hbnd hk
+  have hT_P : P ≤ blockTotalAdvance w P b0 P := by
+    have h := blockTotalAdvance_ge_two_mul w P b0 P
+      (fun k hk => blockAdvance_two_le_of_cyclic_boundary w P
+        (riseBoundaryIter w P b0 k) hw hP hpos (hbndAt k (by omega)))
+    omega
+  let S : Nat → Prop := fun n => P ≤ blockTotalAdvance w P b0 n
+  have hnon : ∃ n : Nat, S n := ⟨P, hT_P⟩
+  let n0 := Nat.find hnon
+  have hn0 : P ≤ blockTotalAdvance w P b0 n0 := by
+    dsimp [n0]
+    exact Nat.find_spec hnon
+  have hn0min : ∀ n : Nat, P ≤ blockTotalAdvance w P b0 n → n0 ≤ n := by
+    intro n hn
+    dsimp [n0]
+    exact Nat.find_min' hnon hn
+  have hn0pos : 0 < n0 := by
+    by_contra hz
+    have hn0z : n0 = 0 := Nat.eq_zero_of_not_pos hz
+    rw [hn0z] at hn0
+    simp [blockTotalAdvance] at hn0
+    omega
+  have hn0le : n0 ≤ P := hn0min P hT_P
+  have hprevlt : blockTotalAdvance w P b0 (n0 - 1) < P := by
+    by_contra hnot
+    have hge : P ≤ blockTotalAdvance w P b0 (n0 - 1) := Nat.le_of_not_gt hnot
+    have hle := hn0min (n0 - 1) hge
+    omega
+  let b := riseBoundaryIter w P b0 (n0 - 1)
+  let A := blockAdvance w P b
+  have hbndb : IsCyclicBoundary w P b := by
+    dsimp [b]
+    exact hbndAt (n0 - 1) (by omega)
+  have hTlast : blockTotalAdvance w P b0 n0 =
+      blockTotalAdvance w P b0 (n0 - 1) + A := by
+    have hsub : n0 = (n0 - 1) + 1 := by omega
+    rw [hsub]
+    simp [blockTotalAdvance, b, A]
+  have hT_n0_eq : blockTotalAdvance w P b0 n0 = P := by
+    by_contra hnot
+    have hgt : P < blockTotalAdvance w P b0 n0 :=
+      lt_of_le_of_ne hn0 (fun h => hnot h.symm)
+    let j := P - blockTotalAdvance w P b0 (n0 - 1)
+    have hj1 : 1 ≤ j := by
+      dsimp [j]
+      omega
+    have hj2 : j < A := by
+      dsimp [j]
+      rw [hTlast] at hgt
+      omega
+    have hb : b ≤ w.length := by
+      have hbP : b < w.length := by simpa [← hw] using hbndb.1
+      omega
+    have hnotb := blockInterior_not_cyclic_boundary w P b hw hP hb
+      hpos hbndb hj1 hj2
+    have hpos_eq : (b + j) % P = b0 := by
+      have hbmod := riseBoundaryIter_eq_add_totalAdvance w P b0 hb0P (n0 - 1)
+      have hb' : riseBoundaryIter w P b0 (n0 - 1) =
+          (b0 + blockTotalAdvance w P b0 (n0 - 1)) % P := hbmod
+      dsimp [b, j]
+      rw [hb']
+      have haP : blockTotalAdvance w P b0 (n0 - 1) ≤ P := by omega
+      have hadd : blockTotalAdvance w P b0 (n0 - 1) +
+          (P - blockTotalAdvance w P b0 (n0 - 1)) = P := Nat.add_sub_of_le haP
+      calc
+        ((b0 + blockTotalAdvance w P b0 (n0 - 1)) % P +
+            (P - blockTotalAdvance w P b0 (n0 - 1))) % P
+            = (b0 + blockTotalAdvance w P b0 (n0 - 1) +
+                (P - blockTotalAdvance w P b0 (n0 - 1))) % P :=
+              Nat.mod_add_mod (b0 + blockTotalAdvance w P b0 (n0 - 1)) P
+                (P - blockTotalAdvance w P b0 (n0 - 1))
+        _ = (b0 + P) % P := by
+            rw [Nat.add_assoc, hadd]
+        _ = b0 := by
+            rw [Nat.add_mod_right]
+            exact Nat.mod_eq_of_lt hb0P
+    have hbad0 : IsCyclicBoundary w P ((b + j) % P) := by
+      simpa [← hpos_eq] using hbnd
+    exact hnotb hbad0
+  have hreturn : riseBoundaryIter w P (nextRiseStart w P b0) (n0 - 1) = b0 := by
+    rw [riseBoundaryIter_succ_compose w P b0 (n0 - 1)]
+    have hsub : n0 - 1 + 1 = n0 := by omega
+    rw [hsub]
+    rw [riseBoundaryIter_eq_add_totalAdvance w P b0 hb0P n0]
+    rw [hT_n0_eq]
+    have hsum : (b0 + P) % P = b0 := by
+      rw [Nat.add_mod_right]
+      exact Nat.mod_eq_of_lt hb0P
+    simpa using hsum
+  have haux : riseRunCycleLenAux w P P b0 (nextRiseStart w P b0) ≤ n0 - 1 :=
+    riseRunCycleLenAux_le_of_hit w P P b0 (nextRiseStart w P b0) (n0 - 1)
+      (by omega) hreturn
+  unfold blockCountOf riseRunCycleLen
   omega
 
 end StringFlow.CycleBridge
