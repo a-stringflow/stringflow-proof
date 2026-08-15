@@ -452,4 +452,15 @@ theorem blockRiseLen_le_P
     _ = w.length := hlen
     _ = P := hw
 
+/-- A single C3 run never exceeds the period. -/
+theorem c3PrefixLength_le_P
+    (w : List Nat) (P b : Nat) (hw : w.length = P) (hb : b ≤ w.length) :
+    c3PrefixLength (cyclicSegmentAt w b) ≤ P := by
+  have hlen := cyclicSegmentAt_length w b hb
+  calc
+    c3PrefixLength (cyclicSegmentAt w b) ≤
+        (cyclicSegmentAt w b).length := c3PrefixLength_le _
+    _ = w.length := hlen
+    _ = P := hw
+
 end StringFlow.CycleBridge
