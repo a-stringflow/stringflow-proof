@@ -2291,6 +2291,59 @@ theorem cycleQb8Input_exists_c3_and_rise_index
   · exact cycleQb8Input_exists_c3_index h
   · exact cycleQb8Input_exists_rise_index h
 
+/-- A PMI-B bad proper prefix of a closed QB-8 cycle word returns to
+the global minimum: `wordOrbit (w.take j) m = m`.  Here "bad" is the
+PMI-B condition `5^j <= 2^(W_j)` in the word-weight form of
+`StringFlow.PMI.isBad`, and the numerator bound
+`wordA (w.take j) < 5^j` is supplied by `wordA_lt_five_pow` on the
+pure `{1,2}` prefix. -/
+theorem cycleQb8Input_bad_prefix_returns_to_min
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3) {j : Nat}
+    (hjp : j < P)
+    (hbad : 5 ^ j ≤ 2 ^ StringFlow.wordWeight (w.take j))
+    (hok : StringFlow.Word.wordOK (w.take j)) :
+    StringFlow.Word.wordOrbit (w.take j) m = m := by
+  let u := w.take j
+  have hu_len : u.length = j := by
+    dsimp [u]
+    rw [List.length_take_of_le]
+    rw [h.hlength]
+    omega
+  have hv : StringFlow.Word.wordValid (u ++ w.drop j) m := by
+    dsimp [u]
+    simpa [List.take_append_drop] using h.hvalid
+  have hvalid_u : StringFlow.Word.wordValid u m := by
+    exact (S6Audit.wordValid_append u (w.drop j) m).mp hv |>.1
+  have hA_lt : StringFlow.Word.wordA u < 5 ^ j := by
+    have hlt := StringFlow.Word.wordA_lt_five_pow u hok
+    rwa [hu_len] at hlt
+  have hid : 2 ^ StringFlow.wordWeight u * StringFlow.Word.wordOrbit u m =
+      5 ^ j * m + StringFlow.Word.wordA u := by
+    have hid' := StringFlow.Word.word_orbit_identity u m hvalid_u
+    rwa [hu_len] at hid'
+  have hmul_lt : StringFlow.Word.wordOrbit u m *
+        2 ^ StringFlow.wordWeight u <
+      (m + 1) * 2 ^ StringFlow.wordWeight u := by
+    calc
+      StringFlow.Word.wordOrbit u m * 2 ^ StringFlow.wordWeight u
+          = 5 ^ j * m + StringFlow.Word.wordA u := by
+              rw [Nat.mul_comm, hid]
+      _ < 5 ^ j * m + 5 ^ j := Nat.add_lt_add_left hA_lt (5 ^ j * m)
+      _ = 5 ^ j * (m + 1) := by ring
+      _ ≤ (m + 1) * 2 ^ StringFlow.wordWeight u := by
+          have h' : 5 ^ j * (m + 1) ≤
+              2 ^ StringFlow.wordWeight u * (m + 1) :=
+            Nat.mul_le_mul_right (m + 1) hbad
+          rw [Nat.mul_comm (m + 1) (2 ^ StringFlow.wordWeight u)]
+          exact h'
+  have ho_le_m : StringFlow.Word.wordOrbit u m ≤ m := by
+    have hlt := Nat.lt_of_mul_lt_mul_right hmul_lt
+    omega
+  have hm_le_o : m ≤ StringFlow.Word.wordOrbit u m := by
+    simpa [u] using h.hglobal_min j hjp
+  simpa [u] using le_antisymm ho_le_m hm_le_o
+
 /-- One more step of `wordOrbit` is the exact quotient by the next
 step weight. -/
 theorem wordOrbit_take_succ (w : List Nat) (m j : Nat) (hj : j < w.length) :
