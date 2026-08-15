@@ -1099,6 +1099,201 @@ theorem cycleRiseBlockSuffixEndpoint_eq_nextHead
       rw [hmod0, Nat.mod_eq_of_lt h0lt]
     rw [hsuff, hmod, hrhs]
 
+/-- The end of a block's C3 chain is a genuine cyclic C3-to-rise
+boundary: the last C3 entry is at least three and the following rise
+suffix starts with an entry one or two.  This is the exact structural
+input needed to attach the real boundary terminal to the cyclic
+failure-window machinery. -/
+theorem cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hne : d.suffixWord r ≠ []) :
+    IsCyclicC3RiseBoundaryAt w (cycleRiseBlockTailDepth d r) := by
+  have hbpos : 1 ≤ cycleRiseBlockTailDepth d r :=
+    cycleRiseBlockTailDepth_pos d r hr
+  have hblt : cycleRiseBlockTailDepth d r - 1 < P :=
+    cycleRiseBlockTailDepth_lt_succ d r hr
+  have hble : cycleRiseBlockTailDepth d r ≤ P := by omega
+  have hPpos : 0 < P := by omega
+  have hlenpos : 0 < w.length := by
+    rw [d.hperiod]
+    exact hPpos
+  have hbcase : cycleRiseBlockTailDepth d r = w.length ∨
+      (1 ≤ cycleRiseBlockTailDepth d r ∧
+        cycleRiseBlockTailDepth d r < w.length) := by
+    by_cases hlt : cycleRiseBlockTailDepth d r < P
+    · right
+      constructor
+      · exact hbpos
+      · rw [d.hperiod]
+        exact hlt
+    · left
+      have heq : cycleRiseBlockTailDepth d r = P := by omega
+      rw [d.hperiod]
+      exact heq
+  have hprev3 : 3 ≤ w.getI (cycleRiseBlockTailDepth d r - 1) := by
+    have hCpos : 0 < (d.c3Word r).length :=
+      List.length_pos_iff.mpr (d.hc3_nonempty r hr)
+    have hk : (d.c3Word r).length - 1 < (d.c3Word r).length := by omega
+    have hseg := d.hc3_segment r hr ((d.c3Word r).length - 1) hk
+    have hidx : d.headDepth r + ((d.c3Word r).length - 1) =
+        cycleRiseBlockTailDepth d r - 1 := by
+      dsimp [cycleRiseBlockTailDepth]
+      omega
+    rw [hidx] at hseg
+    have hm : (d.c3Word r).getI ((d.c3Word r).length - 1) ∈ d.c3Word r := by
+      rw [List.getI_eq_getElem (l := d.c3Word r)
+        (n := (d.c3Word r).length - 1) hk]
+      exact List.getElem_mem hk
+    have hge := d.hc3_entries r hr
+      ((d.c3Word r).getI ((d.c3Word r).length - 1)) hm
+    rwa [hseg] at hge
+  have hnext12 : w.getI (cycleRiseBlockTailDepth d r % w.length) = 1 ∨
+      w.getI (cycleRiseBlockTailDepth d r % w.length) = 2 := by
+    have hk : 0 < (d.suffixWord r).length := List.length_pos_iff.mpr hne
+    have hseg := d.hsuffix_segment r hr 0 hk
+    have hmod : (d.headDepth r + (d.c3Word r).length + 0) % P =
+        (d.headDepth r + (d.c3Word r).length) % P := by
+      simp
+    rw [hmod] at hseg
+    rw [d.hperiod]
+    dsimp [cycleRiseBlockTailDepth]
+    have hm : (d.suffixWord r).getI 0 ∈ d.suffixWord r := by
+      rw [List.getI_eq_getElem (l := d.suffixWord r) (n := 0) hk]
+      exact List.getElem_mem hk
+    rcases d.hsuffix_one_two r hr ((d.suffixWord r).getI 0) hm with h1 | h2
+    · left
+      rw [← hseg]
+      exact h1
+    · right
+      rw [← hseg]
+      exact h2
+  exact ⟨hlenpos, hbcase, hprev3, hnext12⟩
+
+/-- The rise suffix of a cyclic rise block is exactly the prefix of
+the cyclic rotation at the block's C3-tail depth.  This is the
+wrap-invariant word alignment used by the failure-window assembly. -/
+theorem cycleRiseBlockSuffixWord_eq_cyclic_take
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hLle : (d.suffixWord r).length ≤ w.length) :
+    d.suffixWord r =
+      (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+        (d.suffixWord r).length := by
+  have hbpos : 1 ≤ cycleRiseBlockTailDepth d r :=
+    cycleRiseBlockTailDepth_pos d r hr
+  have hblt : cycleRiseBlockTailDepth d r - 1 < P :=
+    cycleRiseBlockTailDepth_lt_succ d r hr
+  have hble : cycleRiseBlockTailDepth d r ≤ w.length := by
+    rw [d.hperiod]
+    omega
+  have hlen : (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).length =
+      w.length :=
+    cyclicSegmentAt_length w (cycleRiseBlockTailDepth d r) hble
+  refine List.ext_getElem ?_ ?_
+  · rw [List.length_take_of_le
+      (l := cyclicSegmentAt w (cycleRiseBlockTailDepth d r))
+      (by simpa [hlen] using hLle)]
+  · intro k hk1 hk2
+    have hklt : k < w.length := by omega
+    have hseg := d.hsuffix_segment r hr k hk1
+    have hrot := cyclicSegmentAt_getI_mod w (cycleRiseBlockTailDepth d r) k
+      hble hklt
+    have hsegP : (d.suffixWord r).getI k =
+        w.getI ((cycleRiseBlockTailDepth d r + k) % P) := by
+      dsimp [cycleRiseBlockTailDepth] at hseg ⊢
+      exact hseg
+    have hmain : (d.suffixWord r).getI k =
+        ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+          (d.suffixWord r).length).getI k := by
+      calc
+        (d.suffixWord r).getI k = w.getI ((cycleRiseBlockTailDepth d r + k) % P) := hsegP
+        _ = w.getI ((cycleRiseBlockTailDepth d r + k) % w.length) := by
+          rw [d.hperiod]
+        _ = (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).getI k := hrot.symm
+        _ = ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+            (d.suffixWord r).length).getI k := by
+          rw [List.getI_eq_getElem
+            (l := cyclicSegmentAt w (cycleRiseBlockTailDepth d r))
+            (n := k) (by simpa [hlen] using hklt)]
+          rw [List.getI_eq_getElem
+            (l := (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+              (d.suffixWord r).length) (n := k) hk2]
+          rw [← List.getElem_take]
+    rw [← List.getI_eq_getElem (l := d.suffixWord r) (n := k) hk1]
+    rw [← List.getI_eq_getElem
+      (l := (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+        (d.suffixWord r).length) (n := k) hk2]
+    exact hmain
+
+/-- The word entry after a block's rise suffix is a C3 entry: in the
+non-wrapping case it is the first entry of the next block's C3 chain,
+and in the wrapping case it is the first entry of block zero.  This is
+the exact stop condition of the cyclic rise run. -/
+theorem cycleRiseBlockSuffixStopC3
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hLlt : (d.suffixWord r).length < w.length) :
+    3 ≤ (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).getI
+      (d.suffixWord r).length := by
+  have hpos : 0 < d.blockCount := by omega
+  have hbpos : 1 ≤ cycleRiseBlockTailDepth d r :=
+    cycleRiseBlockTailDepth_pos d r hr
+  have hblt : cycleRiseBlockTailDepth d r - 1 < P :=
+    cycleRiseBlockTailDepth_lt_succ d r hr
+  have hble : cycleRiseBlockTailDepth d r ≤ w.length := by
+    rw [d.hperiod]
+    omega
+  have hrot := cyclicSegmentAt_getI_mod w (cycleRiseBlockTailDepth d r)
+    (d.suffixWord r).length hble hLlt
+  by_cases hrnext : r + 1 < d.blockCount
+  · have hnext' : cycleRiseBlockTailDepth d r + (d.suffixWord r).length =
+        d.headDepth (r + 1) := by
+      have h := d.hnext r hr
+      dsimp [cycleRiseBlockTailDepth]
+      rw [if_pos hrnext] at h
+      exact h.symm
+    have hmod : (d.headDepth (r + 1)) % P = d.headDepth (r + 1) :=
+      Nat.mod_eq_of_lt (d.hhead_lt (r + 1) hrnext)
+    have hk0 : 0 < (d.c3Word (r + 1)).length :=
+      List.length_pos_iff.mpr (d.hc3_nonempty (r + 1) hrnext)
+    have hseg0 := d.hc3_segment (r + 1) hrnext 0 hk0
+    have hge0 := d.hc3_entries (r + 1) hrnext
+      ((d.c3Word (r + 1)).getI 0)
+      (by
+        rw [List.getI_eq_getElem (l := d.c3Word (r + 1)) (n := 0) hk0]
+        exact List.getElem_mem hk0)
+    rw [hrot]
+    rw [d.hperiod]
+    rw [hnext']
+    rw [hmod]
+    simpa [hseg0] using hge0
+  · have hnext' : cycleRiseBlockTailDepth d r + (d.suffixWord r).length =
+        d.headDepth 0 + P := by
+      have h := d.hnext r hr
+      dsimp [cycleRiseBlockTailDepth]
+      rw [if_neg hrnext] at h
+      exact h.symm
+    have h0lt : d.headDepth 0 < P := d.hhead_lt 0 hpos
+    have hmod : (d.headDepth 0 + P) % P = d.headDepth 0 := by
+      rw [Nat.add_mod, Nat.mod_self]
+      have h0m : d.headDepth 0 % P = d.headDepth 0 :=
+        Nat.mod_eq_of_lt h0lt
+      simp [h0m]
+    have hk0 : 0 < (d.c3Word 0).length :=
+      List.length_pos_iff.mpr (d.hc3_nonempty 0 hpos)
+    have hseg0 := d.hc3_segment 0 hpos 0 hk0
+    have hge0 := d.hc3_entries 0 hpos
+      ((d.c3Word 0).getI 0)
+      (by
+        rw [List.getI_eq_getElem (l := d.c3Word 0) (n := 0) hk0]
+        exact List.getElem_mem hk0)
+    rw [hrot]
+    rw [d.hperiod]
+    rw [hnext']
+    rw [hmod]
+    simpa [hseg0] using hge0
+
 /-- The complete real-block premises instantiation for a cyclic rise
 block (wrap-invariant): the word structure, the `q0` interval, the head
 bound and the prefix-orbit identities are all derived from the
