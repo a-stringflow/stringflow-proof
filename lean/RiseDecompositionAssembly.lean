@@ -1367,6 +1367,96 @@ theorem cycleRiseBlockSuffixStopOr
   right
   exact cycleRiseBlockSuffixStopC3 d r hr hLlt
 
+/-- Assemble the fully cyclic failure window from a cyclic rise block.
+The block's C3-tail depth supplies the boundary, the rise suffix is the
+local word, and the maximality stop is the following C3 entry; only the
+genuine reset terminal (`hrt`, `hterm`, `hk`, `hslt`) and the failure
+lower bounds (`hfail_t1`, `hfail_t2`) remain as inputs.  These are
+exactly the data that real orbit reachability and the block-layer PMI
+must supply. -/
+theorem cyclicDepthFailureWindow_of_cycleRiseBlock
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (hne : d.suffixWord r ≠ [])
+    (hLlt : (d.suffixWord r).length < w.length)
+    (t delta : Nat) (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hrt : rt.r =
+      (5 * StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2)
+    (ht_last : t = (d.suffixWord r).getI ((d.suffixWord r).length - 1))
+    (ht : t = 1 ∨ t = 2)
+    (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
+    (hterm : IsLocalResetTerminal t (d.suffixWord r).length
+      (StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+          (d.suffixWord r).length)
+        (StringFlow.Word.wordOrbit
+          (w.take (cycleRiseBlockTailDepth d r)) m)) delta rt)
+    (hk : rt.k + 1 ≤ (d.suffixWord r).length)
+    (hslt : rt.s < 5 ^ ((d.suffixWord r).length - rt.k - 1))
+    (hfail_t1 : t = 1 → 2 * (d.suffixWord r).length + 12 ≤
+      twoValuation (5 ^ (rt.k + 1) * rt.s +
+        5 ^ (d.suffixWord r).length - 2))
+    (hfail_t2 : t = 2 → 2 * (d.suffixWord r).length + 11 ≤
+      twoValuation (5 ^ (rt.k + 1) * rt.s +
+        delta * 5 ^ (d.suffixWord r).length)) :
+    RealOrbitLocalLemma.CyclicDepthFailureWindow m S P w rise c3
+      (cycleRiseBlockTailDepth d r) (d.suffixWord r).length t delta rt := by
+  have hb := cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary d r hr hne
+  have hLpos : 1 ≤ (d.suffixWord r).length := List.length_pos_iff.mpr hne
+  have hLle : (d.suffixWord r).length ≤ w.length := by omega
+  have hlast := cycleRiseBlockSuffixLastStep d r hr hLpos hLle
+  have ht_last' : t =
+      (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).getI
+        ((d.suffixWord r).length - 1) := by
+    rw [← hlast]
+    exact ht_last
+  exact RealOrbitLocalLemma.cyclic_local_block_to_cyclicDepthFailureWindow
+    h (cycleRiseBlockTailDepth d r) (d.suffixWord r).length t delta
+    hb hLpos hLle rt hrt ht_last' ht hdelta hterm hk hslt hfail_t1 hfail_t2
+
+/-- A fully sourced failure window at a cyclic rise block is
+impossible: the following C3 entry fixes the head rank at two, which
+contradicts the failure lower bounds.  This is the exact-structure
+contradiction behind the failure-window route; it needs no decisive
+window bound and no large-depth rank estimate. -/
+theorem cycleRiseBlockWindowFalse
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (hne : d.suffixWord r ≠ [])
+    (hLlt : (d.suffixWord r).length < w.length)
+    (t delta : Nat) (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hrt : rt.r =
+      (5 * StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2)
+    (ht_last : t = (d.suffixWord r).getI ((d.suffixWord r).length - 1))
+    (ht : t = 1 ∨ t = 2)
+    (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
+    (hterm : IsLocalResetTerminal t (d.suffixWord r).length
+      (StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+          (d.suffixWord r).length)
+        (StringFlow.Word.wordOrbit
+          (w.take (cycleRiseBlockTailDepth d r)) m)) delta rt)
+    (hk : rt.k + 1 ≤ (d.suffixWord r).length)
+    (hslt : rt.s < 5 ^ ((d.suffixWord r).length - rt.k - 1))
+    (hfail_t1 : t = 1 → 2 * (d.suffixWord r).length + 12 ≤
+      twoValuation (5 ^ (rt.k + 1) * rt.s +
+        5 ^ (d.suffixWord r).length - 2))
+    (hfail_t2 : t = 2 → 2 * (d.suffixWord r).length + 11 ≤
+      twoValuation (5 ^ (rt.k + 1) * rt.s +
+        delta * 5 ^ (d.suffixWord r).length)) :
+    False := by
+  have fw := cyclicDepthFailureWindow_of_cycleRiseBlock
+    h d r hr hne hLlt t delta rt hrt ht_last ht hdelta hterm hk hslt
+    hfail_t1 hfail_t2
+  exact RealOrbitLocalLemma.cyclicDepthFailureWindow_false_of_outgoing_c3
+    fw hLlt (cycleRiseBlockSuffixStopC3 d r hr hLlt)
+
 /-- The complete real-block premises instantiation for a cyclic rise
 block (wrap-invariant): the word structure, the `q0` interval, the head
 bound and the prefix-orbit identities are all derived from the
