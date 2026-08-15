@@ -975,6 +975,44 @@ theorem blockState_prefix_of_wordValid
           2 ^ weight (k + 1) = 0 := hsucc.2
       exact ⟨horb', by dsimp [weight] at hint' ⊢; exact hint'⟩
 
+/-- The real-word premises instantiation: an exact `{1,2}`-word of
+length `s` starting at `q`, with reset depth `j` and tail `r_s`,
+supplies every `All36_20PremisesNoHge` field.  The failure-branch
+conditions (`r_s % 8 = 5`, the valuation `L`, the capacity `H_s`) and
+the real-orbit size bounds (`q` in the reset window, `r_s < 5^s`,
+`r_j < 5^j`) enter as explicit inputs; the word structure itself is
+fully derived. -/
+theorem premises_of_real_word
+    (u : List Nat) (q j s r_s L H_s : Nat)
+    (hvalid : StringFlow.Word.wordValid u q)
+    (hsteps : ∀ t ∈ u, t = 1 ∨ t = 2)
+    (hj_pos : 1 ≤ j) (hj_le_s : j ≤ s) (hs_le : s ≤ u.length)
+    (hq_ge : 2 ^ prefixWeightOf u (j - 1) ≤ q)
+    (hq_lt : q < 2 ^ prefixWeightOf u j)
+    (hrj_lt : (wordMolecule (prefixWeightOf u) j + 5 ^ j * q) /
+        2 ^ prefixWeightOf u j < 5 ^ j)
+    (hrs_eq : r_s = StringFlow.Word.wordOrbit (u.take s) q)
+    (hrs_lt : r_s < 5 ^ s)
+    (hrs_mod8 : r_s % 8 = 5)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hH : H_s = 2 * s + 13 - 2 *
+      (prefixWeightOf u s - prefixWeightOf u (j - 1))) :
+    All36_20PremisesNoHge j (prefixWeightOf u (j - 1)) (prefixWeightOf u j) q
+      (wordMolecule (prefixWeightOf u) j) (wordMolecule (prefixWeightOf u) s) s
+      (prefixWeightOf u s) r_s L H_s (prefixWeightOf u) := by
+  have hvalid' : ∀ k, k ≤ s →
+      (wordMolecule (prefixWeightOf u) k + 5 ^ k * q) %
+        2 ^ prefixWeightOf u k = 0 := by
+    intro k hk
+    exact (blockState_prefix_of_wordValid u q k hvalid hsteps (by omega)).2
+  have hrs_block : r_s = blockState (prefixWeightOf u) q s := by
+    rw [hrs_eq]
+    exact (blockState_prefix_of_wordValid u q s hvalid hsteps hs_le).1
+  exact premises_of_block_word (prefixWeightOf u) q j s r_s L H_s rfl
+    (fun k hk => prefixWeightOf_step u k hsteps (by omega))
+    hvalid' hj_pos hj_le_s hq_ge hq_lt hrj_lt hrs_block
+    hrs_lt hrs_mod8 hL hH
+
 /-- The exact block-tail relation:
 `2^(W_s-W_j)*r_s = 5^(s-j)*r_j + B`, where `B` is the block suffix
 molecule. -/
