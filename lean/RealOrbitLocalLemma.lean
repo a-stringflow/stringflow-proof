@@ -4864,4 +4864,43 @@ theorem decisiveWindowValuationBoundCorrected_of_rjRankBounds
   · exact t2WindowBoundCorrected_of_rjRankT2Bound h2
   · exact t1WindowBoundCorrected_of_rjRankT1Bound h1
 
+/-- The `t=1` rank bound follows from the corrected decisive window
+bound: the window-bound premise carries the same reset reachability
+that `rjRankT1Bound` requires, so the iff identity applies. -/
+theorem rjRankT1Bound_of_decisiveWindowValuationBoundCorrected
+    (hwin : BlockAutomaton.decisiveWindowValuationBoundCorrected) :
+    rjRankT1Bound := by
+  intro j k0 s rj hreset hreach
+  have hb := hwin.2 j k0 (j - k0 - 1) 1 s rfl rfl hreach
+  exact (t1WindowBoundCorrected_iff_rj_rank j k0 s rj hreset).mp hb
+
+/-- The `t=2` rank bound follows from the corrected decisive window
+bound; the reset equation supplies `δ ∈ {1,3}`. -/
+theorem rjRankT2Bound_of_decisiveWindowValuationBoundCorrected
+    (hwin : BlockAutomaton.decisiveWindowValuationBoundCorrected) :
+    rjRankT2Bound := by
+  intro j k0 δ s rj hreset hreach
+  have hδ : δ = 1 ∨ δ = 3 := by
+    rcases hreset with h1 | h2
+    · exfalso
+      rcases h1 with ⟨ht, _hδ, _heq⟩
+      omega
+    · exact h2.2.1
+  have hb := hwin.1 j k0 (j - k0 - 1) 2 δ s rfl rfl hδ hreach
+  exact (t2WindowBoundCorrected_iff_rj_rank j k0 δ s rj hreset).mp hb
+
+/-- The corrected decisive window bound is exactly the conjunction of
+the two real-orbit reset-head rank bounds.  Closing either side closes
+the other; the remaining open content is precisely
+`rjRankT1Bound` / `rjRankT2Bound` (or their large-depth remainders). -/
+theorem decisiveWindowValuationBoundCorrected_iff_rjRankBounds :
+    BlockAutomaton.decisiveWindowValuationBoundCorrected ↔
+      (rjRankT1Bound ∧ rjRankT2Bound) := by
+  constructor
+  · intro hwin
+    exact ⟨rjRankT1Bound_of_decisiveWindowValuationBoundCorrected hwin,
+      rjRankT2Bound_of_decisiveWindowValuationBoundCorrected hwin⟩
+  · intro h
+    exact decisiveWindowValuationBoundCorrected_of_rjRankBounds h.1 h.2
+
 end StringFlow.RealOrbitLocalLemma
