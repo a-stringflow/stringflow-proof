@@ -666,6 +666,87 @@ theorem wordMolecule_lt_five_pow (weight : Nat → Nat) (k : Nat)
   have hlen : (blockWord weight 0 k).length = k := blockWord_length weight 0 k
   simpa [hlen] using hlt
 
+/-- Assemble `All36_20PremisesNoHge` from the block-word data of a real
+rise run.  The cumulative weight function, the run-start state `q`, the
+reset depth `j` and the tail depth `s` determine every premises field;
+the failure-branch conditions (`r_s % 8 = 5`, the valuation `L`, the
+capacity `H_s`) and the real-orbit size bounds enter as explicit inputs.
+This is the block-word instantiation used by the full real-orbit
+wrapper of the unified core. -/
+theorem premises_of_block_word
+    (weight : Nat → Nat) (q j s r_s L H_s : Nat)
+    (h0 : weight 0 = 0)
+    (hstep : ∀ k, k < s → weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2)
+    (hvalid : ∀ k, k ≤ s →
+      (wordMolecule weight k + 5 ^ k * q) % 2 ^ weight k = 0)
+    (hj_pos : 1 ≤ j) (hj_le_s : j ≤ s)
+    (hq_ge : 2 ^ weight (j - 1) ≤ q)
+    (hq_lt : q < 2 ^ weight j)
+    (hrj_lt : (wordMolecule weight j + 5 ^ j * q) / 2 ^ weight j < 5 ^ j)
+    (hrs_eq : r_s = blockState weight q s)
+    (hrs_lt : r_s < 5 ^ s)
+    (hrs_mod8 : r_s % 8 = 5)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hH : H_s = 2 * s + 13 - 2 * (weight s - weight (j - 1))) :
+    All36_20PremisesNoHge j (weight (j - 1)) (weight j) q
+      (wordMolecule weight j) (wordMolecule weight s) s (weight s) r_s L H_s weight := by
+  have hstep_j : ∀ k, k < j → weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2 := by
+    intro k hk
+    exact hstep k (by omega)
+  have hWs_pos : 1 ≤ weight s := by
+    have h := weight_ge weight s h0 hstep
+    omega
+  have hWj_le_Ws : weight j ≤ weight s := by
+    have hmono : ∀ k, k < s → weight k ≤ weight (k + 1) := by
+      intro k hk
+      rcases hstep k hk with h1 | h2 <;> omega
+    have h := weight_mono_le weight j (s - j) (fun k hk => by
+      have hks : k < s := by omega
+      rcases hstep k hks with h1 | h2 <;> omega)
+    have hsum : j + (s - j) = s := Nat.add_sub_of_le hj_le_s
+    rw [hsum] at h
+    exact h
+  have hq_lt_s : q < 2 ^ weight s := by
+    have hpow := Nat.pow_le_pow_right (by norm_num : 1 ≤ 2) hWj_le_Ws
+    exact lt_of_lt_of_le hq_lt hpow
+  exact
+  { Wp_def := rfl
+    Wj_def := rfl
+    Ws_def := rfl
+    tj_mem := by
+      have hj1 : j - 1 < s := by omega
+      have hsub : (j - 1) + 1 = j := Nat.sub_add_cancel hj_pos
+      rcases hstep (j - 1) hj1 with h1 | h2
+      · left
+        simpa [hsub] using h1
+      · right
+        simpa [hsub] using h2
+    Aj_mol := rfl
+    Aj_lt := wordMolecule_lt_five_pow weight j h0 hstep_j
+    q_ge := hq_ge
+    q_lt := hq_lt
+    q0_def := q0_unique_of_congruence (wordMolecule weight s) s (weight s) q
+      hWs_pos hq_lt_s (hvalid s (by omega))
+    r_s_eq := by
+      simpa [blockState] using hrs_eq
+    r_s_int := hvalid s (by omega)
+    r_s_lt := hrs_lt
+    r_s_mod8 := hrs_mod8
+    L_val := hL
+    H_def := hH
+    A_s_mol := rfl
+    A_s_lt := wordMolecule_lt_five_pow weight s h0 hstep
+    r_j_int := hvalid j (by omega)
+    r_j_lt := hrj_lt
+    Wj_le_Ws := hWj_le_Ws
+    j_le_s := hj_le_s
+    W0_def := h0
+    j_pos := hj_pos
+    weight_step := hstep
+    valid_prefix := hvalid }
+
 /-- The exact block-tail relation:
 `2^(W_s-W_j)*r_s = 5^(s-j)*r_j + B`, where `B` is the block suffix
 molecule. -/
