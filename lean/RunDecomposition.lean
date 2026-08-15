@@ -463,4 +463,122 @@ theorem c3PrefixLength_le_P
     _ = w.length := hlen
     _ = P := hw
 
+/-- Dropping `n` entries from a cyclic segment gives the next cyclic
+segment restricted to the remaining positions. -/
+lemma cyclicSegmentAt_drop_take
+    (w : List Nat) (b n : Nat) (hb : b ≤ w.length) (hn : n ≤ w.length)
+    (hlenpos : 0 < w.length) :
+    (cyclicSegmentAt w b).drop n =
+      (cyclicSegmentAt w ((b + n) % w.length)).take (w.length - n) := by
+  have hseg : (cyclicSegmentAt w b).length = w.length :=
+    cyclicSegmentAt_length w b hb
+  have hmidle : (b + n) % w.length ≤ w.length :=
+    le_of_lt (Nat.mod_lt _ hlenpos)
+  have hseg' : (cyclicSegmentAt w ((b + n) % w.length)).length = w.length :=
+    cyclicSegmentAt_length w ((b + n) % w.length) hmidle
+  refine List.ext_getElem ?hlen ?hget
+  · rw [List.length_drop, hseg]
+    have htl : ((cyclicSegmentAt w ((b + n) % w.length)).take
+        (w.length - n)).length = w.length - n :=
+      List.length_take_of_le (le_trans (Nat.sub_le w.length n)
+        (le_of_eq hseg'.symm))
+    rw [htl]
+  · intro i hi1 hi2
+    have hilt : n + i < w.length := by
+      rw [List.length_drop, hseg] at hi1
+      omega
+    have hilt2 : i < w.length := by
+      have htakeLen : ((cyclicSegmentAt w ((b + n) % w.length)).take
+          (w.length - n)).length = w.length - n :=
+        List.length_take_of_le (le_trans (Nat.sub_le w.length n)
+          (le_of_eq hseg'.symm))
+      rw [htakeLen] at hi2
+      omega
+    have hmod := cyclicSegmentAt_getI_mod w b (n + i) hb hilt
+    have hmod' := cyclicSegmentAt_getI_mod w ((b + n) % w.length) i hmidle hilt2
+    have hmodEq : (b + (n + i)) % w.length =
+        ((b + n) % w.length + i) % w.length := by
+      calc
+        (b + (n + i)) % w.length = ((b + n) + i) % w.length := by rw [Nat.add_assoc]
+        _ = ((b + n) % w.length + i) % w.length :=
+          (Nat.mod_add_mod (b + n) w.length i).symm
+    have h1 : (cyclicSegmentAt w b).getI (n + i) =
+        (cyclicSegmentAt w ((b + n) % w.length)).getI i := by
+      rw [hmod, hmod', hmodEq]
+    have hd := List.getElem_drop
+      (xs := cyclicSegmentAt w b) (i := n) (j := i) (h := hi1)
+    have ht := List.getElem_take
+      (xs := cyclicSegmentAt w ((b + n) % w.length))
+      (j := w.length - n) (i := i) (h := hi2)
+    rw [hd, ht]
+    have hgetL := List.getI_eq_getElem
+      (l := cyclicSegmentAt w b) (n := n + i) (by rwa [hseg])
+    have hgetR := List.getI_eq_getElem
+      (l := cyclicSegmentAt w ((b + n) % w.length)) (n := i) (by rwa [hseg'])
+    rw [hgetL, hgetR] at h1
+    exact h1
+
+/-- The forward advance of one block never exceeds the period. -/
+theorem blockAdvance_le_P
+    (w : List Nat) (P : Nat) (b : Nat) (hw : w.length = P)
+    (hb : b ≤ w.length) (hb1 : 1 ≤ b)
+    (_hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hprev : 3 ≤ w.getI (b - 1))
+    (hnext : w.getI (b % w.length) = 1 ∨ w.getI (b % w.length) = 2) :
+    blockAdvance w P b ≤ P := by
+  unfold blockAdvance
+  have hlenpos : 0 < w.length := by
+    by_contra hnot
+    have hw0 : w.length = 0 := Nat.eq_zero_of_not_pos hnot
+    have hb0 : b = 0 := by omega
+    subst b
+    have hz : w.getI 0 = 0 := by
+      have hge : w.length ≤ 0 := by omega
+      simpa using (List.getI_eq_default (l := w) (n := 0) hge)
+    omega
+  let mid := (b + blockRiseLen w b) % w.length
+  have hmidle : mid ≤ w.length := le_of_lt (Nat.mod_lt _ hlenpos)
+  have hc3le : c3PrefixLength (cyclicSegmentAt w mid) ≤
+      w.length - blockRiseLen w b := by
+    by_contra hnot
+    have hlt : w.length - blockRiseLen w b <
+        c3PrefixLength (cyclicSegmentAt w mid) := Nat.lt_of_not_ge hnot
+    have hmem := c3PrefixLength_mem (cyclicSegmentAt w mid)
+      (w.length - blockRiseLen w b) hlt
+    have hilt : w.length - blockRiseLen w b < w.length := by
+      have hr : blockRiseLen w b ≤ w.length := by
+        simpa [hw] using blockRiseLen_le_P w P b hw hb
+      have hposR : 0 < blockRiseLen w b :=
+        blockRiseLen_pos_of_boundary w b hb hnext
+      omega
+    have hmod := cyclicSegmentAt_getI_mod w mid
+      (w.length - blockRiseLen w b) hmidle hilt
+    have hidx : (mid + (w.length - blockRiseLen w b)) % w.length =
+        b % w.length := by
+      dsimp [mid]
+      have hr : blockRiseLen w b ≤ w.length := by
+        simpa [hw] using blockRiseLen_le_P w P b hw hb
+      have hsum : b + blockRiseLen w b + (w.length - blockRiseLen w b) =
+          b + w.length := by omega
+      calc
+        ((b + blockRiseLen w b) % w.length +
+            (w.length - blockRiseLen w b)) % w.length
+            = (b + blockRiseLen w b + (w.length - blockRiseLen w b)) % w.length :=
+              Nat.mod_add_mod (b + blockRiseLen w b)
+                w.length (w.length - blockRiseLen w b)
+        _ = (b + w.length) % w.length := by rw [hsum]
+        _ = b % w.length := by rw [Nat.add_mod_right]
+    rw [hmod, hidx] at hmem
+    rcases hnext with h1 | h2
+    · rw [h1] at hmem
+      omega
+    · rw [h2] at hmem
+      omega
+  have hc3le' : c3PrefixLength
+      (cyclicSegmentAt w ((b + blockRiseLen w b) % P)) ≤
+        P - blockRiseLen w b := by
+    simpa [mid, hw] using hc3le
+  have hr : blockRiseLen w b ≤ P := blockRiseLen_le_P w P b hw hb
+  omega
+
 end StringFlow.CycleBridge
