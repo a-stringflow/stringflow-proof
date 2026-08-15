@@ -1013,6 +1013,60 @@ theorem premises_of_real_word
     hvalid' hj_pos hj_le_s hq_ge hq_lt hrj_lt hrs_block
     hrs_lt hrs_mod8 hL hH
 
+/-- The size-side instantiation of `premises_of_real_word`: the real
+block-head size interval `5^j <= 2^t*rj` and `rj < 5^j` supplies the
+`q0` interval `[2^(weight(j-1)), 2^(weight j))` and the head bound
+`r_j < 5^j`.  This is exactly the connection to
+`reset_head_size_bounds_of_reachability` on the real orbit. -/
+theorem reset_window_bounds_of_head_size
+    (weight : Nat → Nat) (q j t rj : Nat)
+    (h0 : weight 0 = 0)
+    (hstep : ∀ k, k < j → weight (k + 1) = weight k + 1 ∨
+      weight (k + 1) = weight k + 2)
+    (ht : weight j = weight (j - 1) + t)
+    (hvalid : (wordMolecule weight j + 5 ^ j * q) % 2 ^ weight j = 0)
+    (hrj : rj = (wordMolecule weight j + 5 ^ j * q) / 2 ^ weight j)
+    (hhead : 5 ^ j ≤ 2 ^ t * rj ∧ rj < 5 ^ j) :
+    (2 ^ weight (j - 1) ≤ q ∧ q < 2 ^ weight j) ∧
+      (wordMolecule weight j + 5 ^ j * q) / 2 ^ weight j < 5 ^ j := by
+  have hq0 := (q0_interval_iff_rj_bound j (weight (j - 1)) (weight j) q
+    (wordMolecule weight j) rj t ht
+    (wordMolecule_lt_five_pow weight j h0 hstep) hvalid hrj).mpr hhead
+  exact ⟨hq0, by simpa [hrj] using hhead.2⟩
+
+/-- The full real-word instantiation: an exact `{1,2}`-word, a reset
+head with the real size interval, and the failure-branch tail data
+produce the complete `All36_20PremisesNoHge`.  The word structure, the
+`q0` interval and the head bound are all derived; only the tail size
+and the failure branch remain as inputs. -/
+theorem premises_of_real_orbit_head
+    (u : List Nat) (q j s r_s L H_s t rj : Nat)
+    (hvalid : StringFlow.Word.wordValid u q)
+    (hsteps : ∀ t ∈ u, t = 1 ∨ t = 2)
+    (hj_pos : 1 ≤ j) (hj_le_s : j ≤ s) (hs_le : s ≤ u.length)
+    (ht : prefixWeightOf u j = prefixWeightOf u (j - 1) + t)
+    (hrj : rj = StringFlow.Word.wordOrbit (u.take j) q)
+    (hhead : 5 ^ j ≤ 2 ^ t * rj ∧ rj < 5 ^ j)
+    (hrs_eq : r_s = StringFlow.Word.wordOrbit (u.take s) q)
+    (hrs_lt : r_s < 5 ^ s)
+    (hrs_mod8 : r_s % 8 = 5)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hH : H_s = 2 * s + 13 - 2 *
+      (prefixWeightOf u s - prefixWeightOf u (j - 1))) :
+    All36_20PremisesNoHge j (prefixWeightOf u (j - 1)) (prefixWeightOf u j) q
+      (wordMolecule (prefixWeightOf u) j) (wordMolecule (prefixWeightOf u) s) s
+      (prefixWeightOf u s) r_s L H_s (prefixWeightOf u) := by
+  have hbs := blockState_prefix_of_wordValid u q j hvalid hsteps (by omega)
+  have hrj' : rj = (wordMolecule (prefixWeightOf u) j + 5 ^ j * q) /
+      2 ^ prefixWeightOf u j := by
+    rw [hrj, hbs.1]
+    rfl
+  have hq0 := reset_window_bounds_of_head_size (prefixWeightOf u) q j t rj rfl
+    (fun k hk => prefixWeightOf_step u k hsteps (by omega))
+    ht hbs.2 hrj' hhead
+  exact premises_of_real_word u q j s r_s L H_s hvalid hsteps hj_pos hj_le_s hs_le
+    hq0.1.1 hq0.1.2 hq0.2 hrs_eq hrs_lt hrs_mod8 hL hH
+
 /-- The exact block-tail relation:
 `2^(W_s-W_j)*r_s = 5^(s-j)*r_j + B`, where `B` is the block suffix
 molecule. -/
