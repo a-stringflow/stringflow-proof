@@ -1,4 +1,5 @@
 import CycleBridge
+import RealOrbitLocalLemma
 
 namespace StringFlow
 
@@ -685,6 +686,179 @@ same block. -/
 def cycleRiseBlockTailResetWeight {m S P : Nat} {w : List Nat}
     (d : CycleRiseBlockDecomposition m S P w) (r : Nat) : Nat :=
   (d.c3Word r).getI ((d.c3Word r).length - 1)
+
+/-- The C3-tail depth of a block is positive. -/
+lemma cycleRiseBlockTailDepth_pos {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    1 ≤ cycleRiseBlockTailDepth d r := by
+  have hh : 1 ≤ d.headDepth r := d.hhead_pos r hr
+  have hc3len : 1 ≤ (d.c3Word r).length := by
+    cases hc : d.c3Word r with
+    | nil => exact False.elim (d.hc3_nonempty r hr hc)
+    | cons a as => simp
+  dsimp [cycleRiseBlockTailDepth]
+  omega
+
+/-- The last C3 entry of a block is at least three. -/
+lemma cycleRiseBlockTailResetWeight_ge_three {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    3 ≤ cycleRiseBlockTailResetWeight d r := by
+  have hne : d.c3Word r ≠ [] := d.hc3_nonempty r hr
+  have hlen : 1 ≤ (d.c3Word r).length := List.length_pos_iff.mpr hne
+  have hidx : (d.c3Word r).length - 1 < (d.c3Word r).length := by omega
+  have hmem : (d.c3Word r).getI ((d.c3Word r).length - 1) ∈ d.c3Word r := by
+    rw [List.getI_eq_getElem (l := d.c3Word r)
+      (n := (d.c3Word r).length - 1) hidx]
+    exact List.getElem_mem hidx
+  simpa [cycleRiseBlockTailResetWeight] using
+    d.hc3_entries r hr ((d.c3Word r).getI ((d.c3Word r).length - 1)) hmem
+
+/-- The last C3 entry is the concrete incoming word weight at the
+C3-tail depth (when that depth is a valid word index). -/
+lemma cycleRiseBlockTailResetWeight_eq_word_get
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (_hj : cycleRiseBlockTailDepth d r - 1 < P) :
+    cycleRiseBlockTailResetWeight d r =
+      w.getI (cycleRiseBlockTailDepth d r - 1) := by
+  have hne : d.c3Word r ≠ [] := d.hc3_nonempty r hr
+  have hlen : 1 ≤ (d.c3Word r).length := List.length_pos_iff.mpr hne
+  have hk : (d.c3Word r).length - 1 < (d.c3Word r).length := by omega
+  have hseg := d.hc3_segment r hr ((d.c3Word r).length - 1) hk
+  have hidx : d.headDepth r + ((d.c3Word r).length - 1) =
+      cycleRiseBlockTailDepth d r - 1 := by
+    dsimp [cycleRiseBlockTailDepth]
+    omega
+  calc
+    cycleRiseBlockTailResetWeight d r =
+        (d.c3Word r).getI ((d.c3Word r).length - 1) := rfl
+    _ = w.getI (d.headDepth r + ((d.c3Word r).length - 1)) := hseg
+    _ = w.getI (cycleRiseBlockTailDepth d r - 1) := by rw [hidx]
+
+/-- The C3-tail state is obtained from the state one word step earlier
+by the last C3 step of the block. -/
+lemma cycleRiseBlockTailState_eq_step_of_lt
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (hj : cycleRiseBlockTailDepth d r - 1 < P) :
+    cycleRiseBlockC3TailState d r =
+      (5 * StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) /
+        (2 ^ cycleRiseBlockTailResetWeight d r) := by
+  have hjp : 1 ≤ cycleRiseBlockTailDepth d r :=
+    cycleRiseBlockTailDepth_pos d r hr
+  have hj' : cycleRiseBlockTailDepth d r - 1 < w.length := by
+    rw [d.hperiod]
+    exact hj
+  have hsucc := wordOrbit_take_succ w m (cycleRiseBlockTailDepth d r - 1) hj'
+  have hsum : cycleRiseBlockTailDepth d r - 1 + 1 =
+      cycleRiseBlockTailDepth d r := by omega
+  have hwget : w.getI (cycleRiseBlockTailDepth d r - 1) =
+      cycleRiseBlockTailResetWeight d r :=
+    (cycleRiseBlockTailResetWeight_eq_word_get d r hr hj).symm
+  rw [hsum] at hsucc
+  rw [hwget] at hsucc
+  simpa [cycleRiseBlockC3TailState, cycleRiseBlockTailDepth] using hsucc
+
+/-- Exact last-C3-step data at a C3-tail: the incoming weight is the
+last C3 entry, its exact valuation matches that entry, and the C3-tail
+state is the accelerated successor of the previous prefix state. -/
+theorem cycleRiseBlockTailC3Step
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (hj : cycleRiseBlockTailDepth d r - 1 < P) :
+    let x := StringFlow.Word.wordOrbit
+      (w.take (cycleRiseBlockTailDepth d r - 1)) m
+    let rj := cycleRiseBlockC3TailState d r
+    let t := cycleRiseBlockTailResetWeight d r
+    3 ≤ t ∧
+    twoValuation (5 * x + 1) = t ∧
+    2 ^ t * rj = 5 * x + 1 ∧
+    w.getI (cycleRiseBlockTailDepth d r - 1) = t := by
+  let x := StringFlow.Word.wordOrbit
+    (w.take (cycleRiseBlockTailDepth d r - 1)) m
+  let rj := cycleRiseBlockC3TailState d r
+  let t := cycleRiseBlockTailResetWeight d r
+  change 3 ≤ t ∧
+    twoValuation (5 * x + 1) = t ∧
+    2 ^ t * rj = 5 * x + 1 ∧
+    w.getI (cycleRiseBlockTailDepth d r - 1) = t
+  have hne : d.c3Word r ≠ [] := d.hc3_nonempty r hr
+  have hlen : 1 ≤ (d.c3Word r).length := List.length_pos_iff.mpr hne
+  have hk : (d.c3Word r).length - 1 < (d.c3Word r).length := by omega
+  have hex := d.hc3_exact r hr ((d.c3Word r).length - 1) hk
+  have hidx : d.headDepth r + ((d.c3Word r).length - 1) =
+      cycleRiseBlockTailDepth d r - 1 := by
+    dsimp [cycleRiseBlockTailDepth]
+    omega
+  have ht : 3 ≤ t := by
+    simpa [t] using cycleRiseBlockTailResetWeight_ge_three d r hr
+  have hval : twoValuation (5 * x + 1) = t := by
+    dsimp [x, t, cycleRiseBlockTailResetWeight]
+    rw [← hidx]
+    exact hex
+  have hstate := cycleRiseBlockTailState_eq_step_of_lt d r hr hj
+  have hpos : 0 < 5 * x + 1 := by positivity
+  have hle : t ≤ twoValuation (5 * x + 1) := by omega
+  have hdvd : 2 ^ t ∣ 5 * x + 1 :=
+    (StringFlow.Lte.twoValuation_ge_iff_dvd_pow (5 * x + 1) t hpos).mp hle
+  have hmul : 2 ^ t * ((5 * x + 1) / 2 ^ t) = 5 * x + 1 := by
+    rw [Nat.mul_comm]
+    exact Nat.div_mul_cancel hdvd
+  have hstep : 2 ^ t * rj = 5 * x + 1 := by
+    dsimp [rj] at hstate ⊢
+    rw [hstate]
+    exact hmul
+  have hincoming : w.getI (cycleRiseBlockTailDepth d r - 1) = t := by
+    exact (cycleRiseBlockTailResetWeight_eq_word_get d r hr hj).symm.trans (by
+      dsimp [t])
+  exact ⟨ht, hval, hstep, hincoming⟩
+
+/-- The state immediately before the last C3 step of a real block has
+rank exactly two. -/
+theorem cycleRiseBlockTailHeadRank_two
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w)
+    (r : Nat) (hr : r < d.blockCount)
+    (hj : cycleRiseBlockTailDepth d r - 1 < P) :
+    twoValuation
+      (StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) = 2 := by
+  let x := StringFlow.Word.wordOrbit
+    (w.take (cycleRiseBlockTailDepth d r - 1)) m
+  have hxfull : S6Audit.FullOrbitFrom7 x := by
+    dsimp [x]
+    have hjl : cycleRiseBlockTailDepth d r - 1 ≤ w.length := by
+      rw [d.hperiod]
+      omega
+    exact cycleQb8Input_prefix_full_reachable h
+      (cycleRiseBlockTailDepth d r - 1) hjl
+  have hodd : S6Audit.IsOdd x := S6Audit.FullOrbitFrom7_odd x hxfull
+  have ht : 3 ≤ cycleRiseBlockTailResetWeight d r :=
+    cycleRiseBlockTailResetWeight_ge_three d r hr
+  have hne : d.c3Word r ≠ [] := d.hc3_nonempty r hr
+  have hlen : 1 ≤ (d.c3Word r).length := List.length_pos_iff.mpr hne
+  have hk : (d.c3Word r).length - 1 < (d.c3Word r).length := by omega
+  have hex := d.hc3_exact r hr ((d.c3Word r).length - 1) hk
+  have hidx : d.headDepth r + ((d.c3Word r).length - 1) =
+      cycleRiseBlockTailDepth d r - 1 := by
+    dsimp [cycleRiseBlockTailDepth]
+    omega
+  have hval : twoValuation (5 * x + 1) =
+      cycleRiseBlockTailResetWeight d r := by
+    dsimp [x, cycleRiseBlockTailResetWeight]
+    rw [← hidx]
+    exact hex
+  have hc3 : 3 ≤ twoValuation (5 * x + 1) := by
+    omega
+  exact StringFlow.RealOrbitLocalLemma.state_rank_eq_two_of_outgoing_c3
+    x hodd hc3
 
 /-- Tail-charged PMI budget: `Σ(2*(tailDepth - tailReset) + 12 + F)`. -/
 def cycleRiseBlockTailAvoidBudgetSum {m S P : Nat} {w : List Nat}

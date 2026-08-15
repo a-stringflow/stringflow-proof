@@ -524,7 +524,7 @@ def ResetHeadEq (s0 j k t δ rj : Nat) : Prop :=
 /-- C3-chain reset equation: a C3 step `2^t * rj = 5x + 1` from a head
 `x` with `x + 1 = 4 * 5^k * s0` gives the tail reset identity
 `2^(t-2) * (rj + 1) = 5^(k+1) * s0 + 2^(t-2) - 1`. -/
-def ResetHeadEqC3 (s0 j k t rj : Nat) : Prop :=
+def ResetHeadEqC3 (s0 _j k t rj : Nat) : Prop :=
   3 <= t /\
     2 ^ (t - 2) * (rj + 1) =
       5 ^ (k + 1) * s0 + 2 ^ (t - 2) - 1
@@ -1813,6 +1813,54 @@ theorem reset_head_lt_five_pow (s0 j k t δ rj : Nat)
       omega
     have hlt : rj + 1 < 5 ^ j := by omega
     omega
+
+/-- A C3 reset head also satisfies `rj < 5^j`: from
+`2^(t-2)*(rj+1) = 5^(k+1)*s0 + 2^(t-2) - 1` and the size bound on
+`s0`, the whole right-hand side stays below `2^(t-2)*5^j`. -/
+theorem reset_head_c3_lt_five_pow
+    (s0 j k t rj : Nat)
+    (hjk : k + 1 ≤ j)
+    (hs0 : s0 < 5 ^ (j - 1 - k))
+    (hReset : ResetHeadEqC3 s0 j k t rj) :
+    rj < 5 ^ j := by
+  rcases hReset with ⟨ht, heq⟩
+  have h5s0 : 5 ^ (k + 1) * s0 < 5 ^ j := by
+    have hsum : (k + 1) + (j - 1 - k) = j := by omega
+    have hpow : 5 ^ (k + 1) * 5 ^ (j - 1 - k) = 5 ^ j := by
+      rw [← Nat.pow_add]
+      rw [hsum]
+    have hlt := Nat.mul_lt_mul_of_pos_left hs0
+      (Nat.pow_pos (by decide : 0 < 5) : 0 < 5 ^ (k + 1))
+    simpa [hpow] using hlt
+  let A := 2 ^ (t - 2)
+  have htA : 2 ≤ A := by
+    dsimp [A]
+    have h := Nat.pow_le_pow_right (by norm_num : 1 ≤ 2) (by omega : 1 ≤ t - 2)
+    simpa using h
+  have hApos : 0 < A := by
+    dsimp [A]
+    positivity
+  have hle : 5 ^ j + A - 1 ≤ A * 5 ^ j := by
+    have hA1pos : 0 < A - 1 := by omega
+    have h5 : 5 ^ j ≤ (A - 1) * 5 ^ j :=
+      Nat.le_mul_of_pos_left (5 ^ j) hA1pos
+    have hA1eq : A * 5 ^ j = (A - 1) * 5 ^ j + 5 ^ j := by
+      have hA : A = A - 1 + 1 := by omega
+      nlinarith [hA]
+    rw [hA1eq]
+    omega
+  have hlt2 : 5 ^ (k + 1) * s0 + A - 1 < A * 5 ^ j := by
+    have hsumlt : 5 ^ (k + 1) * s0 + A - 1 < 5 ^ j + A - 1 := by omega
+    exact lt_of_lt_of_le hsumlt hle
+  have hltmul : A * (rj + 1) < A * 5 ^ j := by
+    have heq' : A * (rj + 1) = 5 ^ (k + 1) * s0 + A - 1 := by
+      dsimp [A]
+      exact heq
+    rw [heq']
+    exact hlt2
+  have hlt' : rj + 1 < 5 ^ j :=
+    (Nat.mul_lt_mul_left hApos).1 hltmul
+  omega
 
 /-- Nat version of the exact `t=2` chain closed form:
 `4^n*(r_n+1) = 5^n*(r_0+1)`. -/
