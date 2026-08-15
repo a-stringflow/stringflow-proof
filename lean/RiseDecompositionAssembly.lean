@@ -1496,6 +1496,63 @@ theorem cycleRiseBlockRealTerminal
   exact cycleQb8Input_angelina_real_terminal h (cycleRiseBlockTailDepth d r)
     hbpos hble hprev3
 
+/-- Cycle closure of the rotated word: the rise-start state
+`q = wordOrbit (w.take b) m` satisfies
+`q * (2^S - 5^P) = wordA (cyclicSegmentAt w b)`.
+This is the exact form in which the closed cycle word enters the
+`hpred` word equation: it determines `q` without any size estimate. -/
+theorem cycleQb8Input_rotated_wordA
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3) (b : Nat) (hb : b ≤ w.length) :
+    StringFlow.Word.wordOrbit (w.take b) m * (2 ^ S - 5 ^ P) =
+      StringFlow.Word.wordA (cyclicSegmentAt w b) := by
+  let q := StringFlow.Word.wordOrbit (w.take b) m
+  have hclosed_rot : StringFlow.Word.wordOrbit (cyclicSegmentAt w b) q = q := by
+    dsimp [q]
+    exact cyclicSegmentAt_closed h b
+  have hvalid_rot : StringFlow.Word.wordValid (cyclicSegmentAt w b) q := by
+    dsimp [q]
+    exact cyclicSegmentAt_valid h b
+  have hid := StringFlow.Word.word_orbit_identity (cyclicSegmentAt w b) q hvalid_rot
+  have hlen_rot : (cyclicSegmentAt w b).length = P := by
+    rw [cyclicSegmentAt_length w b hb, h.hlength]
+  have hweight_rot : StringFlow.wordWeight (cyclicSegmentAt w b) = S := by
+    unfold cyclicSegmentAt
+    have hsplit : w.take b ++ w.drop b = w := List.take_append_drop b w
+    have hww := StringFlow.Word.wordWeight_append (w.drop b) (w.take b)
+    rw [hww]
+    rw [← h.hweight]
+    have hww' := StringFlow.Word.wordWeight_append (w.take b) (w.drop b)
+    rw [hsplit] at hww'
+    rw [Nat.add_comm]
+    exact hww'.symm
+  rw [hweight_rot, hlen_rot] at hid
+  rw [hclosed_rot] at hid
+  have hqpos : 0 < q := by
+    dsimp [q]
+    have hreach : S6Audit.FullOrbitFrom7
+        (StringFlow.Word.wordOrbit (w.take b) m) :=
+      cycleQb8Input_prefix_full_reachable h b hb
+    have hodd : S6Audit.IsOdd (StringFlow.Word.wordOrbit (w.take b) m) :=
+      S6Audit.FullOrbitFrom7_odd _ hreach
+    by_contra hnot
+    have hz : StringFlow.Word.wordOrbit (w.take b) m = 0 := by omega
+    rw [hz] at hodd
+    norm_num [S6Audit.IsOdd] at hodd
+  have hsub : 2 ^ S * q - 5 ^ P * q =
+      StringFlow.Word.wordA (cyclicSegmentAt w b) := by
+    have h : 5 ^ P * q + StringFlow.Word.wordA (cyclicSegmentAt w b) =
+        2 ^ S * q := by
+      simpa [Nat.add_comm] using hid.symm
+    omega
+  have hgoal : q * (2 ^ S - 5 ^ P) =
+      StringFlow.Word.wordA (cyclicSegmentAt w b) := by
+    rw [Nat.mul_comm]
+    rw [Nat.mul_sub_right_distrib]
+    exact hsub
+  dsimp [q] at hgoal ⊢
+  exact hgoal
+
 /-- Direct construction of the block-head predecessor identity
 (`hpred`) from the real boundary terminal.  The proof instantiates the
 real terminal, the cyclic prefix occurrence with its exact incoming
