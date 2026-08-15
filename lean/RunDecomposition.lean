@@ -373,4 +373,25 @@ theorem nextRiseStart_eq_add_blockAdvance
       _ = ((b + r) % P + c) % P := by rw [Nat.mod_add_mod]
   exact h.symm
 
+/-- The cycle-length counter never exceeds its fuel. -/
+theorem riseRunCycleLenAux_le_fuel
+    (w : List Nat) (P fuel b0 b : Nat) :
+    riseRunCycleLenAux w P fuel b0 b ≤ fuel := by
+  induction fuel generalizing b with
+  | zero =>
+      simp [riseRunCycleLenAux]
+  | succ fuel ih =>
+      by_cases hb : b = b0
+      · simp [riseRunCycleLenAux, hb]
+      · simp [riseRunCycleLenAux, hb]
+        have h := ih (nextRiseStart w P b)
+        omega
+
+/-- A first upper bound on the block count: at most one plus the period. -/
+theorem blockCountOf_le_succ_P (w : List Nat) (P b0 : Nat) :
+    blockCountOf w P b0 ≤ P + 1 := by
+  unfold blockCountOf riseRunCycleLen
+  have h := riseRunCycleLenAux_le_fuel w P P b0 (nextRiseStart w P b0)
+  omega
+
 end StringFlow.CycleBridge
