@@ -1047,6 +1047,15 @@ def riseRun : Nat → List Nat → Nat
   | r, [] => r
   | r, t :: ts => riseRun (riseStep r t) ts
 
+/-- `riseRun` is the same recurrence as `Word.wordOrbit`. -/
+theorem riseRun_eq_wordOrbit (r : Nat) (ts : List Nat) :
+    riseRun r ts = StringFlow.Word.wordOrbit ts r := by
+  induction ts generalizing r with
+  | nil => rfl
+  | cons t ts ih =>
+      simp [riseRun, StringFlow.Word.wordOrbit, riseStep]
+      exact ih (riseStep r t)
+
 /-- Number of `t=2` steps in a rise word. -/
 def riseCountTwo : List Nat → Nat
   | [] => 0
@@ -1158,7 +1167,104 @@ theorem rise_block_balance (r0 : Nat) (ts : List Nat)
           _ ≤ 2 + (twoValuation (r1 + 1) + riseChargeSum r1 ts) := by omega
           _ = twoValuation (r0 + 1) + riseChargeSum r1 ts := by omega
           _ = twoValuation (r0 + 1) + riseChargeSum r0 (2 :: ts) := by
-              rw [hsum]
+            rw [hsum]
+
+/-- Endpoint rank upper bound along a rise word.  Every `t=2` step
+consumes exactly two units, while the recorded charge covers every
+positive `t=1` rank increase.  Negative `t=1` changes are discarded, so
+the endpoint side is bounded above by `v2(r0+1)+F`. -/
+theorem rise_endpoint_rank_le (r0 : Nat) (ts : List Nat)
+    (hok : ∀ t ∈ ts, t = 1 ∨ t = 2)
+    (hexact : ∀ k, k < ts.length →
+      twoValuation (5 * riseRun r0 (ts.take k) + 1) = ts.getI k) :
+    twoValuation (riseRun r0 ts + 1) + 2 * riseCountTwo ts ≤
+      twoValuation (r0 + 1) + riseChargeSum r0 ts := by
+  induction ts generalizing r0 with
+  | nil => simp [riseRun, riseCountTwo, riseChargeSum]
+  | cons t ts ih =>
+      rcases hok t (by simp) with ht1 | ht2
+      · subst t
+        let r1 := riseStep r0 1
+        have htail := ih r1 (fun t ht => hok t (by simp [ht]))
+        have htailExact : ∀ k, k < ts.length →
+            twoValuation (5 * riseRun r1 (ts.take k) + 1) = ts.getI k := by
+          intro k hk
+          have hk' : k + 1 < (1 :: ts).length := by simp [hk]
+          have h := hexact (k + 1) hk'
+          have hrun : riseRun r0 ((1 :: ts).take (k + 1)) =
+              riseRun r1 (ts.take k) := by
+            rw [List.take_cons (by omega)]
+            rfl
+          have hidx : (1 :: ts).getI (k + 1) = ts.getI k := by
+            rw [List.getI_cons_succ]
+          rwa [hrun, hidx] at h
+        have hcharge_ge : twoValuation (r1 + 1) ≤
+            twoValuation (r0 + 1) + riseCharge r0 1 := by
+          unfold riseCharge
+          simp [r1]
+          omega
+        have hsum : riseChargeSum r0 (1 :: ts) =
+            riseCharge r0 1 + riseChargeSum r1 ts := rfl
+        change twoValuation (riseRun r0 (1 :: ts) + 1) +
+            2 * (0 + riseCountTwo ts) ≤
+          twoValuation (r0 + 1) + riseChargeSum r0 (1 :: ts)
+        calc
+          twoValuation (riseRun r0 (1 :: ts) + 1) +
+              2 * (0 + riseCountTwo ts) =
+              twoValuation (riseRun r1 ts + 1) + 2 * riseCountTwo ts := by
+            simp [r1, riseRun, riseStep]
+          _ ≤ twoValuation (r1 + 1) + riseChargeSum r1 ts := htail htailExact
+          _ ≤ twoValuation (r0 + 1) + riseCharge r0 1 +
+                riseChargeSum r1 ts := by omega
+          _ = twoValuation (r0 + 1) + riseChargeSum r0 (1 :: ts) := by
+            rw [hsum]
+            omega
+      · subst t
+        let r1 := riseStep r0 2
+        have htail := ih r1 (fun t ht => hok t (by simp [ht]))
+        have htailExact : ∀ k, k < ts.length →
+            twoValuation (5 * riseRun r1 (ts.take k) + 1) = ts.getI k := by
+          intro k hk
+          have hk' : k + 1 < (2 :: ts).length := by simp [hk]
+          have h := hexact (k + 1) hk'
+          have hrun : riseRun r0 ((2 :: ts).take (k + 1)) =
+              riseRun r1 (ts.take k) := by
+            rw [List.take_cons (by omega)]
+            rfl
+          have hidx : (2 :: ts).getI (k + 1) = ts.getI k := by
+            rw [List.getI_cons_succ]
+          rwa [hrun, hidx] at h
+        have hfirst : twoValuation (5 * r0 + 1) = 2 := by
+          have h0 := hexact 0 (by simp)
+          simpa [riseRun] using h0
+        have hdrop := t2Step_valuation_drop r0 hfirst
+        have hdrop' : twoValuation (r1 + 1) + 2 =
+            twoValuation (r0 + 1) := by
+          dsimp [r1, riseStep] at hdrop ⊢
+          omega
+        have hcharge : riseCharge r0 2 = 0 := by
+          unfold riseCharge
+          simp
+        have hsum : riseChargeSum r0 (2 :: ts) =
+            riseChargeSum r1 ts := by
+          dsimp [r1]
+          rw [riseChargeSum, hcharge]
+          simp
+        have hbal2 := htail htailExact
+        change twoValuation (riseRun r0 (2 :: ts) + 1) +
+            2 * (1 + riseCountTwo ts) ≤
+          twoValuation (r0 + 1) + riseChargeSum r0 (2 :: ts)
+        calc
+          twoValuation (riseRun r0 (2 :: ts) + 1) +
+              2 * (1 + riseCountTwo ts) =
+              (twoValuation (riseRun r1 ts + 1) + 2 * riseCountTwo ts) + 2 := by
+            simp [r1, riseRun, riseStep]
+            ring
+          _ ≤ (twoValuation (r1 + 1) + riseChargeSum r1 ts) + 2 := by
+            omega
+          _ = twoValuation (r0 + 1) + riseChargeSum r1 ts := by omega
+          _ = twoValuation (r0 + 1) + riseChargeSum r0 (2 :: ts) := by
+            rw [hsum]
 
 /-- If a block's local balance, window-avoidance bound, and explicit
 charge budget all hold, then its `t=2` count satisfies the capacity
@@ -2516,6 +2622,45 @@ theorem cycleQb8Input_cycle_params
   rcases hr with ⟨hrise, hc3⟩
   exact ⟨cp.1, cp.2, hw, hm, hS, hrise, hc3⟩
 
+/-- Conversely, every `CycleQb8Input` really does determine a positive
+repeat of the accelerated orbit of `7`.  The `hcycle` field supplies
+the concrete cycle-word parameters, while `hclosed` supplies the
+endpoint equality. -/
+theorem cycleQb8Input_imp_orbit_cycle
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3) :
+    OrbitCycle 7 := by
+  rcases cycleQb8Input_cycle_params h with
+    ⟨c, p, hw, hm, _hS, _hrise, _hc3⟩
+  have hp : 1 ≤ p := by
+    have hlen : w.length = p := by
+      rw [hw, cycleWord_length]
+    have hP : 2 ≤ w.length := cycleQb8Input_length_ge_two h
+    omega
+  have hclosed : StringFlow.Word.wordOrbit (cycleWord c p)
+      (fiveXPlusOneOrbit 7 c) = fiveXPlusOneOrbit 7 c := by
+    simpa [hw, hm] using h.hclosed
+  have horbit : fiveXPlusOneOrbit 7 (c + p) = fiveXPlusOneOrbit 7 c := by
+    rw [← cycleWord_orbit_eq c p]
+    exact hclosed
+  exact ⟨c + p, c, by omega, horbit.symm⟩
+
+/-- Absence of a positive orbit repeat is equivalent to absence of all
+`CycleQb8Input` packages.  Both directions use concrete bridges, so a
+universal proposition over `CycleQb8Input` may be vacuous precisely
+when the desired no-cycle conclusion is already true. -/
+theorem no_orbit_cycle_iff_no_cycleQb8Input :
+    (¬ OrbitCycle 7) ↔
+      (∀ m S P : Nat, ∀ w rise c3 : List Nat,
+        ¬ CycleQb8Input m S P w rise c3) := by
+  constructor
+  · intro hno m S P w rise c3 hinput
+    exact hno (cycleQb8Input_imp_orbit_cycle hinput)
+  · intro hno hcycle
+    rcases orbit_cycle_imp_cycle_qb8_input hcycle with
+      ⟨_c, P, m, S, w, rise, c3, hinput, _hw, _hrise, _hc3, _hS, _hm⟩
+    exact hno m S P w rise c3 hinput
+
 /-- A `CycleQb8Input` is anchored at a rise start, so its first
 step weight is `1` or `2`. -/
 theorem cycleQb8Input_rise_start
@@ -2644,6 +2789,59 @@ theorem local_reset_scalar_of_angelina_terminal
       simpa [Nat.add_comm] using hshift'
     rw [hA_eq, hshift]
   simpa [N, A, C, Nat.mul_comm] using hgoal
+
+/-- For an admissible reset branch, the local terminal equation is
+exactly the reset-head equation for the same real terminal.  Thus
+`hterm` is not an additional valuation hypothesis: its remaining
+content is precisely that the boundary terminal's own `s,k` reset to
+the chosen block head. -/
+theorem isLocalResetTerminal_iff_resetHeadEq
+    (t j rj δ : Nat) (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (ht : t = 1 ∨ t = 2)
+    (hδ : (t = 1 → δ = 1) ∧ (t = 2 → δ = 1 ∨ δ = 3)) :
+    IsLocalResetTerminal t j rj δ rt ↔
+      S6Audit.ResetHeadEq rt.s j rt.k t δ rj := by
+  have hspos : 0 < rt.s := by
+    have hodd : rt.s % 2 = 1 := rt.hs_odd
+    omega
+  have hpow5 : 5 ≤ 5 ^ (rt.k + 1) := by
+    have hle : 1 ≤ rt.k + 1 := by omega
+    simpa using Nat.pow_le_pow_right (by decide : 0 < 5) hle
+  have hprod4 : 4 ≤ 5 ^ (rt.k + 1) * rt.s := by
+    have hs1 : 1 ≤ rt.s := by omega
+    nlinarith
+  constructor
+  · intro hterm
+    have hscalar := local_reset_scalar_of_angelina_terminal
+      t j rj δ rt hterm
+    rcases ht with ht1 | ht2
+    · have hδ1 : δ = 1 := hδ.1 ht1
+      left
+      refine ⟨ht1, hδ1, ?_⟩
+      subst t
+      subst δ
+      norm_num at hscalar ⊢
+      omega
+    · have hδ13 : δ = 1 ∨ δ = 3 := hδ.2 ht2
+      right
+      refine ⟨ht2, hδ13, ?_⟩
+      subst t
+      norm_num at hscalar ⊢
+      omega
+  · intro hreset
+    unfold IsLocalResetTerminal localResetNumerator
+    rcases hreset with h1 | h2
+    · rcases h1 with ⟨ht1, hδ1, heq⟩
+      subst t
+      subst δ
+      norm_num at heq ⊢
+      rw [Nat.mul_comm]
+      omega
+    · rcases h2 with ⟨ht2, _hδ13, heq⟩
+      subst t
+      norm_num at heq ⊢
+      rw [Nat.mul_comm]
+      omega
 
 /-- Given the local block-head representation and a locally compatible
 real terminal, construct the exact 36.30.8.2 identity.  The terminal
@@ -2843,6 +3041,7 @@ structure FailureWindow (m S P : Nat) (w rise c3 : List Nat)
   hinput : CycleQb8Input m S P w rise c3
   hj_lt : j < P
   ht : t = 1 ∨ t = 2
+  hincoming : w.getI (j - 1) = t
   hδ : (t = 1 → δ = 1) ∧ (t = 2 → δ = 1 ∨ δ = 3)
   hreset : S6Audit.ResetHeadEq s j k0 t δ
     (StringFlow.Word.wordOrbit (w.take j) m)
@@ -2855,6 +3054,43 @@ structure FailureWindow (m S P : Nat) (w rise c3 : List Nat)
     twoValuation (5 ^ (k0 + 1) * s + 5 ^ j - 2)
   hfail_t2 : t = 2 → 2 * j + 11 ≤
     twoValuation (5 ^ (k0 + 1) * s + δ * 5 ^ j)
+
+/-- Once a `LocalHidentBlock` is written at the same global depth `j`
+as `wordOrbit (w.take j) m`, the reset reachability theorem supplies the
+two reachability fields of `FailureWindow`.  The failure lower bounds
+remain the separate block-budget input. -/
+theorem local_hident_to_global_failure_window
+    {m S P : Nat} {w rise c3 : List Nat}
+    {j Wp Wj q Aj rj t δ : Nat}
+    {rt : S6Audit.AngelinaGilbertaRealTerminal}
+    (h : CycleQb8Input m S P w rise c3)
+    (hj_lt : j < P)
+    (hrj_eq : rj = StringFlow.Word.wordOrbit (w.take j) m)
+    (hincoming : w.getI (j - 1) = t)
+    (d : LocalHidentBlock j Wp Wj q Aj rj t δ rt)
+    (hfail_t1 : t = 1 → 2 * j + 12 ≤
+      twoValuation (5 ^ (rt.k + 1) * rt.s + 5 ^ j - 2))
+    (hfail_t2 : t = 2 → 2 * j + 11 ≤
+      twoValuation (5 ^ (rt.k + 1) * rt.s + δ * 5 ^ j)) :
+    FailureWindow m S P w rise c3 j rt.k t δ rt.s := by
+  rcases local_hident_to_reset_reachability d with ⟨hreset, hreach⟩
+  exact {
+    hinput := h
+    hj_lt := hj_lt
+    ht := d.ht
+    hincoming := hincoming
+    hδ := d.hδ
+    hreset := by
+      rw [← hrj_eq]
+      exact hreset
+    hreach := hreach
+    hs_odd := rt.hs_odd
+    hs_not_five := rt.hs_not_five
+    hk := d.hk
+    hs_lt := d.hs_lt
+    hfail_t1 := hfail_t1
+    hfail_t2 := hfail_t2
+  }
 
 /-- Open step-3 statement: every closed QB-8 word has a failure
 window block. This is the remaining analytic core; it is

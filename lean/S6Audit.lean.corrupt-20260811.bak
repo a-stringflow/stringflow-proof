@@ -1,0 +1,65 @@
+﻿    omega
+  rcases hcases with h0 | h1 | h2 | h3
+  · rw [h0] at h
+    rw [Nat.add_mod, Nat.mul_mod] at h
+    simp at h
+  · rw [h1] at h
+    rw [Nat.add_mod, Nat.mul_mod] at h
+    simp at h
+  · rw [h2] at h
+    rw [Nat.add_mod, Nat.mul_mod] at h
+    simp at h
+  · exact h3
+
+/-- `(a+3) ≡ 0 (mod 4)` 时 `a ≡ 1 (mod 4)`。 -/
+lemma mod4_of_add_three (a : Nat) (h : (a + 3) % 4 = 0) : a % 4 = 1 := by
+  have hsplit : a = 4 * (a / 4) + a % 4 := (Nat.div_add_mod a 4).symm
+  rw [hsplit] at h
+  have hcases : a % 4 = 0 ∨ a % 4 = 1 ∨ a % 4 = 2 ∨ a % 4 = 3 := by
+    have hlt : a % 4 < 4 := Nat.mod_lt a (by decide)
+    omega
+  rcases hcases with h0 | h1 | h2 | h3
+  · rw [h0] at h
+    rw [Nat.add_mod, Nat.mul_mod] at h
+    simp at h
+  · exact h1
+  · rw [h2] at h
+    rw [Nat.add_mod, Nat.mul_mod] at h
+    simp at h
+  · rw [h3] at h
+    rw [Nat.add_mod, Nat.mul_mod] at h
+    simp at h
+
+/-- 由模 4 同余确定重置参数 `δ=δr`。 -/
+lemma delta_eq_of_mod4_sum (s δ δr : Nat)
+    (hδ : δ = 1 ∨ δ = 3) (hδr : δr = 1 ∨ δr = 3)
+    (h1 : (s + δ) % 4 = 0) (h2 : (s + δr) % 4 = 0) : δ = δr := by
+  rcases hδ with rfl | rfl <;> rcases hδr with rfl | rfl
+  · rfl
+  · have ha := mod4_of_add_one s h1
+    have hb := mod4_of_add_three s h2
+    omega
+  · have ha := mod4_of_add_three s h1
+    have hb := mod4_of_add_one s h2
+    omega
+  · rfl
+
+/-- `(5x+1) ≡ 2 (mod 4)` 时 `x ≡ 1 (mod 4)`。 -/
+lemma mod4_of_five_mul_add_one (x : Nat) (h : (5 * x + 1) % 4 = 2) :
+    x % 4 = 1 := by
+  have hsplit : x = 4 * (x / 4) + x % 4 := (Nat.div_add_mod x 4).symm
+  rw [hsplit] at h
+  have hcases : x % 4 = 0 ∨ x % 4 = 1 ∨ x % 4 = 2 ∨ x % 4 = 3 := by
+    have hlt : x % 4 < 4 := Nat.mod_lt x (by decide)
+    omega
+  rcases hcases with h0 | h1 | h2 | h3
+  · rw [h0] at h
+    rw [Nat.add_mod, Nat.mul_mod] at h
+    simp at h
+  · exact h1
+  · rw [h2] at h
+    rw [Nat.add_mod, Nat.mul_mod] at h
+    simp at h
+  · rw [h3] at h
+    rw [Nat.add_mod, Nat.mul_mod] at h
+    simp at h

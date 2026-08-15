@@ -349,6 +349,32 @@ structure SurvExConditions where
 def SurvEx53_4LB : Prop :=
   SurvExConditions → SurvExTd0
 
+/-- The current condition record stores propositions, not proofs of
+those propositions, so it has an unconditional inhabitant. -/
+def trivialSurvExConditions : SurvExConditions where
+  sx1 := True
+  sx2_lucas := True
+  sx2_exclusion := True
+  sx3_ab := True
+  sx3_interval := True
+  sx3_c := True
+  sx4 := True
+  main_chain_53 := True
+  surv_ray := True
+  simons_s1 := True
+  lb_prime := True
+
+/-- With the present record type, the advertised conditional statement
+is logically equivalent to the final no-cycle input itself.  Therefore
+`SurvEx53_4LB` is not an independently weaker assembly premise. -/
+theorem survEx53_4LB_iff_survExTd0 :
+    SurvEx53_4LB ↔ SurvExTd0 := by
+  constructor
+  · intro h
+    exact h trivialSurvExConditions
+  · intro h _hC
+    exact h
+
 /-- Assembly bridge: if the conditional statement and its explicit
 conditions hold, then the no-cycle interface closes and divergence
 follows.  This is not a proof of the condition fields. -/

@@ -73,6 +73,30 @@ def failureWindowExistenceOfUnifiedCore : Prop :=
   unifiedCoreClosed →
     CycleBridge.failureWindowExistence
 
+/-- Since `unifiedCoreClosed` is already proved, the conditional
+window interface is exactly as strong as the corrected window bound
+itself; the wrapper does not discharge any remaining premise. -/
+theorem decisiveWindowValuationBoundCorrected_of_unified_core_iff :
+    decisiveWindowValuationBoundCorrected_of_unified_core ↔
+      BlockAutomaton.decisiveWindowValuationBoundCorrected := by
+  constructor
+  · intro h
+    exact h unifiedCoreClosed_proved
+  · intro h _hcore
+    exact h
+
+/-- Likewise the conditional failure-window interface is equivalent to
+`failureWindowExistence` because its unified-core antecedent is already
+available. -/
+theorem failureWindowExistenceOfUnifiedCore_iff :
+    failureWindowExistenceOfUnifiedCore ↔
+      CycleBridge.failureWindowExistence := by
+  constructor
+  · intro h
+    exact h unifiedCoreClosed_proved
+  · intro h _hcore
+    exact h
+
 /-- 最外层接口：循环桥闭合且无 `7` 的正循环时，`7` 的轨道无界。 -/
 theorem dwdbDivFinalAssembly
     (_hbridge : CycleBridge.windowBoundToNoCycle) :
