@@ -729,6 +729,264 @@ lemma cycleRiseBlockTailDepth_lt_succ {m S P : Nat} {w : List Nat}
   rw [hseg, hzero] at hgt
   norm_num at hgt
 
+/-- The C3 word of a block is the dropped prefix segment from the
+block head to the C3-tail depth. -/
+lemma cycleRiseBlockC3Word_eq_prefix_drop
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    d.c3Word r =
+      (w.take (d.headDepth r + (d.c3Word r).length)).drop (d.headDepth r) := by
+  have hbL : d.headDepth r + (d.c3Word r).length ≤ w.length := by
+    have htail_lt : cycleRiseBlockTailDepth d r - 1 < P :=
+      cycleRiseBlockTailDepth_lt_succ d r hr
+    dsimp [cycleRiseBlockTailDepth] at htail_lt
+    rw [d.hperiod]
+    omega
+  refine List.ext_getElem ?_ ?_
+  · rw [List.length_drop]
+    rw [List.length_take_of_le hbL]
+    omega
+  · intro k hk1 hk2
+    have hseg := d.hc3_segment r hr k hk1
+    have hltw : d.headDepth r + k < w.length := by
+      have hbL' : d.headDepth r + (d.c3Word r).length ≤ P := by
+        rw [d.hperiod] at hbL
+        exact hbL
+      have hklen : k < (d.c3Word r).length := hk1
+      rw [d.hperiod]
+      omega
+    have hleft : (d.c3Word r)[k] = w.getI (d.headDepth r + k) := by
+      rw [← List.getI_eq_getElem (l := d.c3Word r) (n := k) hk1]
+      exact hseg
+    have hright : ((w.take (d.headDepth r + (d.c3Word r).length)).drop
+        (d.headDepth r))[k] = w.getI (d.headDepth r + k) := by
+      rw [List.getElem_drop (i := d.headDepth r) (j := k) (h := hk2)]
+      rw [List.getElem_take (j := d.headDepth r + (d.c3Word r).length)
+        (i := d.headDepth r + k)
+        (h := by rw [List.length_take_of_le hbL]; omega)]
+      rw [← List.getI_eq_getElem (l := w) (n := d.headDepth r + k) hltw]
+    rw [hleft, hright]
+
+/-- The C3-tail state is the orbit of the C3 word starting from the
+block head state. -/
+lemma cycleRiseBlockC3TailState_eq_wordOrbit_c3Word
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    cycleRiseBlockC3TailState d r =
+      StringFlow.Word.wordOrbit (d.c3Word r)
+        (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m) := by
+  have hbL : d.headDepth r + (d.c3Word r).length ≤ w.length := by
+    have htail_lt : cycleRiseBlockTailDepth d r - 1 < P :=
+      cycleRiseBlockTailDepth_lt_succ d r hr
+    dsimp [cycleRiseBlockTailDepth] at htail_lt
+    rw [d.hperiod]
+    omega
+  have hdrop := cycleRiseBlockC3Word_eq_prefix_drop d r hr
+  have hwd := StringFlow.CycleBridge.wordOrbit_take_drop w m
+    (d.headDepth r) (d.c3Word r).length hbL
+  rw [← hdrop] at hwd
+  simpa [cycleRiseBlockC3TailState] using hwd
+
+/-- Orbit states along a C3 chain: each step divides by the exact
+C3 weight. -/
+def c3ChainStates (x0 : Nat) : List Nat → List Nat
+  | [] => [x0]
+  | t :: ts => x0 :: c3ChainStates ((5 * x0 + 1) / 2 ^ t) ts
+
+/-- The state chain of a C3 word is never empty. -/
+lemma c3ChainStates_ne_nil (x0 : Nat) (ts : List Nat) :
+    c3ChainStates x0 ts ≠ [] := by
+  cases ts with
+  | nil => simp [c3ChainStates]
+  | cons t ts' => simp [c3ChainStates]
+
+/-- The last state of `c3ChainStates` is the orbit of the whole C3
+word from the starting state. -/
+lemma chainLast_c3ChainStates (x0 : Nat) (ts : List Nat) :
+    StringFlow.GC.chainLast (c3ChainStates x0 ts) =
+      StringFlow.Word.wordOrbit ts x0 := by
+  induction ts generalizing x0 with
+  | nil => simp [c3ChainStates, StringFlow.GC.chainLast,
+      StringFlow.Word.wordOrbit]
+  | cons t ts ih =>
+      simp [c3ChainStates, StringFlow.Word.wordOrbit]
+      cases h : c3ChainStates ((5 * x0 + 1) / 2 ^ t) ts with
+      | nil => exact False.elim (c3ChainStates_ne_nil ((5 * x0 + 1) / 2 ^ t) ts h)
+      | cons a as =>
+          simp [StringFlow.GC.chainLast]
+          have ih' := ih ((5 * x0 + 1) / 2 ^ t)
+          rw [h] at ih'
+          exact ih'
+
+/-- The first state of a nonempty `c3ChainStates` is the start. -/
+lemma chainFirst_c3ChainStates (x0 : Nat) (ts : List Nat) (h : ts ≠ []) :
+    StringFlow.GC.chainFirst (c3ChainStates x0 ts) = x0 := by
+  cases ts with
+  | nil => contradiction
+  | cons t ts' => simp [c3ChainStates, StringFlow.GC.chainFirst]
+
+/-- A maximal exact C3 word with global prefix states gives the
+`c3ExactMax` chain built by `c3ChainStates`. -/
+lemma c3ExactMax_c3ChainStates_of_word
+    (m : Nat) (w : List Nat) (hd : Nat) (ts : List Nat)
+    (hexact : ∀ k, k < ts.length →
+      twoValuation (5 * StringFlow.Word.wordOrbit (w.take (hd + k)) m + 1) =
+        ts.getI k)
+    (hseg : ∀ k, k < ts.length → w.getI (hd + k) = ts.getI k)
+    (hbound : ∀ k, k < ts.length → hd + k < w.length) :
+    StringFlow.GC.c3ExactMax
+      (c3ChainStates (StringFlow.Word.wordOrbit (w.take hd) m) ts) ts := by
+  induction ts generalizing hd with
+  | nil => simp [c3ChainStates, StringFlow.GC.c3ExactMax]
+  | cons t ts' ih =>
+      have hhead : twoValuation
+          (5 * StringFlow.Word.wordOrbit (w.take hd) m + 1) = t :=
+        hexact 0 (by simp)
+      have hseg0 : w.getI hd = t := hseg 0 (by simp)
+      have hlt0 : hd < w.length := hbound 0 (by simp)
+      have hsucc : StringFlow.Word.wordOrbit (w.take (hd + 1)) m =
+          (5 * StringFlow.Word.wordOrbit (w.take hd) m + 1) / 2 ^ t := by
+        simpa [hseg0] using StringFlow.CycleBridge.wordOrbit_take_succ w m hd hlt0
+      have hpos : 0 < 5 * StringFlow.Word.wordOrbit (w.take hd) m + 1 := by positivity
+      have hdvd : 2 ^ t ∣ 5 * StringFlow.Word.wordOrbit (w.take hd) m + 1 := by
+        rw [← StringFlow.Lte.twoValuation_ge_iff_dvd_pow
+          (5 * StringFlow.Word.wordOrbit (w.take hd) m + 1) t hpos]
+        rw [hhead]
+      have hstep' : 2 ^ t *
+          StringFlow.Word.wordOrbit (w.take (hd + 1)) m =
+          5 * StringFlow.Word.wordOrbit (w.take hd) m + 1 := by
+        rw [hsucc]
+        rw [Nat.mul_comm]
+        exact Nat.div_mul_cancel hdvd
+      have hmax' : (5 * StringFlow.Word.wordOrbit (w.take hd) m + 1) %
+          2 ^ (t + 1) ≠ 0 := by
+        have hnotdvd : ¬ 2 ^ (t + 1) ∣
+            5 * StringFlow.Word.wordOrbit (w.take hd) m + 1 :=
+          by
+            rw [← StringFlow.Lte.twoValuation_le_iff_not_dvd_pow
+              (5 * StringFlow.Word.wordOrbit (w.take hd) m + 1) t hpos]
+            rw [hhead]
+        intro hz
+        exact hnotdvd (Nat.dvd_iff_mod_eq_zero.mpr hz)
+      have htail := ih (hd + 1)
+        (fun k hk => by
+          have hlen : (t :: ts').length = ts'.length + 1 := by simp
+          have hk' : k + 1 < (t :: ts').length := by omega
+          simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm,
+            List.getI_cons_succ] using hexact (k + 1) hk')
+        (fun k hk => by
+          have hlen : (t :: ts').length = ts'.length + 1 := by simp
+          have hk' : k + 1 < (t :: ts').length := by omega
+          simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm,
+            List.getI_cons_succ] using hseg (k + 1) hk')
+        (fun k hk => by
+          have hlen : (t :: ts').length = ts'.length + 1 := by simp
+          have hk' : k + 1 < (t :: ts').length := by omega
+          have hb := hbound (k + 1) hk'
+          simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hb)
+      have hlist : c3ChainStates (StringFlow.Word.wordOrbit (w.take hd) m) (t :: ts') =
+          StringFlow.Word.wordOrbit (w.take hd) m ::
+            c3ChainStates (StringFlow.Word.wordOrbit (w.take (hd + 1)) m) ts' := by
+        simp [c3ChainStates]
+        rw [hsucc]
+      rw [hlist]
+      cases ts' with
+      | nil =>
+          simp [c3ChainStates]
+          unfold StringFlow.GC.c3ExactMax
+          exact ⟨hstep', hmax', trivial⟩
+      | cons t2 ts2 =>
+          simp [c3ChainStates]
+          unfold StringFlow.GC.c3ExactMax
+          exact ⟨hstep', hmax', htail⟩
+
+/-- The C3 word of a cyclic rise block is a maximal exact C3 chain
+when represented by its global prefix orbit states. -/
+lemma cycleRiseBlockC3ExactMax
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    StringFlow.GC.c3ExactMax
+      (c3ChainStates
+        (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m)
+        (d.c3Word r))
+      (d.c3Word r) := by
+  apply c3ExactMax_c3ChainStates_of_word m w (d.headDepth r) (d.c3Word r)
+  · exact d.hc3_exact r hr
+  · intro k hk
+    exact (d.hc3_segment r hr k hk).symm
+  · intro k hk
+    have hbL : d.headDepth r + (d.c3Word r).length ≤ w.length := by
+      have htail_lt : cycleRiseBlockTailDepth d r - 1 < P :=
+        cycleRiseBlockTailDepth_lt_succ d r hr
+      dsimp [cycleRiseBlockTailDepth] at htail_lt
+      rw [d.hperiod]
+      omega
+    omega
+
+/-- Block-level C3 rank gain: the C3-tail rank of a block is
+controlled by its C3 word and the per-step residuals. -/
+theorem cycleRiseBlockC3ChainRankGain
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    cycleRiseBlockTailRank d r + (d.c3Word r).sum =
+      2 + (StringFlow.RealOrbitLocalLemma.c3Residuals
+        (c3ChainStates
+          (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m)
+          (d.c3Word r))
+        (d.c3Word r)).sum := by
+  have hQ : 0 < (d.c3Word r).length :=
+    List.length_pos_iff.mpr (d.hc3_nonempty r hr)
+  have hmax := cycleRiseBlockC3ExactMax d r hr
+  let headState := StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m
+  have hheadN : twoValuation (headState + 1) = 2 := by
+    dsimp [headState]
+    have hgt : 3 ≤ twoValuation (5 * StringFlow.Word.wordOrbit
+        (w.take (d.headDepth r)) m + 1) := by
+      have hmem : (d.c3Word r).getI 0 ∈ d.c3Word r := by
+        rw [List.getI_eq_getElem (l := d.c3Word r) (n := 0) hQ]
+        exact List.getElem_mem hQ
+      have hge : 3 ≤ (d.c3Word r).getI 0 := d.hc3_entries r hr _ hmem
+      have hex0 : twoValuation (5 * StringFlow.Word.wordOrbit
+          (w.take (d.headDepth r)) m + 1) = (d.c3Word r).getI 0 := by
+        simpa using d.hc3_exact r hr 0 hQ
+      rw [hex0]
+      exact hge
+    have hodd : S6Audit.IsOdd (StringFlow.Word.wordOrbit
+        (w.take (d.headDepth r)) m) := by
+      by_contra hnot
+      have hxeven : StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m % 2 = 0 := by
+        rcases Nat.mod_two_eq_zero_or_one
+          (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m) with h0 | h1
+        · exact h0
+        · exact False.elim (hnot h1)
+      have hx1odd : (5 * StringFlow.Word.wordOrbit
+          (w.take (d.headDepth r)) m + 1) % 2 = 1 := by
+        omega
+      have hv : twoValuation (5 * StringFlow.Word.wordOrbit
+          (w.take (d.headDepth r)) m + 1) = 0 :=
+        StringFlow.twoValuation_odd _ hx1odd
+      omega
+    exact StringFlow.RealOrbitLocalLemma.state_rank_eq_two_of_outgoing_c3
+      (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m) hodd hgt
+  have hgain := StringFlow.RealOrbitLocalLemma.c3Chain_rank_gain
+    (c3ChainStates headState (d.c3Word r))
+    (d.c3Word r) hQ hmax (d.hc3_entries r hr)
+    (by
+      rw [chainFirst_c3ChainStates headState (d.c3Word r)
+        (d.hc3_nonempty r hr)]
+      exact hheadN)
+  have hlast : StringFlow.GC.chainLast
+      (c3ChainStates headState (d.c3Word r)) =
+      cycleRiseBlockC3TailState d r := by
+    rw [chainLast_c3ChainStates]
+    dsimp [headState]
+    exact (cycleRiseBlockC3TailState_eq_wordOrbit_c3Word d r hr).symm
+  simpa [cycleRiseBlockTailRank, headState, hlast] using hgain
+
 /-- The last C3 entry of a block is at least three. -/
 lemma cycleRiseBlockTailResetWeight_ge_three {m S P : Nat} {w : List Nat}
     (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
