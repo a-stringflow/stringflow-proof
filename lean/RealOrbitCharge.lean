@@ -977,6 +977,47 @@ lemma cycleRiseBlockSuffixEndpointRank_eq_two
   rw [hstate]
   exact cycleRiseBlockHeadRank_two d (r + 1) hrnext
 
+/-- Summed endpoint ranks: all non-wrapping endpoints have rank two,
+and the wrapping endpoint of the last block is left explicit. -/
+lemma cycleRiseBlockEndpointRankSum_eq
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w)
+    (hpos : 0 < d.blockCount) :
+    ((List.range d.blockCount).map
+        (fun r => cycleRiseBlockSuffixEndpointRank d r)).sum =
+      2 * (d.blockCount - 1) +
+        cycleRiseBlockSuffixEndpointRank d (d.blockCount - 1) := by
+  have hrange : List.range d.blockCount =
+      List.range (d.blockCount - 1) ++ [d.blockCount - 1] := by
+    have hK : d.blockCount = (d.blockCount - 1) + 1 := by omega
+    conv_lhs => rw [hK]
+    rw [List.range_succ]
+  rw [hrange]
+  rw [List.map_append, List.sum_append]
+  have hsum2 : (List.range (d.blockCount - 1)).map
+      (fun r => cycleRiseBlockSuffixEndpointRank d r) =
+    (List.range (d.blockCount - 1)).map (fun _ => 2) := by
+    refine List.ext_getElem ?_ ?_
+    · simp
+    · intro k hk1 hk2
+      have hklt : k < d.blockCount - 1 := by simpa using hk1
+      have hr : k < d.blockCount := by omega
+      have hrnext : k + 1 < d.blockCount := by omega
+      rw [List.getElem_map]
+      rw [List.getElem_map]
+      simpa using cycleRiseBlockSuffixEndpointRank_eq_two d k hr hrnext
+  rw [hsum2]
+  simp [List.sum_replicate, Nat.mul_comm]
+
+/-- The C3 residual sum of one block. -/
+def cycleRiseBlockC3ResidualSum {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat) : Nat :=
+  (StringFlow.RealOrbitLocalLemma.c3Residuals
+    (c3ChainStates
+      (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m)
+      (d.c3Word r))
+    (d.c3Word r)).sum
+
 /-- Block-level C3 rank gain: the C3-tail rank of a block is
 controlled by its C3 word and the per-step residuals. -/
 theorem cycleRiseBlockC3ChainRankGain
@@ -1011,15 +1052,6 @@ theorem cycleRiseBlockC3ChainRankGain
     exact (cycleRiseBlockC3TailState_eq_wordOrbit_c3Word d r hr).symm
   simpa [cycleRiseBlockTailRank, headState, hlast] using hgain
 
-/-- The C3 residual sum of one block. -/
-def cycleRiseBlockC3ResidualSum {m S P : Nat} {w : List Nat}
-    (d : CycleRiseBlockDecomposition m S P w) (r : Nat) : Nat :=
-  (StringFlow.RealOrbitLocalLemma.c3Residuals
-    (c3ChainStates
-      (StringFlow.Word.wordOrbit (w.take (d.headDepth r)) m)
-      (d.c3Word r))
-    (d.c3Word r)).sum
-
 /-- Summed block-level C3 rank gain over the whole cyclic
 decomposition:
 `Σ tailRank + Σ c3Weight = 2*K + Σ residual`. -/
@@ -1047,6 +1079,46 @@ theorem cycleRiseBlockTailRankSum_add_c3WeightSum
   rw [hmap]
   rw [List.sum_map_add]
   simp [List.sum_replicate, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+
+/-- Global C3 rank-gain telescoping: the total tail rank exceeds the
+total endpoint rank by at most `2 + Σ residual`. -/
+theorem cycleRiseBlockTailRankSum_le_endpointRankSum_add_two_add_residual
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w)
+    (hpos : 0 < d.blockCount) :
+    ((List.range d.blockCount).map (fun r => cycleRiseBlockTailRank d r)).sum ≤
+      ((List.range d.blockCount).map
+        (fun r => cycleRiseBlockSuffixEndpointRank d r)).sum +
+        2 + ((List.range d.blockCount).map
+          (fun r => cycleRiseBlockC3ResidualSum d r)).sum := by
+  have htaille : ((List.range d.blockCount).map
+      (fun r => cycleRiseBlockTailRank d r)).sum ≤
+      2 * d.blockCount +
+        ((List.range d.blockCount).map
+          (fun r => cycleRiseBlockC3ResidualSum d r)).sum := by
+    have h := cycleRiseBlockTailRankSum_add_c3WeightSum d
+    omega
+  have hlast : 2 * (d.blockCount - 1) ≤
+      ((List.range d.blockCount).map
+        (fun r => cycleRiseBlockSuffixEndpointRank d r)).sum := by
+    have h := cycleRiseBlockEndpointRankSum_eq d hpos
+    omega
+  omega
+
+/-- Global C3 rank-gain budget: `2*ΣH2` is bounded by
+`2 + Σ residual + Σ charge`. -/
+theorem cycleRiseBlockTwoH2Sum_le_two_add_residual_add_charge
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w)
+    (hpos : 0 < d.blockCount) :
+    2 * cycleRiseBlockH2Sum d ≤
+      2 + ((List.range d.blockCount).map
+          (fun r => cycleRiseBlockC3ResidualSum d r)).sum +
+        ((List.range d.blockCount).map
+          (fun r => cycleRiseBlockCharge d r)).sum := by
+  have htel := cycleRiseBlockTailRankSum_le_endpointRankSum_add_two_add_residual d hpos
+  have hend := cycleRiseBlockEndpointRankSum_le d
+  omega
 
 /-- The last C3 entry of a block is at least three. -/
 lemma cycleRiseBlockTailResetWeight_ge_three {m S P : Nat} {w : List Nat}
