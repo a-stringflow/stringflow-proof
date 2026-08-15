@@ -997,6 +997,32 @@ theorem cycleQb8Input_cyclic_local_hident_block_of_reset
     h b L t δ hb hL hLle rt ht_last ht hδ hterm hk hslt
       hrj_odd hrj_reach
 
+/-- Independent `hk` input for the split local hident assembly:
+`rt.k + 1 ≤ L` at the concrete C3-to-rise boundary.  This is no longer
+buried inside the whole `cycleQb8InputExistsLocalHidentBlock` existence
+target. -/
+def cycleQb8InputHkBound : Prop :=
+  ∀ m S P : Nat, ∀ w rise c3 : List Nat,
+    CycleQb8Input m S P w rise c3 →
+    ∀ (b L : Nat),
+      IsCyclicC3RiseBoundaryAt w b → 1 ≤ L → L ≤ w.length →
+      ∀ rt : S6Audit.AngelinaGilbertaRealTerminal,
+        rt.r = (5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1) / 2 →
+        rt.k + 1 ≤ L
+
+/-- Independent `hs_lt` input for the split local hident assembly:
+the terminal's five-adic odd part stays below `5^(L - rt.k - 1)`.  Like
+`cycleQb8InputHkBound`, this is a separate open input, not a hidden part
+of the local-hident existence target. -/
+def cycleQb8InputHsLtBound : Prop :=
+  ∀ m S P : Nat, ∀ w rise c3 : List Nat,
+    CycleQb8Input m S P w rise c3 →
+    ∀ (b L : Nat),
+      IsCyclicC3RiseBoundaryAt w b → 1 ≤ L → L ≤ w.length →
+      ∀ rt : S6Audit.AngelinaGilbertaRealTerminal,
+        rt.r = (5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1) / 2 →
+        rt.s < 5 ^ (L - rt.k - 1)
+
 /-- The local `hident` block using the cyclic suffix equation.  The
 local depth remains `j = L`; the head is obtained from the rotated
 segment `cyclicSegmentAt w b`, not from the non-wrapping expression

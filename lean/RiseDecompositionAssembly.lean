@@ -2,6 +2,12 @@ import RunDecomposition
 import C4C8Tail
 
 set_option maxHeartbeats 800000
+set_option linter.unnecessarySimpa false
+set_option linter.unusedVariables false
+set_option linter.unusedSimpArgs false
+set_option linter.unnecessarySeqFocus false
+set_option linter.unusedTactic false
+set_option linter.unreachableTactic false
 
 namespace StringFlow.CycleBridge
 
@@ -557,8 +563,7 @@ theorem cycleRiseBlockDecompositionExists_of_input
     have hlen0 : (c3w r).length = 0 := by simp [hnil]
     rw [hlen] at hlen0
     omega
-  · intro r hr
-    intro t ht
+  · intro r hr t ht
     rcases (List.mem_iff_getElem.mp ht) with ⟨k, hklt, hk⟩
     have hkget : (c3w r).getI k = t := by
       have hklt' : k < (c3w r).length := hklt
@@ -588,8 +593,7 @@ theorem cycleRiseBlockDecompositionExists_of_input
         blockC3Word_getI w (bnd (r + 1)) (by rw [hw]; exact hb.2.1) k hkltC
     rw [← hkget, hget2]
     exact hmem
-  · intro r hr
-    intro k hk
+  · intro r hr k hk
     have hb := hbndFacts (r + 1) (by omega)
     have hkltC : k < c3SuffixLengthAt w (bnd (r + 1)) := by
       have hlen : (c3w r).length = c3SuffixLengthAt w (bnd (r + 1)) := by
@@ -605,8 +609,7 @@ theorem cycleRiseBlockDecompositionExists_of_input
         simp [blockC3Len]
       simpa [blockC3Len, hidx] using hg
     exact hget2
-  · intro r hr
-    intro k hk
+  · intro r hr k hk
     have hb := hbndFacts (r + 1) (by omega)
     have hkltC : k < c3SuffixLengthAt w (bnd (r + 1)) := by
       have hlen : (c3w r).length = c3SuffixLengthAt w (bnd (r + 1)) := by
@@ -631,8 +634,7 @@ theorem cycleRiseBlockDecompositionExists_of_input
         simp [blockC3Len]
       simpa [blockC3Len, hidx] using hg
     rwa [← hget2] at hex
-  · intro r hr
-    intro t ht
+  · intro r hr t ht
     rcases (List.mem_iff_getElem.mp ht) with ⟨k, hklt, hk⟩
     have hkget : (sw r).getI k = t := by
       have hklt' : k < (sw r).length := hklt
@@ -664,8 +666,7 @@ theorem cycleRiseBlockDecompositionExists_of_input
         blockSuffixWord_getI w (bnd (r + 1)) (by rw [hw]; exact hb.2.1) k hkltL
     rw [← hkget, hget3]
     simpa [hw] using hw12
-  · intro r hr
-    intro k hk
+  · intro r hr k hk
     have hb := hbndFacts (r + 1) (by omega)
     have hkltL : k < blockRiseLen w (bnd (r + 1)) := by
       have hlen : (sw r).length = blockRiseLen w (bnd (r + 1)) := by
@@ -683,8 +684,7 @@ theorem cycleRiseBlockDecompositionExists_of_input
       simpa [hidx] using hget
     dsimp [sw]
     exact hget'
-  · intro r hr
-    intro k hk
+  · intro r hr k hk
     have hb := hbndFacts (r + 1) (by omega)
     have hkltL : k < blockRiseLen w (bnd (r + 1)) := by
       have hlen : (sw r).length = blockRiseLen w (bnd (r + 1)) := by
@@ -798,31 +798,30 @@ theorem cycleRiseBlockDecompositionExists_of_input
     · rw [if_neg hrK]
       exact hwrap r hr (by omega)
 
-/-- The real cyclic rise decomposition plus the tail-charged PMI
-comparison yield a C3-tail failure.  Structural existence is now
-closed; only the PMI comparison remains an input. -/
-theorem cycleRiseBlockFailure_of_real_input_and_global_comparison
+/-- INVALID: depends on the rejected tail-charged global comparison
+(6).  Kept only for the audit trail; do not use as an hfail source. -/
+theorem cycleRiseBlockFailure_of_real_input_and_global_comparison_INVALID
     {m S P : Nat} {w rise c3 : List Nat}
     (h : CycleQb8Input m S P w rise c3)
-    (hglobal : cycleRiseBlockPMIGlobalComparisonHolds) :
+    (hglobal : cycleRiseBlockPMIGlobalComparisonHolds_INVALID) :
     ∃ d : CycleRiseBlockDecomposition m S P w,
       ∃ r : Nat, r < d.blockCount ∧
         2 * (cycleRiseBlockTailDepth d r -
             cycleRiseBlockTailResetWeight d r) + 13 ≤
           cycleRiseBlockTailRank d r := by
   rcases cycleRiseBlockDecompositionExists_of_input h with ⟨d, _hdpos⟩
-  exact ⟨d, cycleRiseBlockTailFailure_of_global_comparison d
+  exact ⟨d, cycleRiseBlockTailFailure_of_global_comparison_INVALID d
     (hglobal m S P w rise c3 h d)⟩
 
-/-- The real cyclic rise decomposition plus the tail-charged PMI
-comparison supply the C3-tail failure window. -/
-theorem cycleRiseBlockTailFailureWindowExistence_of_pmi
-    (hglobal : cycleRiseBlockPMIGlobalComparisonHolds) :
+/-- INVALID: depends on the rejected global comparison (6).  Kept only
+for the audit trail; do not use downstream. -/
+theorem cycleRiseBlockTailFailureWindowExistence_of_pmi_INVALID
+    (hglobal : cycleRiseBlockPMIGlobalComparisonHolds_INVALID) :
     cycleRiseBlockTailFailureWindowExistence := by
   intro m S P w rise c3 h
   rcases cycleRiseBlockDecompositionExists_of_input h with ⟨d, _hdpos⟩
   refine ⟨d, ?_⟩
-  exact cycleRiseBlockTailFailureWindow_of_global_comparison h d
+  exact cycleRiseBlockTailFailureWindow_of_global_comparison_INVALID h d
     (hglobal m S P w rise c3 h d)
 
 /-- A word is valid from a state when every step is exact: the
@@ -1798,13 +1797,16 @@ theorem cycleRiseBlockHpred_of_real_terminal
 `5^rt.k * rt.s + delta * 5^(L-1) - 1 = wordOrbit u' q` constructs the
 reset equation.  The remaining open input is exactly that predecessor
 identity, supplied by real orbit data; cycle closure does not replace
-it. -/
+it.  The `L ≥ 3` premise is structural: for `L ≤ 2` the identity is the
+pseudo-candidate excluded by `cyclic_local_reset_length_ge_three`, whose
+proof currently depends on `hterm` itself. -/
 theorem cycleRiseBlockHterm_of_real_predecessor
     {m S P : Nat} {w rise c3 : List Nat}
     (h : CycleQb8Input m S P w rise c3)
     (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
     (hr : r < d.blockCount) (hne : d.suffixWord r ≠ [])
     (hLle : (d.suffixWord r).length ≤ w.length)
+    (_hLge3 : 3 ≤ (d.suffixWord r).length)
     (t delta : Nat)
     (ht_last : t = (d.suffixWord r).getI ((d.suffixWord r).length - 1))
     (ht : t = 1 ∨ t = 2)
@@ -1857,29 +1859,1279 @@ theorem cycleRiseBlockHterm_of_real_predecessor
       delta rt ht hdelta).mpr hreset
   simpa [b, L, q] using hterm'
 
-/-- The exact real-orbit input still needed for `hterm`: at every
-cyclic rise block, the genuine predecessor identity holds.  It is the
-only remaining real-orbit gap after
-`cycleRiseBlockHterm_of_real_predecessor`. -/
-def cycleQb8InputRealPredecessorIdentity : Prop :=
-  ∀ m S P : Nat, ∀ w rise c3 : List Nat,
-    CycleQb8Input m S P w rise c3 →
-    ∀ (d : CycleRiseBlockDecomposition m S P w) (r : Nat),
-      r < d.blockCount → d.suffixWord r ≠ [] →
-      (d.suffixWord r).length ≤ w.length →
-      ∀ t delta : Nat,
-        t = (d.suffixWord r).getI ((d.suffixWord r).length - 1) →
-        (t = 1 ∨ t = 2) →
-        ((t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3)) →
-        ∀ rt : S6Audit.AngelinaGilbertaRealTerminal,
-          rt.r = (5 * StringFlow.Word.wordOrbit
-            (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2 →
-          5 ^ rt.k * rt.s + delta * 5 ^ ((d.suffixWord r).length - 1) - 1 =
+/-- Pure boundary form of the real predecessor identity: it no longer
+mentions a `CycleRiseBlockDecomposition`.  All structure is carried by
+the concrete C3-to-rise boundary `b`, the rise length `L`, the exact
+rise-prefix membership `hseg`, and the single real terminal `rt`.  The
+`L ≥ 3` premise is structural: without it the identity is the `L ≤ 2`
+pseudo-candidate excluded by `cyclic_local_reset_length_ge_three`, whose
+proof currently depends on `hterm` itself. -/
+def cyclic_real_predecessor_identity
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b : Nat) (hb : IsCyclicC3RiseBoundaryAt w b)
+    (L : Nat) (hLge3 : 3 ≤ L) (hLle : L ≤ w.length)
+    (hseg : ∀ k : Nat, k < L →
+      (cyclicSegmentAt w b).getI k = 1 ∨
+      (cyclicSegmentAt w b).getI k = 2)
+    (t delta : Nat)
+    (ht_last : t = (cyclicSegmentAt w b).getI (L - 1))
+    (ht : t = 1 ∨ t = 2)
+    (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
+    (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hrt : rt.r = (5 * StringFlow.Word.wordOrbit
+      (w.take (b - 1)) m + 1) / 2) :
+    Prop :=
+  5 ^ rt.k * rt.s + delta * 5 ^ (L - 1) - 1 =
+    StringFlow.Word.wordOrbit
+      ((cyclicSegmentAt w b).take (L - 1))
+      (StringFlow.Word.wordOrbit (w.take b) m)
+
+/-- The congruence step behind the real predecessor identity:
+`wordOrbit u' q ≡ 2^(c-1) q (mod 5^(L-1))`.  Once this congruence is
+proved, the quotient `delta` is an integer and the remaining work is
+only to pin its parity and size to `{1,3}` (or `1` for `t=1`). -/
+def cyclic_real_predecessor_congruence : Prop :=
+  ∀ (m S P : Nat) (w rise c3 : List Nat),
+    ∀ (h : CycleQb8Input m S P w rise c3),
+      ∀ (b L : Nat) (hb : IsCyclicC3RiseBoundaryAt w b),
+        ∀ (hLpos : 1 ≤ L) (hLle : L ≤ w.length),
+          StringFlow.Word.wordOrbit
+              ((cyclicSegmentAt w b).take (L - 1))
+              (StringFlow.Word.wordOrbit (w.take b) m) %
+                5 ^ (L - 1) =
+            (2 ^ (w.getI (b - 1) - 1) *
+              StringFlow.Word.wordOrbit (w.take b) m) %
+              5 ^ (L - 1)
+
+/-- The selected-block congruence target: the same mod `5^(L-1)`
+congruence, but only for blocks whose penultimate rise step is `1`.
+This is the quantifier-shrunk form forced by the mod-5 discriminator. -/
+def cyclic_real_predecessor_congruence_selected : Prop :=
+  ∀ (m S P : Nat) (w rise c3 : List Nat),
+    ∀ (h : CycleQb8Input m S P w rise c3),
+      ∀ (b L : Nat) (hb : IsCyclicC3RiseBoundaryAt w b),
+        ∀ (hLpos : 1 ≤ L) (hLle : L ≤ w.length),
+          ∀ (hseg : ∀ k : Nat, k < L →
+            (cyclicSegmentAt w b).getI k = 1 ∨
+            (cyclicSegmentAt w b).getI k = 2),
+            (cyclicSegmentAt w b).getI (L - 2) = 1 →
             StringFlow.Word.wordOrbit
-              ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
-                ((d.suffixWord r).length - 1))
-              (StringFlow.Word.wordOrbit
-                (w.take (cycleRiseBlockTailDepth d r)) m)
+                ((cyclicSegmentAt w b).take (L - 1))
+                (StringFlow.Word.wordOrbit (w.take b) m) %
+                  5 ^ (L - 1) =
+              (2 ^ (w.getI (b - 1) - 1) *
+                StringFlow.Word.wordOrbit (w.take b) m) %
+                5 ^ (L - 1)
+
+/-- The mod-25 base of the selected congruence.  This is the first
+non-trivial layer of the 5-adic telescope; C4C8Tail supplies the exact
+`wordA mod 25` and start-residue identities used at this level. -/
+def cyclic_real_predecessor_congruence_mod25_selected : Prop :=
+  ∀ (m S P : Nat) (w rise c3 : List Nat),
+    ∀ (h : CycleQb8Input m S P w rise c3),
+      ∀ (b L : Nat) (hb : IsCyclicC3RiseBoundaryAt w b),
+        ∀ (hLpos : 1 ≤ L) (hLle : L ≤ w.length),
+          ∀ (hseg : ∀ k : Nat, k < L →
+            (cyclicSegmentAt w b).getI k = 1 ∨
+            (cyclicSegmentAt w b).getI k = 2),
+            (cyclicSegmentAt w b).getI (L - 2) = 1 →
+            StringFlow.Word.wordOrbit
+                ((cyclicSegmentAt w b).take (L - 1))
+                (StringFlow.Word.wordOrbit (w.take b) m) %
+                  25 =
+              (2 ^ (w.getI (b - 1) - 1) *
+                StringFlow.Word.wordOrbit (w.take b) m) %
+                25
+
+/-- The unique candidate for `delta` in the real predecessor identity,
+read directly from the actual orbit: the quotient of
+`wordOrbit u' q - 2^(c-1) q` by `5^(L-1)`.  The congruence step makes
+this quotient exact; the parity/size step then forces it into `{1,3}`. -/
+def realPredecessorDelta (p q c m : Nat) : Nat :=
+  (p - 2 ^ (c - 1) * q) / 5 ^ m
+
+/-- A prefix of the cyclic rotation at a C3-to-rise boundary is a valid
+word from the boundary state.  This is the non-`d` validity input used
+by the mod-5 endpoint lemmas. -/
+theorem cyclicSegmentAt_prefix_wordValid
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b L : Nat) (hble : b ≤ w.length) (hLle : L ≤ w.length) :
+    StringFlow.Word.wordValid
+      ((cyclicSegmentAt w b).take L)
+      (StringFlow.Word.wordOrbit (w.take b) m) := by
+  have hvalid_rot := cyclicSegmentAt_valid h b
+  have hsplit : cyclicSegmentAt w b =
+      (cyclicSegmentAt w b).take L ++ (cyclicSegmentAt w b).drop L :=
+    (List.take_append_drop L (cyclicSegmentAt w b)).symm
+  have hvalid_rot' : StringFlow.Word.wordValid
+      ((cyclicSegmentAt w b).take L ++ (cyclicSegmentAt w b).drop L)
+      (StringFlow.Word.wordOrbit (w.take b) m) := by
+    rw [← hsplit]
+    exact hvalid_rot
+  exact (S6Audit.wordValid_append ((cyclicSegmentAt w b).take L)
+    ((cyclicSegmentAt w b).drop L)
+    (StringFlow.Word.wordOrbit (w.take b) m)).mp hvalid_rot' |>.1
+
+/-- The exact forward recurrence on a cyclic rise prefix: appending
+the `j`-th step multiplies the old orbit equation by the step weight. -/
+theorem cyclicSegmentAt_prefix_orbit_succ
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b j : Nat) (hb : IsCyclicC3RiseBoundaryAt w b)
+    (hj : j < (cyclicSegmentAt w b).length) :
+    2 ^ (cyclicSegmentAt w b).getI j *
+      StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take (j + 1))
+        (StringFlow.Word.wordOrbit (w.take b) m) =
+      5 * StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take j)
+        (StringFlow.Word.wordOrbit (w.take b) m) + 1 := by
+  let u := cyclicSegmentAt w b
+  let q := StringFlow.Word.wordOrbit (w.take b) m
+  have hble : b ≤ w.length := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  have hlen : u.length = w.length := by
+    dsimp [u]
+    exact cyclicSegmentAt_length w b hble
+  have hj' : j < u.length := by
+    simpa [u] using hj
+  have hjlen : j + 1 ≤ w.length := by
+    have hjw : j < w.length := by
+      rw [← hlen]
+      exact hj'
+    omega
+  have hvalid : StringFlow.Word.wordValid (u.take (j + 1)) q := by
+    simpa [u, q] using cyclicSegmentAt_prefix_wordValid h b (j + 1) hble hjlen
+  have htake0 := List.take_concat_get (l := u) (i := j) (by
+    exact hj')
+  have hget : u.getI j = u[j] :=
+    List.getI_eq_getElem (l := u) (n := j) (by
+      exact hj')
+  rw [← hget] at htake0
+  rw [List.concat_eq_append] at htake0
+  have htake : u.take (j + 1) = u.take j ++ [u.getI j] := htake0.symm
+  have hvalid_append : StringFlow.Word.wordValid
+      (u.take j ++ [u.getI j]) q := by
+    simpa [htake] using hvalid
+  have hsplit := (S6Audit.wordValid_append_singleton
+    (u.take j) q (u.getI j)).mp hvalid_append
+  have hdvd : 2 ^ u.getI j ∣ 5 * StringFlow.Word.wordOrbit (u.take j) q + 1 :=
+    Nat.dvd_iff_mod_eq_zero.mpr hsplit.2
+  have hquot : StringFlow.Word.wordOrbit (u.take (j + 1)) q =
+      (5 * StringFlow.Word.wordOrbit (u.take j) q + 1) / 2 ^ u.getI j := by
+    simpa [htake] using
+      (S6Audit.wordOrbit_append_singleton (u.take j) q (u.getI j))
+  rw [hquot]
+  exact Nat.mul_div_cancel' hdvd
+
+/-- With `hcycle`, a `w.take k` orbit is exactly the corresponding
+accelerated orbit state `fiveXPlusOneOrbit 7 (c + k)`. -/
+theorem cycleQb8Input_wordOrbit_take_eq_orbit
+    {w : List Nat} {c p : Nat}
+    (hw : w = cycleWord c p)
+    (k : Nat) (hk : k ≤ p) :
+    StringFlow.Word.wordOrbit (w.take k)
+        (fiveXPlusOneOrbit 7 c) = fiveXPlusOneOrbit 7 (c + k) := by
+  rw [hw]
+  exact cycleWord_prefix_orbit_eq c p k hk
+
+/-- With `hcycle`, every in-range rotated entry is the exact step
+weight at the corresponding accelerated orbit state. -/
+theorem cycleQb8Input_cyclicSegmentAt_getI_eq_orbit
+    {w : List Nat} {c p : Nat}
+    (hw : w = cycleWord c p) (hp : 1 ≤ p)
+    (b j : Nat) (hb : b ≤ p) (hj : j < p) :
+    (cyclicSegmentAt w b).getI j =
+      twoValuation
+        (5 * fiveXPlusOneOrbit 7 (c + ((b + j) % p)) + 1) := by
+  have hlen : w.length = p := by
+    rw [hw, cycleWord_length]
+  have hbw : b ≤ w.length := by simpa [hlen] using hb
+  have hjw : j < w.length := by simpa [hlen] using hj
+  have hmod := cyclicSegmentAt_getI_mod w b j hbw hjw
+  rw [hw] at hmod
+  have hlt : (b + j) % p < p := Nat.mod_lt _ (by omega)
+  have hget := cycleWord_getI_eq c p ((b + j) % p) hlt
+  rw [hw, hmod, cycleWord_length, hget]
+
+/-- The last entry of a nonempty word is its final `getI`. -/
+lemma wordLast_eq_getLast (u : List Nat) (hne : u ≠ []) :
+    StringFlow.Word.wordLast u = List.getLast u hne := by
+  induction u with
+  | nil => contradiction
+  | cons t ts ih =>
+      cases ts with
+      | nil => simp [StringFlow.Word.wordLast]
+      | cons b l =>
+          have htsne : b :: l ≠ [] := by simp
+          have ih' := ih htsne
+          have hcons := List.getLast_cons_cons (a := t) (b := b) (l := l)
+          have hmain : List.getLast (b :: l) htsne =
+              List.getLast (t :: b :: l) hne := by
+            simpa [hne, htsne] using hcons.symm
+          exact ih'.trans hmain
+
+/-- The last entry of a nonempty word is its final `getI`. -/
+lemma wordLast_eq_getI (u : List Nat) (hpos : 1 ≤ u.length) :
+    StringFlow.Word.wordLast u = u.getI (u.length - 1) := by
+  have hne : u ≠ [] := by
+    intro h
+    subst h
+    simp at hpos
+  rw [wordLast_eq_getLast u hne]
+  have hlen : u.length - 1 < u.length := by omega
+  rw [List.getLast_eq_getElem (l := u) hne]
+  rw [List.getI_eq_getElem (l := u) (n := u.length - 1) hlen]
+
+/-- The penultimate rotated entry is the last entry of the rise prefix
+`(cyclicSegmentAt w b).take (L-1)`. -/
+lemma wordLast_take_penultimate
+    {w : List Nat} (b L : Nat)
+    (hble : b ≤ w.length) (hLle : L ≤ w.length) (hLge3 : 3 ≤ L) :
+    StringFlow.Word.wordLast ((cyclicSegmentAt w b).take (L - 1)) =
+      (cyclicSegmentAt w b).getI (L - 2) := by
+  let u := (cyclicSegmentAt w b).take (L - 1)
+  have hulen : u.length = L - 1 := by
+    dsimp [u]
+    rw [List.length_take_of_le]
+    rw [cyclicSegmentAt_length w b hble]
+    omega
+  have hpos : 1 ≤ u.length := by
+    rw [hulen]
+    omega
+  rw [wordLast_eq_getI u hpos]
+  have hklt : L - 2 < u.length := by
+    rw [hulen]
+    omega
+  have hulen' : u.length - 1 = L - 2 := by
+    rw [hulen]
+    omega
+  rw [hulen']
+  have hget := List.getI_eq_getElem (l := u) (n := L - 2) hklt
+  have hrot_lt : L - 2 < (cyclicSegmentAt w b).length := by
+    rw [cyclicSegmentAt_length w b hble]
+    omega
+  have hrot := List.getI_eq_getElem
+    (l := cyclicSegmentAt w b) (n := L - 2) hrot_lt
+  have htake : u[L - 2] = (cyclicSegmentAt w b)[L - 2] :=
+    List.getElem_take (j := L - 1) (i := L - 2) (h := hklt)
+  rw [hget]
+  rw [htake]
+  exact hrot.symm
+
+/-- Modulo 5, the real predecessor congruence holds exactly when the
+penultimate rise step is `1`.  If the penultimate step is `2`, the
+endpoint residue is `4 mod 5`, while the boundary terminal forces the
+right-hand side to be `3 mod 5`.  This is the quantifier discriminator
+used to shrink the universal congruence to selected blocks. -/
+theorem cyclic_real_predecessor_congruence_mod_five_iff_penultimate_one
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b L : Nat) (hb : IsCyclicC3RiseBoundaryAt w b)
+    (hLge3 : 3 ≤ L) (hLle : L ≤ w.length)
+    (hseg : ∀ k : Nat, k < L →
+      (cyclicSegmentAt w b).getI k = 1 ∨
+      (cyclicSegmentAt w b).getI k = 2) :
+    (StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take (L - 1))
+        (StringFlow.Word.wordOrbit (w.take b) m) % 5 =
+      (2 ^ (w.getI (b - 1) - 1) *
+        StringFlow.Word.wordOrbit (w.take b) m) % 5) ↔
+      (cyclicSegmentAt w b).getI (L - 2) = 1 := by
+  let q : Nat := StringFlow.Word.wordOrbit (w.take b) m
+  let u : List Nat := (cyclicSegmentAt w b).take (L - 1)
+  let c : Nat := w.getI (b - 1)
+  have hLpos : 1 ≤ L := by omega
+  have hLm : L - 1 ≤ w.length := le_trans (Nat.sub_le L 1) hLle
+  have hble : b ≤ w.length := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  have hvalid : StringFlow.Word.wordValid u q := by
+    dsimp [u, q]
+    exact cyclicSegmentAt_prefix_wordValid h b (L - 1) hble hLm
+  have hlast : StringFlow.Word.wordLast u =
+      (cyclicSegmentAt w b).getI (L - 2) := by
+    dsimp [u]
+    exact wordLast_take_penultimate b L hble hLle hLge3
+  have hbprev : b - 1 < w.length := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  have hbpos : 1 ≤ b := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  have hsucc := wordOrbit_take_succ w m (b - 1) hbprev
+  have hbadd : b - 1 + 1 = b := Nat.sub_add_cancel hbpos
+  rw [hbadd] at hsucc
+  have hcpos : 1 ≤ c := by
+    dsimp [c]
+    have hge : 3 ≤ w.getI (b - 1) := hb.2.2.1
+    omega
+  have hdvd : 2 ^ c ∣ 5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1 := by
+    dsimp [c]
+    have hval := h.hexact (b - 1) hbprev
+    have hle : c ≤ twoValuation
+        (5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1) := by
+      dsimp [c]
+      omega
+    exact (StringFlow.Lte.twoValuation_ge_iff_dvd_pow
+      (5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1) c
+      (by positivity)).mp hle
+  have hstep : 2 ^ c * q =
+      5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1 := by
+    dsimp [q]
+    rw [hsucc]
+    exact Nat.mul_div_cancel' hdvd
+  have hmodc : (2 ^ c * q) % 5 = 1 := by
+    rw [hstep]
+    rw [Nat.add_mod, Nat.mul_mod]
+    simp
+  have hpow : 2 * 2 ^ (c - 1) = 2 ^ c := by
+    have hsub : c - 1 + 1 = c := Nat.sub_add_cancel hcpos
+    calc
+      2 * 2 ^ (c - 1) = 2 ^ (c - 1) * 2 := by ring
+      _ = 2 ^ ((c - 1) + 1) := by rw [Nat.pow_succ]
+      _ = 2 ^ c := by rw [hsub]
+  have hbound : (2 ^ (c - 1) * q) % 5 = 3 := by
+    have hmod2 : (2 * (2 ^ (c - 1) * q)) % 5 = 1 := by
+      rw [← Nat.mul_assoc, hpow]
+      exact hmodc
+    exact StringFlow.Word.two_mul_mod_five_eq_one_imp
+      (2 ^ (c - 1) * q) hmod2
+  have hq : q = StringFlow.Word.wordOrbit (w.take b) m := rfl
+  have hc : c = w.getI (b - 1) := rfl
+  rw [hq, hc] at hbound
+  constructor
+  · intro hcong
+    have hp3 : StringFlow.Word.wordOrbit u q % 5 = 3 := by
+      rwa [hbound] at hcong
+    by_contra hnot
+    have ht2 : (cyclicSegmentAt w b).getI (L - 2) = 2 := by
+      have hcase := hseg (L - 2) (by omega)
+      rcases hcase with h1 | h2
+      · omega
+      · exact h2
+    have hlast2 : StringFlow.Word.wordLast u = 2 := by
+      rw [hlast]
+      exact ht2
+    have hp4 := StringFlow.Word.wordOrbit_mod_five_of_last_two u q hvalid hlast2
+    omega
+  · intro ht1
+    have hlast1 : StringFlow.Word.wordLast u = 1 := by
+      rw [hlast]
+      exact ht1
+    have hp3 := StringFlow.Word.wordOrbit_mod_five_of_last_one u q hvalid hlast1
+    rw [hp3, hbound]
+
+/-- If the penultimate rise step is `2`, the mod-5 layer of the real
+predecessor congruence fails: the endpoint residue is `4`, while the
+boundary terminal forces the target residue `3`.  This is the formal
+reason the universal congruence must be shrunk to selected blocks with
+penultimate step `1`. -/
+theorem cyclic_real_predecessor_congruence_mod_five_false_of_penultimate_two
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b L : Nat) (hb : IsCyclicC3RiseBoundaryAt w b)
+    (hLge3 : 3 ≤ L) (hLle : L ≤ w.length)
+    (hseg : ∀ k : Nat, k < L →
+      (cyclicSegmentAt w b).getI k = 1 ∨
+      (cyclicSegmentAt w b).getI k = 2)
+    (ht2 : (cyclicSegmentAt w b).getI (L - 2) = 2) :
+    ¬ (StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take (L - 1))
+        (StringFlow.Word.wordOrbit (w.take b) m) % 5 =
+      (2 ^ (w.getI (b - 1) - 1) *
+        StringFlow.Word.wordOrbit (w.take b) m) % 5) := by
+  have hiff := cyclic_real_predecessor_congruence_mod_five_iff_penultimate_one
+    h b L hb hLge3 hLle hseg
+  intro hcong
+  have h1 : (cyclicSegmentAt w b).getI (L - 2) = 1 := hiff.mp hcong
+  omega
+
+/-- `2^W mod 5` depends only on `W mod 4`. -/
+lemma two_pow_mod5_of_mod4 (W : Nat) : (2 ^ W) % 5 = (2 ^ (W % 4)) % 5 := by
+  have hdiv : W = 4 * (W / 4) + W % 4 := (Nat.div_add_mod W 4).symm
+  have h4 : (2 ^ 4) % 5 = 1 := by norm_num
+  have hmul : ((2 ^ 4) ^ (W / 4)) % 5 = 1 := by
+    rw [Nat.pow_mod, h4]
+    norm_num
+  rw [hdiv, Nat.pow_add, Nat.mul_mod, Nat.pow_mul, hmul]
+  norm_num
+
+/-- `2^a == 2^b (mod 5)` iff `a == b (mod 4)`. -/
+lemma two_pow_mod5_eq_iff_mod4_eq (a b : Nat) :
+    (2 ^ a) % 5 = (2 ^ b) % 5 ↔ a % 4 = b % 4 := by
+  constructor
+  · intro h
+    have ha := two_pow_mod5_of_mod4 a
+    have hb := two_pow_mod5_of_mod4 b
+    rw [ha, hb] at h
+    have hlt₁ : a % 4 < 4 := Nat.mod_lt a (by decide)
+    have hlt₂ : b % 4 < 4 := Nat.mod_lt b (by decide)
+    interval_cases h₁ : a % 4 <;> interval_cases h₂ : b % 4 <;>
+      norm_num at h <;> all_goals omega
+  · intro h
+    rw [two_pow_mod5_of_mod4 a, two_pow_mod5_of_mod4 b, h]
+
+/-- Given `x * 2^a == 1 (mod 5)`, the identity `x * 2^b == 1 (mod 5)`
+holds iff `a == b (mod 4)`. -/
+lemma mul_pow_mod5_eq_one_iff (x a b : Nat) (h1 : (x * 2 ^ a) % 5 = 1) :
+    (x * 2 ^ b) % 5 = 1 ↔ a % 4 = b % 4 := by
+  constructor
+  · intro h2
+    have ha := two_pow_mod5_of_mod4 a
+    have hb := two_pow_mod5_of_mod4 b
+    rw [Nat.mul_mod] at h1
+    rw [Nat.mul_mod] at h2
+    rw [ha] at h1
+    rw [hb] at h2
+    have hxlt : x % 5 < 5 := Nat.mod_lt x (by decide)
+    have hyalt : a % 4 < 4 := Nat.mod_lt a (by decide)
+    have hyblt : b % 4 < 4 := Nat.mod_lt b (by decide)
+    interval_cases hx : x % 5 <;> interval_cases hya : a % 4 <;>
+      interval_cases hyb : b % 4 <;> (try norm_num at h1) <;> (try norm_num at h2)
+    all_goals omega
+  · intro hres
+    rw [Nat.mul_mod] at h1 ⊢
+    rw [two_pow_mod5_of_mod4 b, ← hres, ← two_pow_mod5_of_mod4 a]
+    exact h1
+
+/-- Adding the same summand does not change equality modulo `n`. -/
+lemma add_mod_eq_add_mod_iff (a b c n : Nat) :
+    (a + b) % n = (c + b) % n ↔ a % n = c % n := by
+  constructor
+  · intro h
+    apply Nat.modEq_iff_dvd.mpr
+    rcases (Nat.modEq_iff_dvd.mp (show a + b ≡ c + b [MOD n] from h)) with ⟨k, hk⟩
+    refine ⟨k, ?_⟩
+    omega
+  · intro h
+    exact Nat.ModEq.add (show a ≡ c [MOD n] from h) (Nat.ModEq.refl b)
+
+/-- `5 == 5a (mod 25)` iff `a == 1 (mod 5)`. -/
+lemma five_mod25_eq_mul_mod25_iff (a : Nat) :
+    5 % 25 = (5 * a) % 25 ↔ a % 5 = 1 := by
+  constructor
+  · intro h
+    have h' : (5 * a) % 25 = 5 := h.symm
+    have ha : a = 5 * (a / 5) + a % 5 := by
+      have hdiv := Nat.div_add_mod a 5
+      omega
+    rw [ha] at h'
+    have hmul : 5 * (5 * (a / 5) + a % 5) = 25 * (a / 5) + 5 * (a % 5) := by ring
+    rw [hmul, Nat.add_mod, Nat.mul_mod] at h'
+    have hlt : a % 5 < 5 := Nat.mod_lt a (by decide)
+    interval_cases ha5 : a % 5 <;> (try norm_num at h')
+    all_goals omega
+  · intro h
+    have ha : a = 5 * (a / 5) + 1 := by
+      have hdiv := Nat.div_add_mod a 5
+      omega
+    rw [ha]
+    have hmul : 5 * (5 * (a / 5) + 1) = 25 * (a / 5) + 5 := by ring
+    rw [hmul, Nat.add_mod, Nat.mul_mod]
+    norm_num
+
+/-- `(5 + 2^t) == (5x + 1) * 2^t (mod 25)` iff `x * 2^t == 1 (mod 5)`. -/
+lemma mod25_cong_five_iff_mod5_one (x t : Nat) :
+    (5 + 2 ^ t) % 25 = ((5 * x + 1) * 2 ^ t) % 25 ↔ (x * 2 ^ t) % 5 = 1 := by
+  have hring : (5 * x + 1) * 2 ^ t = 5 * x * 2 ^ t + 2 ^ t := by ring
+  rw [hring]
+  rw [add_mod_eq_add_mod_iff 5 (2 ^ t) (5 * x * 2 ^ t) 25]
+  rw [Nat.mul_assoc]
+  exact five_mod25_eq_mul_mod25_iff (x * 2 ^ t)
+
+/-- Multiplying by a unit preserves equality modulo 25. -/
+lemma mod25_eq_iff_mul_unit (a b u v : Nat) (huv : (u * v) % 25 = 1) :
+    a % 25 = b % 25 ↔ (a * u) % 25 = (b * u) % 25 := by
+  constructor
+  · intro h
+    exact Nat.ModEq.mul_right u (show a ≡ b [MOD 25] from h)
+  · intro h
+    have h2 : a * u * v ≡ b * u * v [MOD 25] :=
+      Nat.ModEq.mul_right v (show a * u ≡ b * u [MOD 25] from h)
+    have hleft : a * u * v ≡ a [MOD 25] := by
+      have heq : a * u * v = a * (u * v) := by ring
+      rw [heq]
+      exact (Nat.ModEq.mul_left a (show u * v ≡ 1 [MOD 25] from huv)).trans
+        (by simpa [Nat.mul_one] using (Nat.ModEq.refl a : a ≡ a [MOD 25]))
+    have hright : b * u * v ≡ b [MOD 25] := by
+      have heq : b * u * v = b * (u * v) := by ring
+      rw [heq]
+      exact (Nat.ModEq.mul_left b (show u * v ≡ 1 [MOD 25] from huv)).trans
+        (by simpa [Nat.mul_one] using (Nat.ModEq.refl b : b ≡ b [MOD 25]))
+    have hba : b ≡ a [MOD 25] :=
+      (Nat.ModEq.symm hright).trans ((Nat.ModEq.symm h2).trans hleft)
+    exact hba.symm
+
+/-- Multiplying by a unit preserves equality modulo `n`. -/
+lemma modEq_eq_iff_mul_unit (a b u v n : Nat) (hn : 1 < n) (huv : (u * v) % n = 1) :
+    a % n = b % n ↔ (a * u) % n = (b * u) % n := by
+  constructor
+  · intro h
+    exact Nat.ModEq.mul_right u (show a ≡ b [MOD n] from h)
+  · intro h
+    have h2 : a * u * v ≡ b * u * v [MOD n] :=
+      Nat.ModEq.mul_right v (show a * u ≡ b * u [MOD n] from h)
+    have hleft : a * u * v ≡ a [MOD n] := by
+      have heq : a * u * v = a * (u * v) := by ring
+      rw [heq]
+      exact (Nat.ModEq.mul_left a (by
+        unfold Nat.ModEq
+        rw [Nat.mod_eq_of_lt hn]
+        exact huv)).trans
+        (by simpa [Nat.mul_one] using (Nat.ModEq.refl a : a ≡ a [MOD n]))
+    have hright : b * u * v ≡ b [MOD n] := by
+      have heq : b * u * v = b * (u * v) := by ring
+      rw [heq]
+      exact (Nat.ModEq.mul_left b (by
+        unfold Nat.ModEq
+        rw [Nat.mod_eq_of_lt hn]
+        exact huv)).trans
+        (by simpa [Nat.mul_one] using (Nat.ModEq.refl b : b ≡ b [MOD n]))
+    have hba : b ≡ a [MOD n] :=
+      (Nat.ModEq.symm hright).trans ((Nat.ModEq.symm h2).trans hleft)
+    exact hba.symm
+
+/-- The inverse of `2` modulo `5^k`, explicit as `(5^k + 1) / 2`. -/
+def pow2Inv5 (k : Nat) : Nat :=
+  (5 ^ k + 1) / 2
+
+/-- `2 * pow2Inv5 k == 1 (mod 5^k)` for `1 <= k`. -/
+lemma pow2Inv5_spec (k : Nat) (hk : 1 ≤ k) :
+    (2 * pow2Inv5 k) % 5 ^ k = 1 := by
+  have hodd : (5 ^ k) % 2 = 1 := by
+    rw [Nat.pow_mod]
+    norm_num
+  have hdvd : 2 ∣ 5 ^ k + 1 := by
+    have hmod : (5 ^ k + 1) % 2 = 0 := by
+      rw [Nat.add_mod, hodd]
+    exact Nat.dvd_iff_mod_eq_zero.mpr hmod
+  have hdiv : (5 ^ k + 1) / 2 * 2 = 5 ^ k + 1 := by
+    have hmul := Nat.mul_div_cancel' hdvd
+    rw [Nat.mul_comm] at hmul
+    exact hmul
+  dsimp [pow2Inv5]
+  rw [Nat.mul_comm, hdiv]
+  rw [Nat.add_mod, Nat.mod_self]
+  have hlt : 1 < 5 ^ k := by
+    have hpow : 5 ^ 1 ≤ 5 ^ k := Nat.pow_le_pow_right (by decide : 0 < 5) hk
+    norm_num at hpow ⊢
+    omega
+  simp [Nat.mod_eq_of_lt hlt]
+
+/-- `2^m * (pow2Inv5 k)^m == 1 (mod 5^k)`. -/
+lemma pow2Inv5_pow_spec (k m : Nat) (hk : 1 ≤ k) :
+    (2 ^ m * (pow2Inv5 k) ^ m) % 5 ^ k = 1 := by
+  rw [← Nat.mul_pow, Nat.pow_mod, pow2Inv5_spec k hk]
+  have hlt : 1 < 5 ^ k := by
+    have hpow : 5 ^ 1 ≤ 5 ^ k := Nat.pow_le_pow_right (by decide : 0 < 5) hk
+    norm_num at hpow ⊢
+    omega
+  simp
+  rw [Nat.mod_eq_of_lt hlt]
+
+/-- If `a == b (mod 5^k)` then `5a == 5b (mod 5^(k+1))`. -/
+lemma mul_five_lift_mod (a b k : Nat) (h : a % 5 ^ k = b % 5 ^ k) :
+    (5 * a) % 5 ^ (k + 1) = (5 * b) % 5 ^ (k + 1) := by
+  apply Nat.modEq_iff_dvd.mpr
+  rcases (Nat.modEq_iff_dvd.mp (show a ≡ b [MOD 5 ^ k] from h)) with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  have hpow : ((5 ^ (k + 1) : Nat) : ℤ) = (5 : ℤ) * ((5 ^ k : Nat) : ℤ) := by
+    rw [Nat.pow_succ, Nat.cast_mul]
+    ring
+  have hcastpow : ((5 ^ k : Nat) : ℤ) = (5 : ℤ) ^ k := by
+    rw [Nat.cast_pow]
+    norm_num
+  have hcast : (↑(5 * b) : ℤ) - ↑(5 * a) = (5 : ℤ) * (↑b - ↑a) := by
+    simp [Nat.cast_mul]
+    ring
+  rw [hcast, hpow, hc, hcastpow]
+  ring
+
+/-- The exact `k`-th layer lift of the 5-adic telescope: from the
+previous-layer congruence `p ≡ r` and the real-orbit residue
+`25x + 7 ≡ 2^(u+1)x`, one step of weight `u` reaches `p' ≡ x`. -/
+lemma real_predecessor_congruence_prefix_lift
+    (p p' r x u k : Nat)
+    (hstep : 2 ^ u * p' = 5 * p + 1)
+    (hr : 2 * r = 5 * x + 1)
+    (hp : p ≡ r [MOD 5 ^ k])
+    (hx : 25 * x + 7 ≡ 2 ^ (u + 1) * x [MOD 5 ^ k]) :
+    p' ≡ x [MOD 5 ^ k] := by
+  have hp5 : 5 * p + 1 ≡ 5 * r + 1 [MOD 5 ^ k] :=
+    (Nat.ModEq.mul_left 5 hp).add_right 1
+  have h2step : 2 ^ (u + 1) * p' = 2 * (5 * p + 1) := by
+    calc
+      2 ^ (u + 1) * p' = (2 * 2 ^ u) * p' := by
+        rw [Nat.pow_succ]
+        ring
+      _ = 2 * (2 ^ u * p') := by ring
+      _ = 2 * (5 * p + 1) := by rw [hstep]
+  have h2r : 2 * (5 * r + 1) = 25 * x + 7 := by
+    nlinarith
+  have hcong : 2 ^ (u + 1) * p' ≡ 2 ^ (u + 1) * x [MOD 5 ^ k] := by
+    calc
+      2 ^ (u + 1) * p' = 2 * (5 * p + 1) := h2step
+      _ ≡ 2 * (5 * r + 1) [MOD 5 ^ k] := Nat.ModEq.mul_left 2 hp5
+      _ = 25 * x + 7 := h2r
+      _ ≡ 2 ^ (u + 1) * x [MOD 5 ^ k] := hx
+  have hdvd_int : (5 ^ k : ℤ) ∣
+      ↑(2 ^ (u + 1) * x) - ↑(2 ^ (u + 1) * p') :=
+    (Nat.modEq_iff_dvd.mp hcong)
+  have hdvd_nat : 5 ^ k ∣ 2 ^ (u + 1) * (↑x - ↑p' : ℤ).natAbs := by
+    have hdvd_int' : (5 ^ k : ℤ) ∣
+        (2 ^ (u + 1) : ℤ) * (↑x - ↑p' : ℤ) := by
+      simpa [Nat.cast_mul, Nat.cast_pow, mul_sub] using hdvd_int
+    have hdvd_int'' : 5 ^ k ∣
+        ((2 ^ (u + 1) : ℤ) * (↑x - ↑p' : ℤ)).natAbs :=
+      Int.natCast_dvd.mp hdvd_int'
+    have hdvd_int''' : 5 ^ k ∣
+        (2 ^ (u + 1) : ℤ).natAbs * (↑x - ↑p' : ℤ).natAbs := by
+      rw [Int.natAbs_mul] at hdvd_int''
+      exact hdvd_int''
+    norm_num at hdvd_int'''
+    exact hdvd_int'''
+  have hcop : (2 ^ (u + 1)).Coprime (5 ^ k) := by
+    have hcop2 : (2 : Nat).Coprime 5 := by norm_num
+    exact (Nat.Coprime.pow_left (u + 1) hcop2).pow_right k
+  have hdvd_x : 5 ^ k ∣ (↑x - ↑p' : ℤ).natAbs :=
+    Nat.Coprime.dvd_of_dvd_mul_left hcop.symm hdvd_nat
+  have hdvd_int' : (5 ^ k : ℤ) ∣ (↑x - ↑p' : ℤ) :=
+    Int.natCast_dvd.mpr hdvd_x
+  exact Nat.modEq_iff_dvd.mpr hdvd_int'
+
+/-- Left cancellation in `Nat.ModEq` when the multiplier is coprime to
+the modulus. -/
+lemma modEq_mul_left_cancel_of_coprime (a b c n : Nat) (hc : c.Coprime n)
+    (h : c * a ≡ c * b [MOD n]) : a ≡ b [MOD n] := by
+  have hdvd_int : (n : ℤ) ∣ ↑(c * b) - ↑(c * a) :=
+    (Nat.modEq_iff_dvd.mp h)
+  have hdvd_nat : n ∣ c * (↑b - ↑a : ℤ).natAbs := by
+    have hdvd_int' : (n : ℤ) ∣ (c : ℤ) * (↑b - ↑a : ℤ) := by
+      simpa [Nat.cast_mul, mul_sub] using hdvd_int
+    have hdvd_int'' : n ∣ ((c : ℤ) * (↑b - ↑a : ℤ)).natAbs :=
+      Int.natCast_dvd.mp hdvd_int'
+    have hdvd_int''' : n ∣ (c : ℤ).natAbs * (↑b - ↑a : ℤ).natAbs := by
+      rw [Int.natAbs_mul] at hdvd_int''
+      exact hdvd_int''
+    norm_num at hdvd_int'''
+    exact hdvd_int'''
+  have hdvd_x : n ∣ (↑b - ↑a : ℤ).natAbs :=
+    Nat.Coprime.dvd_of_dvd_mul_left hc.symm hdvd_nat
+  have hdvd_int' : (n : ℤ) ∣ (↑b - ↑a : ℤ) :=
+    Int.natCast_dvd.mpr hdvd_x
+  exact Nat.modEq_iff_dvd.mpr hdvd_int'
+
+/-- The forward telescope step: from `p ≡ x (mod 5^k)` and the
+real-orbit residue `5x+1 ≡ 2^u x (mod 5^(k+1))`, one step of weight
+`u` reaches `p' ≡ x (mod 5^(k+1))`. -/
+lemma prefix_congruence_step (p p' x u k : Nat)
+    (hstep : 2 ^ u * p' = 5 * p + 1)
+    (hp : p ≡ x [MOD 5 ^ k])
+    (hx : 5 * x + 1 ≡ 2 ^ u * x [MOD 5 ^ (k + 1)]) :
+    p' ≡ x [MOD 5 ^ (k + 1)] := by
+  have hp5 : 5 * p + 1 ≡ 5 * x + 1 [MOD 5 ^ (k + 1)] := by
+    have h' : 5 * p + 1 ≡ 5 * x + 1 [MOD 5 * 5 ^ k] :=
+      (Nat.ModEq.mul_left' 5 hp).add_right 1
+    simpa [Nat.pow_succ, Nat.mul_comm] using h'
+  have hcong : 2 ^ u * p' ≡ 2 ^ u * x [MOD 5 ^ (k + 1)] := by
+    calc
+      2 ^ u * p' = 5 * p + 1 := hstep
+      _ ≡ 5 * x + 1 [MOD 5 ^ (k + 1)] := hp5
+      _ ≡ 2 ^ u * x [MOD 5 ^ (k + 1)] := hx
+  have hcop : (2 ^ u).Coprime (5 ^ (k + 1)) := by
+    have hcop2 : (2 : Nat).Coprime 5 := by norm_num
+    exact (Nat.Coprime.pow_left u hcop2).pow_right (k + 1)
+  exact modEq_mul_left_cancel_of_coprime p' x (2 ^ u) (5 ^ (k + 1)) hcop hcong
+
+/-- The formal 5-adic telescope on a cyclic rise prefix: once the
+real-orbit residue chain `5x+1 ≡ 2^(u_j)x` is supplied at every layer,
+the full prefix congruence `p_n ≡ x (mod 5^n)` follows by induction. -/
+theorem cyclic_real_predecessor_prefix_orbit_congruence_chain
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b n : Nat) (hb : IsCyclicC3RiseBoundaryAt w b)
+    (hnle : n ≤ w.length)
+    (hres : ∀ j : Nat, j < n →
+      5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1 ≡
+        2 ^ (cyclicSegmentAt w b).getI j *
+          StringFlow.Word.wordOrbit (w.take (b - 1)) m
+          [MOD 5 ^ (j + 1)]) :
+    StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take n)
+        (StringFlow.Word.wordOrbit (w.take b) m) ≡
+      StringFlow.Word.wordOrbit (w.take (b - 1)) m [MOD 5 ^ n] := by
+  let q := StringFlow.Word.wordOrbit (w.take b) m
+  let x := StringFlow.Word.wordOrbit (w.take (b - 1)) m
+  let u := cyclicSegmentAt w b
+  have hble : b ≤ w.length := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  have hulen : u.length = w.length := by
+    dsimp [u]
+    exact cyclicSegmentAt_length w b hble
+  induction n with
+  | zero =>
+      change q % 1 = x % 1
+      simp [q, x, Nat.mod_one]
+  | succ n ih =>
+      have ihn : n ≤ w.length := by omega
+      have ih' : StringFlow.Word.wordOrbit (u.take n) q ≡ x [MOD 5 ^ n] := by
+        have h := ih ihn (fun j hj => by simpa [u, x] using hres j (by omega))
+        simpa [u, q, x] using h
+      have hstep : 2 ^ u.getI n *
+          StringFlow.Word.wordOrbit (u.take (n + 1)) q =
+        5 * StringFlow.Word.wordOrbit (u.take n) q + 1 := by
+        simpa [u, q] using cyclicSegmentAt_prefix_orbit_succ h b n hb (by
+          have hnlt : n < u.length := by
+            rw [hulen]
+            omega
+          simpa [u] using hnlt)
+      have hx : 5 * x + 1 ≡ 2 ^ u.getI n * x [MOD 5 ^ (n + 1)] := by
+        simpa [u, x] using hres n (by omega)
+      simpa [q, x, u, Nat.add_comm] using
+        (prefix_congruence_step (StringFlow.Word.wordOrbit (u.take n) q)
+          (StringFlow.Word.wordOrbit (u.take (n + 1)) q)
+          x (u.getI n) n hstep ih' hx)
+
+/-- The mod-25 real-predecessor congruence, written with the inverse
+of `2^(t+1)`, holds iff `x * 2^t == 1 (mod 5)`, where `2r = 5x + 1`. -/
+lemma mod25_cong_iff_mod5_one
+    (x t inv : Nat) (hinv : (2 ^ (t + 1) * inv) % 25 = 1)
+    (r : Nat) (h2 : 2 * r = 5 * x + 1) :
+    (((5 + 2 ^ t) * inv) % 25 = r % 25) ↔ (x * 2 ^ t) % 5 = 1 := by
+  have hiff1 := mod25_eq_iff_mul_unit ((5 + 2 ^ t) * inv) r (2 ^ (t + 1)) inv hinv
+  rw [hiff1]
+  have hL : ((5 + 2 ^ t) * inv * 2 ^ (t + 1)) % 25 = (5 + 2 ^ t) % 25 := by
+    have hmod : (5 + 2 ^ t) * inv * 2 ^ (t + 1) ≡ 5 + 2 ^ t [MOD 25] := by
+      calc
+        (5 + 2 ^ t) * inv * 2 ^ (t + 1) = (5 + 2 ^ t) * (inv * 2 ^ (t + 1)) := by ring
+        _ ≡ (5 + 2 ^ t) * 1 [MOD 25] := by
+            exact Nat.ModEq.mul_left (5 + 2 ^ t)
+              (show inv * 2 ^ (t + 1) ≡ 1 [MOD 25] from by
+                rw [Nat.mul_comm]
+                exact hinv)
+        _ ≡ 5 + 2 ^ t [MOD 25] := by
+          simpa [Nat.mul_one] using
+            (Nat.ModEq.refl (5 + 2 ^ t) : 5 + 2 ^ t ≡ 5 + 2 ^ t [MOD 25])
+    exact hmod
+  have hR : (r * 2 ^ (t + 1)) % 25 = ((5 * x + 1) * 2 ^ t) % 25 := by
+    have hpow : 2 ^ (t + 1) = 2 ^ t * 2 := by rw [Nat.pow_succ]
+    have heq : r * 2 ^ (t + 1) = (5 * x + 1) * 2 ^ t := by
+      calc
+        r * 2 ^ (t + 1) = r * (2 ^ t * 2) := by rw [hpow]
+        _ = (2 * r) * 2 ^ t := by ring
+        _ = (5 * x + 1) * 2 ^ t := by rw [h2]
+    rw [heq]
+  rw [hL, hR]
+  exact mod25_cong_five_iff_mod5_one x t
+
+/-- The forward congruence step: if the prefix orbit at `L-2` is
+congruent to the pre-C3 state modulo `5^(L-2)`, then the real
+predecessor congruence holds modulo `5^(L-1)` at a selected block
+whose penultimate rise step is `1`.  This is the algebraic core of the
+5-adic telescope; the orbit congruence itself is the remaining
+real-orbit content. -/
+theorem cyclic_real_predecessor_congruence_mod_pow_of_prefix_orbit_eq
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b L : Nat) (hb : IsCyclicC3RiseBoundaryAt w b)
+    (hLge3 : 3 ≤ L) (hLle : L ≤ w.length)
+    (ht1 : (cyclicSegmentAt w b).getI (L - 2) = 1)
+    (hcond : StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take (L - 2))
+        (StringFlow.Word.wordOrbit (w.take b) m) % 5 ^ (L - 2) =
+      StringFlow.Word.wordOrbit (w.take (b - 1)) m % 5 ^ (L - 2)) :
+    StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take (L - 1))
+        (StringFlow.Word.wordOrbit (w.take b) m) % 5 ^ (L - 1) =
+      (2 ^ (w.getI (b - 1) - 1) *
+        StringFlow.Word.wordOrbit (w.take b) m) % 5 ^ (L - 1) := by
+  let q := StringFlow.Word.wordOrbit (w.take b) m
+  let x := StringFlow.Word.wordOrbit (w.take (b - 1)) m
+  let c := w.getI (b - 1)
+  let u' := (cyclicSegmentAt w b).take (L - 1)
+  let u'' := (cyclicSegmentAt w b).take (L - 2)
+  let A := StringFlow.Word.wordA u'
+  let A'' := StringFlow.Word.wordA u''
+  let W'' := StringFlow.wordWeight u''
+  let y'' := StringFlow.Word.wordOrbit u'' q
+  let p := StringFlow.Word.wordOrbit u' q
+  let r := 2 ^ (c - 1) * q
+  have hbpos1 : 1 ≤ b := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  have hble : b ≤ w.length := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  have hbprev : b - 1 < w.length := by omega
+  have hlt : L - 2 < (cyclicSegmentAt w b).length := by
+    rw [cyclicSegmentAt_length w b hble]
+    omega
+  have htake := List.take_concat_get (l := cyclicSegmentAt w b) (i := L - 2) hlt
+  have hget : (cyclicSegmentAt w b).getI (L - 2) = (cyclicSegmentAt w b)[L - 2] :=
+    List.getI_eq_getElem (l := cyclicSegmentAt w b) (n := L - 2) hlt
+  rw [← hget] at htake
+  rw [ht1] at htake
+  rw [List.concat_eq_append] at htake
+  have hu' : u' = u'' ++ [1] := by
+    have hLadd : L - 2 + 1 = L - 1 := by omega
+    rw [hLadd] at htake
+    dsimp [u', u'']
+    exact htake.symm
+  have hW : StringFlow.wordWeight u' = W'' + 1 := by
+    dsimp [W'', u', u''] at hu' ⊢
+    rw [hu']
+    rw [StringFlow.Word.wordWeight_append ((cyclicSegmentAt w b).take (L - 2)) [1]]
+    simp [StringFlow.wordWeight]
+  have hA : A = 5 * A'' + 2 ^ W'' := by
+    have hA' := StringFlow.Word.wordA_append_singleton u'' 1
+    rw [← hu'] at hA'
+    simpa [A, A'', W'', u', u''] using hA'
+  have hvalid_u' : StringFlow.Word.wordValid u' q := by
+    dsimp [u', q]
+    have hvalid_rot := cyclicSegmentAt_valid h b
+    have hsplit : cyclicSegmentAt w b =
+        (cyclicSegmentAt w b).take (L - 1) ++ (cyclicSegmentAt w b).drop (L - 1) :=
+      (List.take_append_drop (L - 1) (cyclicSegmentAt w b)).symm
+    have hvalid_rot' : StringFlow.Word.wordValid
+        ((cyclicSegmentAt w b).take (L - 1) ++ (cyclicSegmentAt w b).drop (L - 1))
+        (StringFlow.Word.wordOrbit (w.take b) m) := by
+      rw [← hsplit]
+      exact hvalid_rot
+    exact (S6Audit.wordValid_append ((cyclicSegmentAt w b).take (L - 1))
+      ((cyclicSegmentAt w b).drop (L - 1))
+      (StringFlow.Word.wordOrbit (w.take b) m)).mp hvalid_rot' |>.1
+  have hvalid_u'' : StringFlow.Word.wordValid u'' q := by
+    dsimp [u'', q]
+    have hvalid_rot := cyclicSegmentAt_valid h b
+    have hsplit : cyclicSegmentAt w b =
+        (cyclicSegmentAt w b).take (L - 2) ++ (cyclicSegmentAt w b).drop (L - 2) :=
+      (List.take_append_drop (L - 2) (cyclicSegmentAt w b)).symm
+    have hvalid_rot' : StringFlow.Word.wordValid
+        ((cyclicSegmentAt w b).take (L - 2) ++ (cyclicSegmentAt w b).drop (L - 2))
+        (StringFlow.Word.wordOrbit (w.take b) m) := by
+      rw [← hsplit]
+      exact hvalid_rot
+    exact (S6Audit.wordValid_append ((cyclicSegmentAt w b).take (L - 2))
+      ((cyclicSegmentAt w b).drop (L - 2))
+      (StringFlow.Word.wordOrbit (w.take b) m)).mp hvalid_rot' |>.1
+  have hid' : 2 ^ (W'' + 1) * p = 5 ^ (L - 1) * q + A := by
+    have hid := StringFlow.Word.word_orbit_identity u' q hvalid_u'
+    have hlen : u'.length = L - 1 := by
+      dsimp [u']
+      rw [List.length_take_of_le]
+      rw [cyclicSegmentAt_length w b hble]
+      omega
+    rw [hW, hlen] at hid
+    simpa [p, A, u'] using hid
+  have hid'' : 2 ^ W'' * y'' = 5 ^ (L - 2) * q + A'' := by
+    have hid := StringFlow.Word.word_orbit_identity u'' q hvalid_u''
+    have hlen : u''.length = L - 2 := by
+      dsimp [u'']
+      rw [List.length_take_of_le]
+      rw [cyclicSegmentAt_length w b hble]
+      omega
+    rw [hlen] at hid
+    simpa [y'', A'', u''] using hid
+  have hstep : 2 ^ c * q = 5 * x + 1 := by
+    have hsucc := wordOrbit_take_succ w m (b - 1) hbprev
+    have hbadd : (b - 1) + 1 = b := Nat.sub_add_cancel hbpos1
+    rw [hbadd] at hsucc
+    have hval : twoValuation (5 * x + 1) = c := by
+      dsimp [c, x]
+      exact h.hexact (b - 1) hbprev
+    have hdvd : 2 ^ c ∣ 5 * x + 1 := by
+      have hge : c ≤ twoValuation (5 * x + 1) := by
+        rw [hval]
+      exact (StringFlow.Lte.twoValuation_ge_iff_dvd_pow
+        (5 * x + 1) c (by positivity)).mp hge
+    dsimp [q, x, c]
+    rw [hsucc]
+    exact Nat.mul_div_cancel' hdvd
+  have hr2 : 2 * r = 5 * x + 1 := by
+    have hc3 : 3 ≤ c := by
+      dsimp [c]
+      exact hb.2.2.1
+    have hcpos : 1 ≤ c := by omega
+    have hc : c = (c - 1) + 1 := by omega
+    have hpow : 2 ^ c = 2 * 2 ^ (c - 1) := by
+      conv_lhs => rw [hc]
+      rw [Nat.pow_succ]
+      ring
+    have h2r : 2 * r = 2 ^ c * q := by
+      dsimp [r]
+      rw [hpow]
+      ring
+    rw [h2r, hstep]
+  have hrdiv : r = (5 * x + 1) / 2 := by
+    have hdvd : 2 ∣ 5 * x + 1 := ⟨r, hr2.symm⟩
+    have hdiv := Nat.mul_div_cancel' hdvd
+    have hEq : 2 * r = 2 * ((5 * x + 1) / 2) := by
+      rw [hr2]
+      exact hdiv.symm
+    exact Nat.mul_left_cancel (by decide : 0 < 2) hEq
+  have hmodA'' : A'' % 5 ^ (L - 2) = (2 ^ W'' * x) % 5 ^ (L - 2) := by
+    have hLm2 : 1 ≤ L - 2 := by omega
+    have hpowpos : 0 < 5 ^ (L - 2) := by positivity
+    have h25q : (5 ^ (L - 2) * q) % 5 ^ (L - 2) = 0 := by
+      exact Nat.mul_mod_right (5 ^ (L - 2)) q
+    have hleft : (2 ^ W'' * y'') % 5 ^ (L - 2) = A'' % 5 ^ (L - 2) := by
+      have hid''_mod := congrArg (fun t : Nat => t % 5 ^ (L - 2)) hid''
+      rw [Nat.add_mod, h25q] at hid''_mod
+      simpa [Nat.add_comm] using hid''_mod
+    have hright : (2 ^ W'' * y'') % 5 ^ (L - 2) = (2 ^ W'' * x) % 5 ^ (L - 2) := by
+      have hx : y'' % 5 ^ (L - 2) = x % 5 ^ (L - 2) := by
+        simpa [x, y'', q, u''] using hcond
+      exact Nat.ModEq.mul_left (2 ^ W'')
+        (show y'' ≡ x [MOD 5 ^ (L - 2)] from hx)
+    exact hleft.symm.trans hright
+  have hmodA : A % 5 ^ (L - 1) = (2 ^ W'' * (5 * x + 1)) % 5 ^ (L - 1) := by
+    have hLm1 : 1 ≤ L - 1 := by omega
+    have hpowpos : 0 < 5 ^ (L - 1) := by positivity
+    have hmul5 : (5 * A'') % 5 ^ (L - 1) = (5 * (2 ^ W'' * x)) % 5 ^ (L - 1) := by
+      have hlift := mul_five_lift_mod A'' (2 ^ W'' * x) (L - 2) hmodA''
+      have hL : L - 1 = (L - 2) + 1 := by omega
+      simpa [hL] using hlift
+    have hring : A = 5 * A'' + 2 ^ W'' := hA
+    have hring' : 2 ^ W'' * (5 * x + 1) = 5 * (2 ^ W'' * x) + 2 ^ W'' := by ring
+    rw [hring, hring']
+    rw [add_mod_eq_add_mod_iff (5 * A'') (2 ^ W'')
+      (5 * (2 ^ W'' * x)) (5 ^ (L - 1))]
+    exact hmul5
+  have hmodp : (2 ^ (W'' + 1) * p) % 5 ^ (L - 1) =
+      (2 ^ (W'' + 1) * r) % 5 ^ (L - 1) := by
+    have h25q : (5 ^ (L - 1) * q) % 5 ^ (L - 1) = 0 := by
+      exact Nat.mul_mod_right (5 ^ (L - 1)) q
+    have hleft : (2 ^ (W'' + 1) * p) % 5 ^ (L - 1) = A % 5 ^ (L - 1) := by
+      have hmod := congrArg (fun t : Nat => t % 5 ^ (L - 1)) hid'
+      rw [Nat.add_mod, h25q] at hmod
+      simpa [Nat.add_comm] using hmod
+    have hright : (2 ^ (W'' + 1) * r) % 5 ^ (L - 1) =
+        (2 ^ W'' * (5 * x + 1)) % 5 ^ (L - 1) := by
+      have hr : 2 ^ (W'' + 1) * r = 2 ^ W'' * (5 * x + 1) := by
+        calc
+          2 ^ (W'' + 1) * r = (2 * 2 ^ W'') * r := by
+            rw [Nat.pow_succ]
+            ring
+          _ = 2 ^ W'' * (2 * r) := by ring
+          _ = 2 ^ W'' * (5 * x + 1) := by rw [hr2]
+      rw [hr]
+    rw [hleft, hright]
+    exact hmodA
+  have hinv : (2 ^ (W'' + 1) * (pow2Inv5 (L - 1)) ^ (W'' + 1)) % 5 ^ (L - 1) = 1 := by
+    exact pow2Inv5_pow_spec (L - 1) (W'' + 1) (by omega)
+  have hcong := (modEq_eq_iff_mul_unit p r (2 ^ (W'' + 1))
+    ((pow2Inv5 (L - 1)) ^ (W'' + 1)) (5 ^ (L - 1)) (by omega) hinv).mpr (by
+      simpa [Nat.mul_comm] using hmodp)
+  simpa [p, r, q, u', u'', W'', c, x] using hcong
+
+/-- The selected congruence closes from the real-orbit prefix
+congruence at `L-2`: this is the exact forward step of the 5-adic
+telescope, stated with the orbit input made explicit. -/
+theorem cyclic_real_predecessor_congruence_selected_of_prefix_orbit_eq
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b L : Nat) (hb : IsCyclicC3RiseBoundaryAt w b)
+    (hLge3 : 3 ≤ L) (hLle : L ≤ w.length)
+    (ht1 : (cyclicSegmentAt w b).getI (L - 2) = 1)
+    (hcond : StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take (L - 2))
+        (StringFlow.Word.wordOrbit (w.take b) m) % 5 ^ (L - 2) =
+      StringFlow.Word.wordOrbit (w.take (b - 1)) m % 5 ^ (L - 2)) :
+    StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take (L - 1))
+        (StringFlow.Word.wordOrbit (w.take b) m) % 5 ^ (L - 1) =
+      (2 ^ (w.getI (b - 1) - 1) *
+        StringFlow.Word.wordOrbit (w.take b) m) % 5 ^ (L - 1) :=
+  cyclic_real_predecessor_congruence_mod_pow_of_prefix_orbit_eq h b L hb hLge3 hLle ht1 hcond
+
+/-- The selected congruence is closed once the real orbit supplies the
+5-adic residue chain at every prefix step.  This is the full algebraic
+content of Step 4; the remaining real-orbit input is exactly `hres`. -/
+theorem cyclic_real_predecessor_congruence_selected_of_residue_chain
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b L : Nat) (hb : IsCyclicC3RiseBoundaryAt w b)
+    (hLge3 : 3 ≤ L) (hLle : L ≤ w.length)
+    (ht1 : (cyclicSegmentAt w b).getI (L - 2) = 1)
+    (hres : ∀ j : Nat, j < L - 2 →
+      5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1 ≡
+        2 ^ (cyclicSegmentAt w b).getI j *
+          StringFlow.Word.wordOrbit (w.take (b - 1)) m
+          [MOD 5 ^ (j + 1)]) :
+    StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take (L - 1))
+        (StringFlow.Word.wordOrbit (w.take b) m) % 5 ^ (L - 1) =
+      (2 ^ (w.getI (b - 1) - 1) *
+        StringFlow.Word.wordOrbit (w.take b) m) % 5 ^ (L - 1) := by
+  have hchain := cyclic_real_predecessor_prefix_orbit_congruence_chain
+    h b (L - 2) hb (by omega) (by
+      intro j hj
+      exact hres j hj)
+  exact cyclic_real_predecessor_congruence_selected_of_prefix_orbit_eq
+    h b L hb hLge3 hLle ht1 (by simpa [Nat.ModEq] using hchain)
+
+/-- The first two entries of a list of length at least two. -/
+lemma take_two_eq (l : List Nat) (h : 2 ≤ l.length) :
+    l.take 2 = [l.getI 0, l.getI 1] := by
+  cases l with
+  | nil => norm_num at h
+  | cons a as =>
+      cases as with
+      | nil => norm_num at h
+      | cons b bs =>
+          have htake : (a :: b :: bs).take 2 = [a, b] := by
+            simp
+          rw [htake]
+          have h0 : (a :: b :: bs).getI 0 = a := by simp [List.getI]
+          have h1 : (a :: b :: bs).getI 1 = b := by simp [List.getI]
+          rw [h0, h1]
+
+/-- The mod-25 layer of the real predecessor congruence at `L = 3`
+holds iff the preceding step weight is congruent to the first rise
+step weight modulo 4.  This is the first non-free layer of the
+5-adic telescope: it is decided by the real orbit content at the
+previous step, not by the boundary structure alone.  Consequently the
+universal congruence is not a free consequence of `CycleQb8Input`; the
+selected-block interface is the correct scope. -/
+theorem cyclic_real_predecessor_congruence_mod25_iff_prev_residue
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b : Nat) (hb : IsCyclicC3RiseBoundaryAt w b)
+    (hLle : 3 ≤ w.length)
+    (ht1 : (cyclicSegmentAt w b).getI 1 = 1) :
+    (StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w b).take 2)
+        (StringFlow.Word.wordOrbit (w.take b) m) % 25 =
+      (2 ^ (w.getI (b - 1) - 1) *
+        StringFlow.Word.wordOrbit (w.take b) m) % 25) ↔
+      w.getI (b - 2) % 4 = (cyclicSegmentAt w b).getI 0 % 4 := by
+  let q := StringFlow.Word.wordOrbit (w.take b) m
+  let x := StringFlow.Word.wordOrbit (w.take (b - 1)) m
+  let y := StringFlow.Word.wordOrbit (w.take (b - 2)) m
+  let c := w.getI (b - 1)
+  let tp := w.getI (b - 2)
+  let t0 := (cyclicSegmentAt w b).getI 0
+  let u := (cyclicSegmentAt w b).take 2
+  let p := StringFlow.Word.wordOrbit u q
+  let r := 2 ^ (c - 1) * q
+  let inv := StringFlow.Word.pow2Inv25 (t0 + 1)
+  have hbpos1 : 1 ≤ b := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  have hbpos : 2 ≤ b := by
+    by_cases hb1 : b = 1
+    · subst b
+      have hc3 : 3 ≤ w.getI 0 := hb.2.2.1
+      rcases h.hrise_start with h1 | h2
+      · rw [h1] at hc3
+        omega
+      · rw [h2] at hc3
+        omega
+    · omega
+  have hble : b ≤ w.length := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  have hbprev : b - 1 < w.length := by omega
+  have hbprev2 : b - 2 < w.length := by omega
+  have hrot_len2 : 2 ≤ (cyclicSegmentAt w b).length := by
+    rw [cyclicSegmentAt_length w b hble]
+    omega
+  have hu : u = [t0, 1] := by
+    dsimp [u, t0]
+    rw [take_two_eq (cyclicSegmentAt w b) hrot_len2]
+    rw [ht1]
+  have hvalid_u : StringFlow.Word.wordValid u q := by
+    dsimp [u, q]
+    have hvalid_rot := cyclicSegmentAt_valid h b
+    have hsplit : cyclicSegmentAt w b =
+        (cyclicSegmentAt w b).take 2 ++ (cyclicSegmentAt w b).drop 2 :=
+      (List.take_append_drop 2 (cyclicSegmentAt w b)).symm
+    have hvalid_rot' : StringFlow.Word.wordValid
+        ((cyclicSegmentAt w b).take 2 ++ (cyclicSegmentAt w b).drop 2)
+        (StringFlow.Word.wordOrbit (w.take b) m) := by
+      rw [← hsplit]
+      exact hvalid_rot
+    exact (S6Audit.wordValid_append ((cyclicSegmentAt w b).take 2)
+      ((cyclicSegmentAt w b).drop 2)
+      (StringFlow.Word.wordOrbit (w.take b) m)).mp hvalid_rot' |>.1
+  have hid : 2 ^ (t0 + 1) * p = 25 * q + (5 + 2 ^ t0) := by
+    have hid' := StringFlow.Word.word_orbit_identity u q hvalid_u
+    rw [hu] at hid'
+    have hw : StringFlow.wordWeight [t0, 1] = t0 + 1 := by
+      simp [StringFlow.wordWeight]
+    have hA : StringFlow.Word.wordA [t0, 1] = 5 + 2 ^ t0 := by
+      simp [StringFlow.Word.wordA]
+    rw [hw, hA] at hid'
+    dsimp [p]
+    rw [hu, hid']
+    simp
+  have hpmod : p % 25 = ((5 + 2 ^ t0) * inv) % 25 := by
+    have hA : StringFlow.Word.wordA [t0, 1] = 5 + 2 ^ t0 := by
+      simp [StringFlow.Word.wordA]
+    have hx : 2 ^ (t0 + 1) * p =
+        StringFlow.Word.wordA ([] ++ [t0, 1]) + 5 ^ (0 + 2) * q := by
+      rw [hid]
+      simp [hA]
+      ring
+    have hstart := StringFlow.Word.start_mod25_of_tail_two
+      [] t0 1 p q (t0 + 1) (by simp [StringFlow.wordWeight]) hx
+    simpa [inv, StringFlow.wordWeight] using hstart
+  have hstep : 2 ^ c * q = 5 * x + 1 := by
+    have hsucc := wordOrbit_take_succ w m (b - 1) hbprev
+    have hbadd : (b - 1) + 1 = b := Nat.sub_add_cancel hbpos1
+    rw [hbadd] at hsucc
+    have hval : twoValuation (5 * x + 1) = c := by
+      dsimp [c, x]
+      exact h.hexact (b - 1) hbprev
+    have hdvd : 2 ^ c ∣ 5 * x + 1 := by
+      have hge : c ≤ twoValuation (5 * x + 1) := by
+        rw [hval]
+      exact (StringFlow.Lte.twoValuation_ge_iff_dvd_pow
+        (5 * x + 1) c (by positivity)).mp hge
+    dsimp [q, x, c]
+    rw [hsucc]
+    exact Nat.mul_div_cancel' hdvd
+  have hr2 : 2 * r = 5 * x + 1 := by
+    have hc3 : 3 ≤ c := by
+      dsimp [c]
+      exact hb.2.2.1
+    have hcpos : 1 ≤ c := by omega
+    have hc : c = (c - 1) + 1 := by omega
+    have hpow : 2 ^ c = 2 * 2 ^ (c - 1) := by
+      conv_lhs => rw [hc]
+      rw [Nat.pow_succ]
+      ring
+    have h2r : 2 * r = 2 ^ c * q := by
+      dsimp [r]
+      rw [hpow]
+      ring
+    rw [h2r, hstep]
+  have hprevstep : 2 ^ tp * x = 5 * y + 1 := by
+    have hsucc := wordOrbit_take_succ w m (b - 2) hbprev2
+    have hbadd : (b - 2) + 1 = b - 1 := by omega
+    rw [hbadd] at hsucc
+    have hval : twoValuation (5 * y + 1) = tp := by
+      dsimp [tp, y]
+      exact h.hexact (b - 2) hbprev2
+    have hdvd : 2 ^ tp ∣ 5 * y + 1 := by
+      have hge : tp ≤ twoValuation (5 * y + 1) := by
+        rw [hval]
+      exact (StringFlow.Lte.twoValuation_ge_iff_dvd_pow
+        (5 * y + 1) tp (by positivity)).mp hge
+    dsimp [tp, x, y]
+    rw [hsucc]
+    exact Nat.mul_div_cancel' hdvd
+  have hprevmod : (2 ^ tp * x) % 5 = 1 := by
+    rw [hprevstep, Nat.add_mod, Nat.mul_mod]
+    norm_num
+  have hinv : (2 ^ (t0 + 1) * inv) % 25 = 1 := by
+    dsimp [inv]
+    exact StringFlow.Word.pow2Inv25_spec (t0 + 1)
+  have hgoal : (p % 25 = r % 25) ↔ (x * 2 ^ t0) % 5 = 1 := by
+    rw [hpmod]
+    exact mod25_cong_iff_mod5_one x t0 inv hinv r hr2
+  have hprevmod' : (x * 2 ^ tp) % 5 = 1 := by
+    rw [Nat.mul_comm]
+    exact hprevmod
+  have hfinal : (x * 2 ^ t0) % 5 = 1 ↔ tp % 4 = t0 % 4 := by
+    exact mul_pow_mod5_eq_one_iff x tp t0 hprevmod'
+  simpa [p, r, tp, t0, u, q] using hgoal.trans hfinal
+
+/-- The pure-boundary predecessor identity constructs `hterm` directly
+at the same C3-to-rise boundary and length.  This is the non-`d`
+version of `cycleRiseBlockHterm_of_real_predecessor`: once the identity
+is supplied at `(b, L)`, the exact incoming step and real terminal give
+`IsLocalResetTerminal` with no block decomposition input. -/
+theorem cyclic_real_predecessor_identity_to_hterm
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (b L t delta : Nat)
+    (hb : IsCyclicC3RiseBoundaryAt w b)
+    (hLge3 : 3 ≤ L) (hLle : L ≤ w.length)
+    (hseg : ∀ k : Nat, k < L →
+      (cyclicSegmentAt w b).getI k = 1 ∨
+      (cyclicSegmentAt w b).getI k = 2)
+    (ht_last : t = (cyclicSegmentAt w b).getI (L - 1))
+    (ht : t = 1 ∨ t = 2)
+    (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
+    (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hrt : rt.r = (5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1) / 2)
+    (hpred : cyclic_real_predecessor_identity h b hb L hLge3 hLle hseg
+      t delta ht_last ht hdelta rt hrt) :
+    IsLocalResetTerminal t L
+      (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L)
+        (StringFlow.Word.wordOrbit (w.take b) m)) delta rt := by
+  let q : Nat := StringFlow.Word.wordOrbit (w.take b) m
+  have hLpos : 1 ≤ L := by omega
+  have hble : b ≤ w.length := by
+    rcases hb.2.1 with hlast | hrange
+    · omega
+    · omega
+  rcases RealOrbitLocalLemma.cycleQb8Input_cyclic_prefix_occurrence_with_incoming
+      h b L hble hLpos hLle with ⟨n, hn, hiter, hprev, hwWord⟩
+  have hw : S6Audit.orbitStepWeight (n - 1) = t := by
+    rw [hwWord, ← ht_last]
+  have hpred' : 5 ^ rt.k * rt.s + delta * 5 ^ (L - 1) - 1 =
+      S6Audit.fullOrbitIter (n - 1) := by
+    rw [hprev]
+    unfold cyclic_real_predecessor_identity at hpred
+    simpa [q] using hpred
+  have hreset := RealOrbitLocalLemma.ResetHeadEq_of_fullOrbit_predecessor_eq
+    n L rt.k t delta rt.s
+      (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L) q)
+    hLpos hn hiter hw ht hdelta hpred'
+  have hterm' : IsLocalResetTerminal t L
+      (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L) q) delta rt :=
+    (isLocalResetTerminal_iff_resetHeadEq t L
+      (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L) q)
+      delta rt ht hdelta).mpr hreset
+  simpa [q] using hterm'
+
+/-- The block-level predecessor identity is the trivial instance of the
+pure boundary proposition at the block's C3-tail boundary and rise
+suffix.  No decomposition induction or structural case analysis is
+allowed inside its proof: the boundary, length, membership, and last
+step are supplied directly by the cyclic rise block. -/
+def cycleQb8InputRealPredecessorIdentity : Prop :=
+  ∀ (m S P : Nat) (w rise c3 : List Nat),
+    ∀ (h : CycleQb8Input m S P w rise c3),
+      ∀ (d : CycleRiseBlockDecomposition m S P w) (r : Nat),
+        ∀ (hr : r < d.blockCount) (hne : d.suffixWord r ≠ []),
+          ∀ (hLle : (d.suffixWord r).length ≤ w.length)
+            (hLge3 : 3 ≤ (d.suffixWord r).length),
+            ∀ (t delta : Nat),
+              ∀ (ht_last : t = (d.suffixWord r).getI ((d.suffixWord r).length - 1))
+                (ht : t = 1 ∨ t = 2)
+                (hdelta : (t = 1 → delta = 1) ∧
+                  (t = 2 → delta = 1 ∨ delta = 3)),
+                ∀ (rt : S6Audit.AngelinaGilbertaRealTerminal)
+                  (hrt : rt.r = (5 * StringFlow.Word.wordOrbit
+                    (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2),
+                  cyclic_real_predecessor_identity h
+                    (cycleRiseBlockTailDepth d r)
+                    (cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary d r hr hne)
+                    (d.suffixWord r).length hLge3 hLle
+                    (fun k hk => cycleRiseBlockSuffixHall d r hr hLle k hk)
+                    t delta
+                    (by
+                      have hLpos : 1 ≤ (d.suffixWord r).length := by omega
+                      exact ht_last.trans
+                        (cycleRiseBlockSuffixLastStep d r hr hLpos hLle))
+                    ht hdelta rt hrt
 
 /-- The real predecessor identity closes the real-orbit half of
 `hterm` at every cyclic rise block. -/
@@ -1890,6 +3142,7 @@ theorem cycleQb8InputHtermOfRealPredecessorIdentity
       ∀ (d : CycleRiseBlockDecomposition m S P w) (r : Nat),
         r < d.blockCount → d.suffixWord r ≠ [] →
         (d.suffixWord r).length ≤ w.length →
+        3 ≤ (d.suffixWord r).length →
         ∀ t delta : Nat,
           t = (d.suffixWord r).getI ((d.suffixWord r).length - 1) →
           (t = 1 ∨ t = 2) →
@@ -1903,10 +3156,59 @@ theorem cycleQb8InputHtermOfRealPredecessorIdentity
                   (d.suffixWord r).length)
                 (StringFlow.Word.wordOrbit
                   (w.take (cycleRiseBlockTailDepth d r)) m)) delta rt := by
-  intro m S P w rise c3 h d r hr hne hLle t delta ht_last ht hdelta rt hrt
-  exact cycleRiseBlockHterm_of_real_predecessor h d r hr hne hLle t delta
-    ht_last ht hdelta rt
-    (hpre m S P w rise c3 h d r hr hne hLle t delta ht_last ht hdelta rt hrt)
+  intro m S P w rise c3 h d r hr hne hLle hLge3
+    t delta ht_last ht hdelta rt hrt
+  exact cycleRiseBlockHterm_of_real_predecessor h d r hr hne hLle hLge3
+    t delta ht_last ht hdelta rt
+    (hpre m S P w rise c3 h d r hr hne hLle hLge3
+      t delta ht_last ht hdelta rt hrt)
+
+/-- Selected-block form of the real predecessor identity: hterm only
+needs one genuine cyclic rise block, not every block in the
+decomposition.  The caller (for example the bad-prefix hfail side)
+supplies the concrete `b, L, t, delta, rt`; this target is exactly the
+pure boundary identity at that selection. -/
+def cycleQb8InputSelectedRealPredecessorIdentity : Prop :=
+  ∀ (m S P : Nat) (w rise c3 : List Nat),
+    ∀ (h : CycleQb8Input m S P w rise c3),
+      ∃ b L t delta : Nat, ∃ rt : S6Audit.AngelinaGilbertaRealTerminal,
+        ∃ hb : IsCyclicC3RiseBoundaryAt w b,
+        ∃ hLge3 : 3 ≤ L, ∃ hLle : L ≤ w.length,
+        ∃ hpen : (cyclicSegmentAt w b).getI (L - 2) = 1,
+        ∃ hseg : ∀ k : Nat, k < L →
+          (cyclicSegmentAt w b).getI k = 1 ∨
+          (cyclicSegmentAt w b).getI k = 2,
+        ∃ hres : ∀ j : Nat, j < L - 2 →
+          5 * StringFlow.Word.wordOrbit (w.take (b - 1)) m + 1 ≡
+            2 ^ (cyclicSegmentAt w b).getI j *
+              StringFlow.Word.wordOrbit (w.take (b - 1)) m
+              [MOD 5 ^ (j + 1)],
+        ∃ ht_last : t = (cyclicSegmentAt w b).getI (L - 1),
+        ∃ ht : t = 1 ∨ t = 2,
+        ∃ hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3),
+        ∃ hrt : rt.r = (5 * StringFlow.Word.wordOrbit
+          (w.take (b - 1)) m + 1) / 2,
+          cyclic_real_predecessor_identity h b hb L hLge3 hLle hseg
+            t delta ht_last ht hdelta rt hrt
+
+/-- A selected predecessor identity directly supplies an `hterm` at
+that selected block; no universal `∀ d r` block quantification is
+needed. -/
+theorem cycleQb8InputSelectedHtermOfRealPredecessorIdentity
+    (hpre : cycleQb8InputSelectedRealPredecessorIdentity) :
+    ∀ m S P : Nat, ∀ w rise c3 : List Nat,
+      CycleQb8Input m S P w rise c3 →
+      ∃ b L t delta : Nat, ∃ rt : S6Audit.AngelinaGilbertaRealTerminal,
+        IsLocalResetTerminal t L
+          (StringFlow.Word.wordOrbit ((cyclicSegmentAt w b).take L)
+            (StringFlow.Word.wordOrbit (w.take b) m)) delta rt := by
+  intro m S P w rise c3 h
+  rcases hpre m S P w rise c3 h with
+    ⟨b, L, t, delta, rt, hb, hLge3, hLle, hpen, hseg, _hres,
+      ht_last, ht, hdelta, hrt, hpred⟩
+  exact ⟨b, L, t, delta, rt,
+    cyclic_real_predecessor_identity_to_hterm h b L t delta
+      hb hLge3 hLle hseg ht_last ht hdelta rt hrt hpred⟩
 
 /-- The complete real-block premises instantiation for a cyclic rise
 block (wrap-invariant): the word structure, the `q0` interval, the head

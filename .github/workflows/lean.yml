@@ -21,3 +21,6 @@ jobs:
           test: false
           lint: false
           mk_all-check: false
+      - name: Axiom audit (reject sorryAx)
+        working-directory: lean
+        run: lake env lean AxiomAudit.lean 2>&1 | grep -q "sorryAx" && exit 1 || true

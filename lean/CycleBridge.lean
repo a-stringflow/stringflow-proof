@@ -2722,6 +2722,30 @@ theorem cycleQb8Input_rise_start
     w.getI 0 = 1 ∨ w.getI 0 = 2 :=
   h.hrise_start
 
+/-- Weak comparison `5^P < 2^S` follows from the positive PMI cycle
+equation via `cycleWord_weight_gt_five_pow`.  It is the weak budget
+input used by the hfail rank target; it is not the rejected strict
+global comparison (6). -/
+theorem cycleQb8Input_weak_comparison
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3) :
+    5 ^ P < 2 ^ S := by
+  rcases cycleQb8Input_cycle_params h with ⟨c, p, hw, hm, hS, _hrise, _hc3⟩
+  have hclosed : StringFlow.Word.wordOrbit (cycleWord c p) (fiveXPlusOneOrbit 7 c) =
+      fiveXPlusOneOrbit 7 c := by
+    simpa [hw, hm] using h.hclosed
+  have hp : 1 ≤ p := by
+    have hlen : w.length = p := by rw [hw, cycleWord_length]
+    have hP : 2 ≤ w.length := cycleQb8Input_length_ge_two h
+    omega
+  have hlt := cycleWord_weight_gt_five_pow c p hclosed hp
+  have hP : P = p := by
+    rw [← h.hlength, hw, cycleWord_length]
+  calc
+    5 ^ P = 5 ^ p := by rw [hP]
+    _ < 2 ^ wordWeight (cycleWord c p) := hlt
+    _ = 2 ^ S := by rw [hS]
+
 /-- A valid word step from a positive state stays positive. -/
 theorem wordOrbit_pos_of_wordValid (w : List Nat) (x : Nat) (hx : 0 < x) :
     StringFlow.Word.wordValid w x → 0 < StringFlow.Word.wordOrbit w x := by

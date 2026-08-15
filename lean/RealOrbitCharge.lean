@@ -1290,9 +1290,10 @@ def cycleRiseBlockTailAvoidBudgetSum {m S P : Nat} {w : List Nat}
         cycleRiseBlockTailResetWeight d r) + 12 +
       cycleRiseBlockCharge d r)).sum
 
-/-- If the tail-charged global comparison holds, some C3-tail rank
-crosses the decisive window. -/
-theorem cycleRiseBlockTailFailure_of_global_comparison
+/-- INVALID: this theorem consumes the rejected tail-charged global
+comparison (6).  It is kept only for the audit trail; downstream code
+must not use it as an hfail source. -/
+theorem cycleRiseBlockTailFailure_of_global_comparison_INVALID
     {m S P : Nat} {w : List Nat}
     (d : CycleRiseBlockDecomposition m S P w)
     (hglobal : 2 * cycleRiseBlockH2Sum d >
@@ -1328,11 +1329,9 @@ theorem cycleRiseBlockTailFailure_of_global_comparison
     omega
   omega
 
-/-- A C3-tail failure from the global PMI comparison yields a concrete
-C3 reset window in the real full orbit.  The window depth is taken at
-the exact full-orbit occurrence of the last C3 head, so the standard
-state bound `fullOrbitIter N < 5^N` supplies the missing size premise. -/
-theorem cycleRiseBlockTailFailureWindow_of_global_comparison
+/-- INVALID: depends on the rejected global comparison (6).  Kept only
+for the audit trail; do not use downstream. -/
+theorem cycleRiseBlockTailFailureWindow_of_global_comparison_INVALID
     {m S P : Nat} {w rise c3 : List Nat}
     (h : CycleQb8Input m S P w rise c3)
     (d : CycleRiseBlockDecomposition m S P w)
@@ -1345,7 +1344,7 @@ theorem cycleRiseBlockTailFailureWindow_of_global_comparison
       w.getI (cycleRiseBlockTailDepth d r - 1) = t ∧
       2 * (cycleRiseBlockTailDepth d r - t) + 13 ≤
         twoValuation (cycleRiseBlockC3TailState d r + 1) := by
-  rcases cycleRiseBlockTailFailure_of_global_comparison d hglobal with
+  rcases cycleRiseBlockTailFailure_of_global_comparison_INVALID d hglobal with
     ⟨r, hr, hfail⟩
   let td := cycleRiseBlockTailDepth d r
   let t := cycleRiseBlockTailResetWeight d r
@@ -1528,9 +1527,9 @@ theorem cycleRiseBlockH2Sum_le_nextAvoidBudget_of_tailRank
   have htail := hc3 r hrlt
   omega
 
-/-- Audit: the old endpoint-based global-comparison implication, kept
+/-- INVALID: old endpoint-based global-comparison implication.  Kept
 only to document why the next-head budget cannot be the PMI target. -/
-theorem cycleRiseBlockEndpointFailure_of_next_global_comparison
+theorem cycleRiseBlockEndpointFailure_of_next_global_comparison_INVALID
     {m S P : Nat} {w : List Nat}
     (d : CycleRiseBlockDecomposition m S P w)
     (hc3 : ∀ r : Nat, r < d.blockCount →
@@ -1586,18 +1585,18 @@ theorem cycleRiseBlockNextPMIGlobalComparison_false_of_hc3
     cycleRiseBlockH2Sum_le_nextAvoidBudget_of_tailRank d hc3
   omega
 
-/-- The remaining PMI global comparison for one cyclic rise
-decomposition, charged to the C3-tail rank and its last C3 reset step. -/
-def cycleRiseBlockPMIGlobalComparison (m S P : Nat) (w : List Nat) : Prop :=
+/-- INVALID: the rejected tail-charged global comparison (6), per
+decomposition.  Do not use as an hfail input. -/
+def cycleRiseBlockPMIGlobalComparison_INVALID
+    (m S P : Nat) (w : List Nat) : Prop :=
   ∀ d : CycleRiseBlockDecomposition m S P w,
     2 * cycleRiseBlockH2Sum d > cycleRiseBlockTailAvoidBudgetSum d
 
-/-- Top-level cyclic-rise PMI comparison for every real
-`CycleQb8Input` word. -/
-def cycleRiseBlockPMIGlobalComparisonHolds : Prop :=
+/-- INVALID: top-level form of the rejected global comparison (6). -/
+def cycleRiseBlockPMIGlobalComparisonHolds_INVALID : Prop :=
   ∀ m S P : Nat, ∀ w rise c3 : List Nat,
     CycleQb8Input m S P w rise c3 →
-      cycleRiseBlockPMIGlobalComparison m S P w
+      cycleRiseBlockPMIGlobalComparison_INVALID m S P w
 
 /-- The exact remaining C3-tail failure-window input: every real
 `CycleQb8Input` has a cyclic rise decomposition whose last C3 step
@@ -1701,10 +1700,10 @@ def cycleBlockAvoidBudgetSum {m S P : Nat} {w : List Nat}
     (fun r => 2 * (d.headDepth r - d.resetWeight r) + 12 +
       cycleBlockCharge d r)).sum
 
-/-- If the global PMI comparison (6) holds, then some block has rank
-above the corrected decisive threshold.  The remaining PMI task is thus
-exactly to prove that global sum inequality. -/
-theorem cycleBlockFailure_of_global_comparison
+/-- INVALID: if the rejected global comparison (6) holds, then some
+block has rank above the corrected decisive threshold.  Do not use
+downstream. -/
+theorem cycleBlockFailure_of_global_comparison_INVALID
     {m S P : Nat} {w : List Nat}
     (d : CycleBlockDecomposition m S P w)
     (hglobal : 2 * cycleBlockH2Sum d > cycleBlockAvoidBudgetSum d) :
@@ -1731,29 +1730,30 @@ theorem cycleBlockFailure_of_global_comparison
     omega
   omega
 
-/-- The remaining PMI global comparison for one block decomposition. -/
-def cycleQb8InputPMIGlobalComparison (m S P : Nat) (w : List Nat) : Prop :=
+/-- INVALID: rejected global comparison (6) for one block
+decomposition. -/
+def cycleQb8InputPMIGlobalComparison_INVALID
+    (m S P : Nat) (w : List Nat) : Prop :=
   ∀ d : CycleBlockDecomposition m S P w,
     2 * cycleBlockH2Sum d > cycleBlockAvoidBudgetSum d
 
-/-- The top-level remaining PMI comparison for every real
-`CycleQb8Input` word. -/
-def cycleQb8InputPMIGlobalComparisonHolds : Prop :=
+/-- INVALID: top-level rejected global comparison (6). -/
+def cycleQb8InputPMIGlobalComparisonHolds_INVALID : Prop :=
   ∀ m S P : Nat, ∀ w rise c3 : List Nat,
     CycleQb8Input m S P w rise c3 →
-      cycleQb8InputPMIGlobalComparison m S P w
+      cycleQb8InputPMIGlobalComparison_INVALID m S P w
 
-/-- If the top-level PMI comparison holds, every decomposition of a real
-cycle word has a decisive-rank failure block. -/
-theorem cycleBlockFailure_of_global_comparison_all
+/-- INVALID: top-level wrapper of the rejected global comparison (6). -/
+theorem cycleBlockFailure_of_global_comparison_all_INVALID
     {m S P : Nat} {w rise c3 : List Nat}
     (h : CycleQb8Input m S P w rise c3)
-    (hglobal : cycleQb8InputPMIGlobalComparisonHolds)
+    (hglobal : cycleQb8InputPMIGlobalComparisonHolds_INVALID)
     (d : CycleBlockDecomposition m S P w) :
     ∃ r : Nat, r < d.blockCount ∧
       2 * (d.headDepth r - d.resetWeight r) + 13 ≤
         cycleBlockHeadRank d r :=
-  cycleBlockFailure_of_global_comparison d (hglobal m S P w rise c3 h d)
+  cycleBlockFailure_of_global_comparison_INVALID d
+    (hglobal m S P w rise c3 h d)
 
 /-- The remaining PMI contradiction target. -/
 def pmicontradictionOfAllBlocksAvoid (m S P : Nat) (w : List Nat) : Prop :=

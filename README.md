@@ -5,6 +5,15 @@ the 5x+1 7-divergence problem.
 
 ![Lean CI](https://github.com/a-stringflow/stringflow-proof/actions/workflows/lean.yml/badge.svg?branch=proof)
 
+## Authorship
+
+The mathematical research, the proof framework, the selection of valid
+proof routes, and the formal verification strategy are the author's
+original work. AI tools were used under the author's direction as
+research and drafting assistants; they are not co-authors and did not
+produce the final proof. Attribution of the mathematical content belongs
+to the author.
+
 ## Core definition
 
 The full accelerated 5x+1 step is
@@ -82,6 +91,22 @@ cd lean
 lake build S6Audit
 ```
 
+## Zero-sorry audit
+
+The zero-sorry gate used by CI can be run locally from the `lean`
+directory:
+
+```sh
+lake env lean AxiomAudit.lean 2>&1 | grep -q "sorryAx" && exit 1 || true
+```
+
+`AxiomAudit.lean` prints the axiom dependencies of the audited
+theorems, including `StringFlow.five_x_plus_one_diverges_at_7`. The
+command exits `0` exactly when no `sorryAx` appears, so the audited
+statements do not depend on `sorry` or `admit`. The workflow step
+`Axiom audit (reject sorryAx)` uses the same check and turns the CI
+badge red as long as any audited theorem still uses `sorry`.
+
 ## Verification boundary
 
 `lake build` verifies that every formal statement is proved by the
@@ -97,15 +122,56 @@ Finite base cases are proved by explicit rewriting (`simp`,
 boundary described here does not affect the definition of the final
 theorem.
 
-## AI assistance
+## What counts as proof
+
+Only declarations checked by the Lean 4 kernel are mathematical
+results. Scratch files, candidate notes, AI-generated drafts, and
+documentation are not proof and are not part of the verification
+boundary. The public theorem is `StringFlow.IsUnboundedOrbit 7`; its
+acceptance is controlled by `lake build`, `AxiomAudit.lean`, and the CI
+zero-sorry gate.
+
+## Authorship and AI assistance
+
+### Author contributions
+
+- Defined the research problem and the 5x+1 7-divergence target.
+- Directed the search for global analytic invariants.
+- Reviewed, rejected, and selected candidate proof routes.
+- Designed the proof framework, decomposition, interfaces, and formal
+  statements.
+- Made the final verification decisions and accepted each theorem.
+
+### AI assistance
 
 AI-assisted tools (DeepSeek V4 Flash (0731), Codex, and OpenCode Go)
-were used during development for drafting Lean code, organizing
-documentation, and assisting proof development. The final proofs are
-fully verified by the Lean 4 kernel; no AI-generated correctness claim
-is used as evidence. All formal statements, proof obligations, and
-verification results are reproducible from the pinned toolchain and
-dependencies in this repository.
+were used under the author's direction to generate candidate invariants,
+candidate proof routes, Lean code drafts, and documentation. They are not
+co-authors, did not autonomously construct the framework, and did not
+verify correctness. AI-generated candidates are not adopted as evidence
+and do not by themselves establish any mathematical claim. Every accepted
+formal claim must pass the Lean 4 kernel, and declarations that still
+depend on `sorry` are rejected by the CI zero-sorry audit until they are
+proved.
+
+### Corrections and negative contributions
+
+The AI outputs also included incorrect or unusable material: wrong
+proof routes, false or overbroad claims, invalid formal statements,
+dead-end frameworks, and repeated attempts to reintroduce already
+rejected approaches. The AI frequently misjudged proof difficulty and
+described straightforward, directly transferable methods as open
+research routes. Correcting the AI's mistaken ideas, redirecting false
+starts, and rejecting misleading goal prompts took a substantial
+portion of the author's effort. The author continuously reviewed,
+corrected, redirected, and rejected those outputs. No AI output was
+accepted as a proof without author review, and the final proof exists
+because of the author's corrections and filtering, not because AI
+output was adopted as-is.
+
+All formal statements, proof obligations, and verification results are
+reproducible from the pinned toolchain and dependencies in this
+repository.
 
 ## Identity proof
 

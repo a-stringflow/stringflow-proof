@@ -1108,6 +1108,31 @@ theorem cycleQb8Input_cyclic_prefix_occurrence_with_incoming
   · rw [hidx]
     exact hweight
 
+/-- The local head of a rotated cyclic segment is a genuine full-orbit
+state and odd.  This is the inherited part of the split local hident
+assembly: `hrj_odd` and `hrj_reach` are not new open inputs. -/
+theorem cycleQb8Input_cyclic_head_odd_reachable
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : StringFlow.CycleBridge.CycleQb8Input m S P w rise c3)
+    (b L : Nat) (hble : b ≤ w.length) (hLle : L ≤ w.length) :
+    S6Audit.IsOdd
+      (StringFlow.Word.wordOrbit
+        ((StringFlow.CycleBridge.cyclicSegmentAt w b).take L)
+        (StringFlow.Word.wordOrbit (w.take b) m)) ∧
+    S6Audit.FullOrbitFrom7
+      (StringFlow.Word.wordOrbit
+        ((StringFlow.CycleBridge.cyclicSegmentAt w b).take L)
+        (StringFlow.Word.wordOrbit (w.take b) m)) := by
+  rcases h.hstart with ⟨n0, hstart⟩
+  have hstate := cycleQb8Input_cyclic_prefix_fullOrbitIter_of_start
+    h n0 hstart b hble L hLle
+  have hreach : S6Audit.FullOrbitFrom7
+      (StringFlow.Word.wordOrbit
+        ((StringFlow.CycleBridge.cyclicSegmentAt w b).take L)
+        (StringFlow.Word.wordOrbit (w.take b) m)) :=
+    ⟨(n0 + b) + L, hstate⟩
+  exact ⟨S6Audit.FullOrbitFrom7_odd _ hreach, hreach⟩
+
 /-- The full-orbit predecessor equation for `rj` at depth `n`. -/
 theorem fullOrbit_predecessor_mul
     (n rj : Nat) (hn : 1 ≤ n)

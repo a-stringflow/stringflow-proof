@@ -13,7 +13,7 @@
 | 已证 | `rise_block_balance` | 已证 | 块层逐步余额 |
 | 已证 | `failure_window_contradicts_window_corrected` | 已证 | 第 4 步代数 + corrected 窗口上界 |
 | 已证 | `RiseDecompositionAssembly.cycleRiseBlockDecompositionExists_of_input` | 已证 | `CycleQb8Input` → 非空循环 rise 分解（结构存在已闭合） |
-| 已证（条件装配） | `RiseDecompositionAssembly.cycleRiseBlockTailFailureWindowExistence_of_pmi` | 已证 | `cycleRiseBlockPMIGlobalComparisonHolds` → C3-tail 失败窗口存在性 |
+| INVALID（仅审计） | `RiseDecompositionAssembly.cycleRiseBlockTailFailureWindowExistence_of_pmi_INVALID` | 已证 | 依赖被否定的全局比较 (6) `cycleRiseBlockPMIGlobalComparisonHolds_INVALID`，禁止下游使用 |
 | 已证 | `windowBoundToNoCycle_of_failureWindowExistence` | 已证 | 条件装配 |
 | 已证 | `arithmetic_failure_window_witness` | 已证（审计） | 旧无约束窗口反例 |
 | 已证 | `decisiveWindowValuationBound_contradiction` | 已证（审计） | 旧无约束窗口定义被否定 |
@@ -23,7 +23,7 @@
 | 开放 | `failureWindowExistenceOfUnifiedCore` | 条件接口 | 统一核心 → `failureWindowExistence`，未证明 |
 | 条件 | `DwdbDiv.dwdbDivFinalAssembly` | 已证 | 无循环结论 |
 | 开放 | `failureWindowExistence` | 开放 | 词内 `ResetHeadEq` + `ResetWindowReachability` 块首 |
-| 开放 | `cycleRiseBlockTailFailureWindowExistence` | 开放 | 依赖 `cycleRiseBlockPMIGlobalComparisonHolds` |
+| INVALID（仅审计） | `cycleRiseBlockTailFailureWindowExistence` 的旧全局比较路线 | 开放 | 全局比较 (6) 已否定；该路线不得作为 hfail 来源 |
 | 开放 | `orbit_cycle_imp_full_globally_reachable` | 开放 | 块分解到 `ResetWindowReachability`、`GeneralOrbitFrom7` 上一终端 |
 | 开放 | `qb8_of_orbit_cycle` | 开放 | 周期词 → 尖峰/上升段 |
 | 开放 | `cycle_closed_imp_failure_window` | 开放 | PMI 块层投影 |
@@ -124,8 +124,10 @@ end StringFlow.DwdbDiv
 ## 5. 当前未闭合清单
 
 - `CycleBridge.failureWindowExistence`
-- `RealOrbitCharge.cycleRiseBlockPMIGlobalComparisonHolds`
-- `RealOrbitCharge.cycleRiseBlockTailFailureWindowExistence`
+- `RealOrbitCharge.cycleRiseBlockPMIGlobalComparisonHolds_INVALID`
+  （全局比较 (6)，已否定，仅审计，禁止下游使用）
+- `RealOrbitCharge.cycleRiseBlockTailFailureWindowExistence` 的旧全局
+  比较路线（已随全局比较 (6) 否定，仅审计）
 - `CycleBridge.orbit_cycle_imp_full_globally_reachable`
 - `CycleBridge.qb8_of_orbit_cycle`
 - `CycleBridge.cycle_closed_imp_failure_window`

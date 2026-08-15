@@ -1,6 +1,7 @@
 import S6Audit
 import SurvExAudit
 import UnifiedCoreBridge
+import FinalTheorem
 
 /-!
 # Axiom audit for the S6 / local-lemma final theorems
@@ -186,6 +187,12 @@ namespace StringFlow
 
 -- Axioms used by the final bridge.
 #print axioms five_x_plus_one_diverges_at_7_of_surv_ex_td0
+
+-- Statement check: the internal final assembly target.
+#check five_x_plus_one_diverges_at_7
+
+-- Axioms used by the internal final assembly target.
+#print axioms five_x_plus_one_diverges_at_7
 
 end StringFlow
 
