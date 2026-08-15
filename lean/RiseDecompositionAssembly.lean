@@ -825,4 +825,55 @@ theorem cycleRiseBlockTailFailureWindowExistence_of_pmi
   exact cycleRiseBlockTailFailureWindow_of_global_comparison h d
     (hglobal m S P w rise c3 h d)
 
+/-- A word is valid from a state when every step is exact: the
+`twoValuation` of the step numerator equals the step weight. -/
+lemma wordValid_of_exact_steps (u : List Nat) (x : Nat)
+    (hexact : ∀ k, k < u.length →
+      twoValuation (5 * riseRun x (u.take k) + 1) = u.getI k) :
+    StringFlow.Word.wordValid u x := by
+  induction u generalizing x with
+  | nil => simp [StringFlow.Word.wordValid]
+  | cons t ts ih =>
+      have hfirst : twoValuation (5 * x + 1) = t := by
+        simpa [riseRun] using hexact 0 (by simp)
+      have hdvd : (5 * x + 1) % 2 ^ t = 0 := by
+        have hpos : 0 < 5 * x + 1 := by positivity
+        have hge : t ≤ twoValuation (5 * x + 1) := by omega
+        have hdvd' : 2 ^ t ∣ 5 * x + 1 :=
+          (StringFlow.Lte.twoValuation_ge_iff_dvd_pow (5 * x + 1) t hpos).mp hge
+        exact Nat.dvd_iff_mod_eq_zero.mp hdvd'
+      have htailExact : ∀ k, k < ts.length →
+          twoValuation (5 * riseRun ((5 * x + 1) / 2 ^ t) (ts.take k) + 1) =
+            ts.getI k := by
+        intro k hk
+        have hk' : k + 1 < (t :: ts).length := by simp [hk]
+        have h := hexact (k + 1) hk'
+        have hrun : riseRun x ((t :: ts).take (k + 1)) =
+            riseRun ((5 * x + 1) / 2 ^ t) (ts.take k) := by
+          rw [List.take_cons (by omega)]
+          simp [riseRun, riseStep]
+        have hidx : (t :: ts).getI (k + 1) = ts.getI k := by
+          rw [List.getI_cons_succ]
+        rwa [hrun, hidx] at h
+      have htail := ih ((5 * x + 1) / 2 ^ t) htailExact
+      simp [StringFlow.Word.wordValid, hdvd, htail]
+
+/-- The rise suffix of a cyclic rise block is an exact legal word from
+the C3-tail state: every step is `1` or `2` and each step divides
+exactly.  This supplies the `hvalid`/`hsteps` inputs of the real-word
+premises instantiation `premises_of_real_orbit_head`. -/
+theorem suffixWord_valid_of_cycleRiseBlock
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    StringFlow.Word.wordValid (d.suffixWord r) (cycleRiseBlockC3TailState d r) ∧
+      ∀ t ∈ d.suffixWord r, t = 1 ∨ t = 2 := by
+  constructor
+  · exact wordValid_of_exact_steps (d.suffixWord r) (cycleRiseBlockC3TailState d r)
+      (by
+        intro k hk
+        have h := d.hsuffix_exact r hr k hk
+        simpa [cycleRiseBlockC3TailState] using h)
+  · exact d.hsuffix_one_two r hr
+
 end StringFlow.CycleBridge
