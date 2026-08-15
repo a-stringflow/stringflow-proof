@@ -1814,6 +1814,52 @@ theorem reset_head_lt_five_pow (s0 j k t δ rj : Nat)
     have hlt : rj + 1 < 5 ^ j := by omega
     omega
 
+/-- A reset block head is not too small: `5^j <= 2^t*rj`.  The reset
+equation and the positivity of the odd part `s0` give the lower bound
+directly.  Together with `reset_head_lt_five_pow` this is the exact
+block-head size interval needed by the `q0` interval
+`[2^Wp, 2^Wj)` of `All36_20Premises`. -/
+theorem reset_head_lower_bound (s0 j k t δ rj : Nat)
+    (hodd : IsOdd s0)
+    (hReset : ResetHeadEq s0 j k t δ rj) :
+    5 ^ j ≤ 2 ^ t * rj := by
+  have hs0pos : 0 < s0 := by
+    have hmod : s0 % 2 = 1 := hodd
+    omega
+  have h5s0 : 5 ≤ 5 ^ (k + 1) * s0 := by
+    have h5pow : 5 ≤ 5 ^ (k + 1) := by
+      have hk : 1 ≤ k + 1 := by omega
+      simpa using (Nat.pow_le_pow_right (by decide : 0 < 5) hk)
+    nlinarith
+  rcases hReset with h1 | h2
+  · rcases h1 with ⟨ht, hδ, heq⟩
+    subst t
+    subst δ
+    have hsub : 3 ≤ 5 ^ (k + 1) * s0 - 2 := by omega
+    have hge : 5 ^ j + 3 ≤ 2 * (rj + 1) := by
+      rw [heq]
+      omega
+    omega
+  · rcases h2 with ⟨ht, hδ, heq⟩
+    subst t
+    have hδpos : 0 < δ := by
+      rcases hδ with hδ1 | hδ3 <;> omega
+    have hge : 5 ^ j + 5 ≤ 4 * (rj + 1) := by
+      rw [heq]
+      nlinarith
+    omega
+
+/-- The reset block-head size interval: `5^j <= 2^t*rj < 2^t*5^j`,
+assembled from the lower bound above and `reset_head_lt_five_pow`. -/
+theorem reset_head_size_bounds (s0 j k t δ rj : Nat)
+    (hodd : IsOdd s0)
+    (hjk : k + 1 ≤ j)
+    (hs0 : s0 < 5 ^ (j - 1 - k))
+    (hReset : ResetHeadEq s0 j k t δ rj) :
+    5 ^ j ≤ 2 ^ t * rj ∧ rj < 5 ^ j :=
+  ⟨reset_head_lower_bound s0 j k t δ rj hodd hReset,
+    reset_head_lt_five_pow s0 j k t δ rj hjk hs0 hReset⟩
+
 /-- A C3 reset head also satisfies `rj < 5^j`: from
 `2^(t-2)*(rj+1) = 5^(k+1)*s0 + 2^(t-2) - 1` and the size bound on
 `s0`, the whole right-hand side stays below `2^(t-2)*5^j`. -/

@@ -181,6 +181,21 @@ theorem resetWindowReachability_previous_data
   rw [← hprod]
   exact hmul
 
+/-- Every reachable reset block head lies in the exact size interval
+`5^j <= 2^t*rj` and `rj < 5^j`.  This is the block-head side of the
+`q0` interval `[2^Wp, 2^Wj)` used by `All36_20PremisesNoHge`. -/
+theorem reset_head_size_bounds_of_reachability
+    (j k0 t δ s rj : Nat)
+    (hreset : ResetHeadEq s j k0 t δ rj)
+    (hreach : ResetWindowReachability j k0 t δ s) :
+    5 ^ j ≤ 2 ^ t * rj ∧ rj < 5 ^ j := by
+  rcases hreach with ⟨r, rj', hk, hprod, hodd, hnd5, hslt, hOrbitR,
+    hreset', hOddRj, hOrbitRj⟩
+  have hrj : rj = rj' :=
+    resetHeadEq_rj_unique j k0 t δ s rj rj' hreset hreset'
+  rw [hrj]
+  exact S6Audit.reset_head_size_bounds s j k0 t δ rj' hodd hk hslt hreset'
+
 /-- The depth alignment forces the previous terminal to have no
 factor of `5`: `k0 = 0`. -/
 theorem previousTerminalDepth_k0_eq_zero
