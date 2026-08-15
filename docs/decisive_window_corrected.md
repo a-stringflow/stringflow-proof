@@ -202,17 +202,23 @@ def failureWindowExistenceOfUnifiedCore : Prop :=
 `rjRankT1LargeBound`/`rjRankT2LargeBound` 的大深度界仍需精确结构，
 不能用小深度尺寸估计替代。
 
-## 10. 关键路径澄清（2026-08-15）
+## 10. 关键路径澄清（2026-08-15，后修正）
 
-`cycleRiseBlockWindowFalse` 已经证明：一旦 `failureWindowExistence`
-在某个 rise 块上组出完全循环失败窗口，出边 C3 的 rank-two 恒等式
-（`state_rank_eq_two_of_outgoing_c3`）直接给出 `False`，不需要
-`decisiveWindowValuationBoundCorrected`，也不需要
-`rjRankT1LargeBound`/`rjRankT2LargeBound`。因此大深度 rank 界不在
-失败窗口矛盾路线（`failureWindowExistence` → `cycleRiseBlockWindowFalse`
-→ 无循环 → 发散）的关键路径上；它只属于 corrected 窗口上界路线。
+`cycleRiseBlockWindowFalse` 只排除一种布局：把失败窗口放在 rise 段
+端点（块首，下一词条为 C3）。这种布局本来就不可能成立，因为出边
+C3 的 rank-two 恒等式（`state_rank_eq_two_of_outgoing_c3`）把块首
+估值钉在 `2`，与失败下界 `≥ 2j+11/12` 矛盾。因此它不能作为
+`failureWindowExistence` 的构造目标，也不意味着“绕过大深度界”。
 
-失败窗口路线的关键路径只剩：从真实 `CycleQb8Input` 的 PMI 失败块构造
-`hterm`（真实终端到 `ResetHeadEq` 的前驱恒等式）与
-`hfail_t1/t2`（失败估值下界），其余结构输入
-（`hb`/`hall`/`hstop`/`ht_last`/`hne`/`hLlt`）已全部闭合。
+真实的失败窗口必须放在 rise 段内部：其块首的下一词条仍为 `1` 或
+`2`（非 C3），出边引理不适用，此时 corrected 窗口上界
+（`decisiveWindowValuationBoundCorrected`）与失败下界的矛盾才是
+唯一关闭路径。因此 `rjRankT1LargeBound`/`rjRankT2LargeBound`
+（或等价的前驱界 `cycleFailureT1PredecessorSpikeBound`/
+`cycleFailureT2PredecessorRankBound`）仍在关键路径上。
+
+失败窗口路线的关键路径为：从真实 `CycleQb8Input` 的 PMI 失败块构造
+mid-rise 失败窗口（含 `hterm`/`hfail`），并用
+`rjRankT1Bound`/`rjRankT2Bound`（大深度剩余）关闭 corrected 窗口
+上界，再与失败下界取矛盾。`cycleRiseBlockWindowFalse` 仅作为
+“端点布局不可行”的结构审计保留，不改变关键路径。

@@ -160,8 +160,10 @@ end StringFlow.DwdbDiv
 - `cyclicDepthFailureWindow_of_cycleRiseBlock`：由 rise 块组装完全
   循环失败窗口，只差真实重置终端（`hrt`/`hterm`/`hk`/`hslt`）与
   失败下界（`hfail_t1`/`hfail_t2`）。
-- `cycleRiseBlockWindowFalse`：组装出的失败窗口立即被出边 C3 rank-two
-  恒等式否定，不需要 decisive window 上界与大深度估计。
+- `cycleRiseBlockWindowFalse`：rise 端点布局的失败窗口被出边 C3
+  rank-two 恒等式否定。这只证明端点布局不可行，真实失败窗口必须
+  放在 rise 段内部（下一词条仍为 1/2），因此 decisive window 上界
+  与大深度 rank 界仍在关键路径上；该引理仅作为布局审计保留。
 
 这些结构层全部编译通过、零 `sorry`。剩余开放项仍是
 `hterm`/`hfail` 的真实构造、`rjRankT1LargeBound`/`rjRankT2LargeBound`、
