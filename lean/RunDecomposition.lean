@@ -235,4 +235,16 @@ theorem nextRiseStart_lt {P : Nat} (hP : 0 < P) (w : List Nat) (b : Nat) :
   unfold nextRiseStart
   exact Nat.mod_lt _ hP
 
+/-- The successor boundary of the iteration is the next rise start. -/
+theorem riseBoundaryIter_succ (w : List Nat) (P b : Nat) (n : Nat) :
+    riseBoundaryIter w P b (n + 1) =
+      nextRiseStart w P (riseBoundaryIter w P b n) :=
+  rfl
+
+/-- A cyclic rise decomposition always has at least one block. -/
+theorem blockCountOf_pos (w : List Nat) (P b0 : Nat) :
+    1 ≤ blockCountOf w P b0 := by
+  unfold blockCountOf riseRunCycleLen
+  omega
+
 end StringFlow.CycleBridge
