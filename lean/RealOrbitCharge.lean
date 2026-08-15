@@ -700,6 +700,35 @@ lemma cycleRiseBlockTailDepth_pos {m S P : Nat} {w : List Nat}
   dsimp [cycleRiseBlockTailDepth]
   omega
 
+/-- The last C3 step of every block lies at a valid non-wrapping word
+depth.  This follows from the block segment equalities themselves: an
+out-of-range segment index would force a positive C3 weight to equal
+the default zero. -/
+lemma cycleRiseBlockTailDepth_lt_succ {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    cycleRiseBlockTailDepth d r - 1 < P := by
+  have hne : d.c3Word r ≠ [] := d.hc3_nonempty r hr
+  have hlen : 1 ≤ (d.c3Word r).length := List.length_pos_iff.mpr hne
+  have hk : (d.c3Word r).length - 1 < (d.c3Word r).length := by omega
+  have hseg := d.hc3_segment r hr ((d.c3Word r).length - 1) hk
+  have hgt : 3 ≤ (d.c3Word r).getI ((d.c3Word r).length - 1) := by
+    have hmem : (d.c3Word r).getI ((d.c3Word r).length - 1) ∈ d.c3Word r := by
+      rw [List.getI_eq_getElem (l := d.c3Word r)
+        (n := (d.c3Word r).length - 1) hk]
+      exact List.getElem_mem hk
+    exact d.hc3_entries r hr ((d.c3Word r).getI ((d.c3Word r).length - 1)) hmem
+  by_contra hnot
+  have hge : w.length ≤ d.headDepth r + ((d.c3Word r).length - 1) := by
+    rw [d.hperiod]
+    dsimp [cycleRiseBlockTailDepth] at hnot
+    omega
+  have hzero : w.getI (d.headDepth r + ((d.c3Word r).length - 1)) = 0 := by
+    simpa using (List.getI_eq_default
+      (l := w) (n := d.headDepth r + ((d.c3Word r).length - 1)) hge)
+  rw [hseg, hzero] at hgt
+  norm_num at hgt
+
 /-- The last C3 entry of a block is at least three. -/
 lemma cycleRiseBlockTailResetWeight_ge_three {m S P : Nat} {w : List Nat}
     (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
@@ -906,6 +935,105 @@ theorem cycleRiseBlockTailFailure_of_global_comparison
     omega
   omega
 
+/-- A C3-tail failure from the global PMI comparison yields a concrete
+C3 reset window in the real full orbit.  The window depth is taken at
+the exact full-orbit occurrence of the last C3 head, so the standard
+state bound `fullOrbitIter N < 5^N` supplies the missing size premise. -/
+theorem cycleRiseBlockTailFailureWindow_of_global_comparison
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w)
+    (hglobal : 2 * cycleRiseBlockH2Sum d >
+      cycleRiseBlockTailAvoidBudgetSum d) :
+    ∃ r jw k0 t s0 : Nat,
+      r < d.blockCount ∧
+      S6Audit.ResetWindowReachabilityC3 jw k0 t s0 ∧
+      3 ≤ t ∧
+      w.getI (cycleRiseBlockTailDepth d r - 1) = t ∧
+      2 * (cycleRiseBlockTailDepth d r - t) + 13 ≤
+        twoValuation (cycleRiseBlockC3TailState d r + 1) := by
+  rcases cycleRiseBlockTailFailure_of_global_comparison d hglobal with
+    ⟨r, hr, hfail⟩
+  let td := cycleRiseBlockTailDepth d r
+  let t := cycleRiseBlockTailResetWeight d r
+  let rj := cycleRiseBlockC3TailState d r
+  let x := StringFlow.Word.wordOrbit (w.take (td - 1)) m
+  have hjd : td - 1 < P := by
+    dsimp [td]
+    exact cycleRiseBlockTailDepth_lt_succ d r hr
+  have hstepData := cycleRiseBlockTailC3Step d r hr (by simpa [td] using hjd)
+  have hxFull : S6Audit.FullOrbitFrom7 x := by
+    dsimp [x]
+    have hjl : td - 1 ≤ w.length := by
+      rw [d.hperiod]
+      omega
+    exact cycleQb8Input_prefix_full_reachable h (td - 1) hjl
+  have hxOdd : S6Audit.IsOdd x := S6Audit.FullOrbitFrom7_odd x hxFull
+  have hrank2 : twoValuation (x + 1) = 2 := by
+    dsimp [x, td]
+    exact cycleRiseBlockTailHeadRank_two h d r hr (by simpa [td] using hjd)
+  rcases h.hstart with ⟨n0, hstart⟩
+  let N := n0 + (td - 1)
+  have hxiter : x = S6Audit.fullOrbitIter N := by
+    dsimp [x, N]
+    have hle : td - 1 ≤ w.length := by
+      rw [d.hperiod]
+      omega
+    have heq := StringFlow.RealOrbitLocalLemma.cycleQb8Input_prefix_fullOrbitIter_of_start
+      h n0 hstart (td - 1) hle
+    exact heq.symm
+  have hN3 : 3 ≤ N := by
+    by_contra hnot
+    have hlt3 : N < 3 := Nat.lt_of_not_ge hnot
+    rw [hxiter] at hrank2
+    interval_cases N <;>
+      norm_num [S6Audit.fullOrbitIter, S6Audit.fullOrbitStep,
+        StringFlow.twoValuation_succ] at hrank2
+  have hxlt : x < 5 ^ N := by
+    rw [hxiter]
+    exact S6Audit.fullOrbitIter_lt_five_pow N hN3
+  have hfac := StringFlow.RealOrbitLocalLemma.c3_head_five_product_of_lt_five_pow
+    x N 1 hxOdd hrank2 hxlt (by norm_num)
+  rcases hfac with ⟨k0, s0, hxeq, hs0odd, hs0nd5, hs0lt⟩
+  have hs0lt' : s0 < 5 ^ (N - k0) := by simpa using hs0lt
+  have hs0pos : 0 < s0 := by
+    by_contra hnot
+    have : s0 = 0 := Nat.eq_zero_of_not_pos hnot
+    subst s0
+    norm_num [S6Audit.IsOdd] at hs0odd
+  have hk0N : k0 ≤ N := by
+    have hpowgt : 1 < 5 ^ (N - k0) := by omega
+    have hsubpos : N - k0 ≠ 0 := by
+      intro hz
+      rw [hz] at hpowgt
+      norm_num at hpowgt
+    have hsub1 : 1 ≤ N - k0 := Nat.pos_of_ne_zero hsubpos
+    omega
+  let jw := N + 1
+  have hk : k0 + 1 ≤ jw := by omega
+  have hslt : s0 < 5 ^ (jw - 1 - k0) := by
+    dsimp [jw]
+    exact hs0lt'
+  have ht : 3 ≤ t := hstepData.1
+  have hval : twoValuation (5 * x + 1) = t := hstepData.2.1
+  have hstep : 2 ^ t * rj = 5 * x + 1 := hstepData.2.2.1
+  have hwget : w.getI (td - 1) = t := hstepData.2.2.2
+  have hrj_full : rj = S6Audit.fullOrbitStep x := by
+    have hvalS : S6Audit.twoValuation (5 * x + 1) = t := by
+      simpa using hval
+    dsimp [rj]
+    unfold S6Audit.fullOrbitStep
+    rw [hvalS]
+    have hstep' : 5 * x + 1 = cycleRiseBlockC3TailState d r * 2 ^ t := by
+      simpa [Nat.mul_comm] using hstep.symm
+    exact (Nat.div_eq_of_eq_mul_left (by positivity : 0 < 2 ^ t) hstep').symm
+  have hwin : S6Audit.ResetWindowReachabilityC3 jw k0 t s0 :=
+    StringFlow.RealOrbitLocalLemma.c3_step_reset_window_reachability
+      x k0 s0 t rj jw hxeq hs0odd hs0nd5 hk hslt hxFull ht hstep hrj_full
+  refine ⟨r, jw, k0, t, s0, hr, hwin, ht, ?_, ?_⟩
+  · simpa [td, t] using hwget
+  · simpa [cycleRiseBlockTailRank, td, t] using hfail
+
 /-- The final wrapping block alone contributes at least `2*P` to the
 shifted avoidance budget. -/
 theorem two_mul_P_le_cycleRiseBlockNextAvoidBudgetSum
@@ -1104,6 +1232,34 @@ theorem cycleRiseBlockFailure_of_decomposition_and_global_comparison
   rcases hexists m S P w rise c3 h with ⟨d, _hdpos⟩
   exact ⟨d, cycleRiseBlockTailFailure_of_global_comparison d
     (hglobal m S P w rise c3 h d)⟩
+
+/-- The exact remaining C3-tail failure-window input: every real
+`CycleQb8Input` has a cyclic rise decomposition whose last C3 step
+supplies a genuine C3 reset window and whose C3-tail rank crosses the
+decisive threshold. -/
+def cycleRiseBlockTailFailureWindowExistence : Prop :=
+  ∀ m S P : Nat, ∀ w rise c3 : List Nat,
+    CycleQb8Input m S P w rise c3 →
+      ∃ d : CycleRiseBlockDecomposition m S P w,
+        ∃ r jw k0 t s0 : Nat,
+          r < d.blockCount ∧
+          S6Audit.ResetWindowReachabilityC3 jw k0 t s0 ∧
+          3 ≤ t ∧
+          w.getI (cycleRiseBlockTailDepth d r - 1) = t ∧
+          2 * (cycleRiseBlockTailDepth d r - t) + 13 ≤
+            twoValuation (cycleRiseBlockC3TailState d r + 1)
+
+/-- Conditional assembly: the structural existence input and the
+tail-charged PMI comparison jointly supply the C3-tail failure window. -/
+theorem cycleRiseBlockTailFailureWindowExistence_of_open_inputs
+    (hexists : cycleRiseBlockDecompositionExists)
+    (hglobal : cycleRiseBlockPMIGlobalComparisonHolds) :
+    cycleRiseBlockTailFailureWindowExistence := by
+  intro m S P w rise c3 h
+  rcases hexists m S P w rise c3 h with ⟨d, _hdpos⟩
+  refine ⟨d, ?_⟩
+  exact cycleRiseBlockTailFailureWindow_of_global_comparison h d
+    (hglobal m S P w rise c3 h d)
 
 /-- Rank of the head of a block. -/
 def cycleBlockHeadRank {m S P : Nat} {w : List Nat}

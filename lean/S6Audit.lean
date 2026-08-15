@@ -1846,8 +1846,11 @@ theorem reset_head_c3_lt_five_pow
       Nat.le_mul_of_pos_left (5 ^ j) hA1pos
     have hA1eq : A * 5 ^ j = (A - 1) * 5 ^ j + 5 ^ j := by
       have hA : A = A - 1 + 1 := by omega
-      nlinarith [hA]
+      conv_lhs => rw [hA]
+      ring
     rw [hA1eq]
+    have hA1le : A - 1 ≤ (A - 1) * 5 ^ j :=
+      Nat.le_mul_of_pos_right (A - 1) (by positivity)
     omega
   have hlt2 : 5 ^ (k + 1) * s0 + A - 1 < A * 5 ^ j := by
     have hsumlt : 5 ^ (k + 1) * s0 + A - 1 < 5 ^ j + A - 1 := by omega
