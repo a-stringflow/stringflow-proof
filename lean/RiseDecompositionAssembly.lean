@@ -1708,7 +1708,10 @@ theorem cycleRiseBlockHpred_of_real_terminal
   -- source is therefore the delta-zero block property of this
   -- specific block (the reset equation holds), which is exactly
   -- `hterm`; whether the cycle closure/PMI forces this property is
-  -- exactly what remains to be derived.
+  -- exactly what remains to be derived.  The coefficient mismatch
+  -- after the cycle-closure substitution does not mean E5 is false:
+  -- it only means E5 is not an automatic consequence of the cycle
+  -- closure, and the delta-zero block property is the remaining input.
   have hE5 : StringFlow.Word.wordA u' + 5 ^ (L - 1) * q =
       2 ^ ((StringFlow.wordWeight u' + w.getI (b - 1)) - 1) * q +
         delta * 2 ^ StringFlow.wordWeight u' * 5 ^ (L - 1) := by
