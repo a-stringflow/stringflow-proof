@@ -410,6 +410,125 @@ theorem risePrefixLength_stop
         have htge : 3 ≤ t := by omega
         simpa using htge
 
+/-- Boolean form of the C3 predicate. -/
+def c3Pred (t : Nat) : Bool :=
+  decide (3 ≤ t)
+
+/-- Length of the initial C3 run of a word. -/
+def c3PrefixLength (w : List Nat) : Nat :=
+  (w.takeWhile c3Pred).length
+
+/-- If a word starts with a C3 step, its initial C3 run is nonempty. -/
+theorem c3PrefixLength_pos_of_head
+    (w : List Nat) (h : 3 ≤ w.getI 0) :
+    1 ≤ c3PrefixLength w := by
+  cases w with
+  | nil =>
+      have h0 : 3 ≤ ([] : List Nat).getI 0 := by simpa using h
+      norm_num at h0
+  | cons t ts =>
+      have ht : 3 ≤ t := by simpa using h
+      have hb : c3Pred t = true := by
+        unfold c3Pred
+        exact decide_eq_true ht
+      dsimp [c3PrefixLength]
+      rw [List.takeWhile_cons_of_pos hb]
+      simp
+
+/-- Every entry before the initial C3-run length is a C3 step. -/
+theorem c3PrefixLength_mem
+    (w : List Nat) (k : Nat)
+    (hk : k < c3PrefixLength w) :
+    3 ≤ w.getI k := by
+  induction w generalizing k with
+  | nil =>
+      have hk0 : k < 0 := by simpa [c3PrefixLength] using hk
+      exact False.elim (Nat.not_lt_zero k hk0)
+  | cons t ts ih =>
+      by_cases ht : 3 ≤ t
+      · have hb : c3Pred t = true := by
+          unfold c3Pred
+          exact decide_eq_true ht
+        cases k with
+        | zero =>
+            simpa using ht
+        | succ k =>
+            have hik : k < (ts.takeWhile c3Pred).length := by
+              dsimp [c3PrefixLength] at hk
+              rw [List.takeWhile_cons_of_pos hb] at hk
+              simpa using hk
+            have hih := ih k (by simpa [c3PrefixLength] using hik)
+            simpa [List.getI_cons_succ] using hih
+      · have hb : c3Pred t = false := by
+          unfold c3Pred
+          exact decide_eq_false ht
+        have hb' : ¬ c3Pred t = true := by
+          intro htrue
+          rw [hb] at htrue
+          contradiction
+        have hlen : c3PrefixLength (t :: ts) = 0 := by
+          dsimp [c3PrefixLength]
+          rw [List.takeWhile_cons_of_neg hb']
+          rfl
+        rw [hlen] at hk
+        omega
+
+/-- The initial C3 run is not longer than the word. -/
+theorem c3PrefixLength_le (w : List Nat) :
+    c3PrefixLength w ≤ w.length := by
+  dsimp [c3PrefixLength]
+  exact (List.takeWhile_prefix c3Pred).length_le
+
+/-- If the initial C3 run stops before the end of a word whose entries
+are all positive, the stopping entry is a rise step. -/
+theorem c3PrefixLength_stop
+    (w : List Nat)
+    (hpos : ∀ x, x ∈ w → 1 ≤ x)
+    (hstop : c3PrefixLength w < w.length) :
+    w.getI (c3PrefixLength w) = 1 ∨ w.getI (c3PrefixLength w) = 2 := by
+  induction w with
+  | nil =>
+      simp [c3PrefixLength] at hstop
+  | cons t ts ih =>
+      by_cases ht : 3 ≤ t
+      · have hb : c3Pred t = true := by
+          unfold c3Pred
+          exact decide_eq_true ht
+        have hstopRaw : (ts.takeWhile c3Pred).length < ts.length := by
+          dsimp [c3PrefixLength] at hstop
+          rw [List.takeWhile_cons_of_pos hb] at hstop
+          simpa using hstop
+        have hpos' : ∀ x, x ∈ ts → 1 ≤ x := by
+          intro x hx
+          exact hpos x (List.mem_cons.mpr (Or.inr hx))
+        have hih := ih hpos' (by simpa [c3PrefixLength] using hstopRaw)
+        have hidx : (t :: ts).getI (c3PrefixLength (t :: ts)) =
+            ts.getI (c3PrefixLength ts) := by
+          dsimp [c3PrefixLength]
+          rw [List.takeWhile_cons_of_pos hb]
+          rw [show (t :: ts.takeWhile c3Pred).length =
+              (ts.takeWhile c3Pred).length + 1 by simp]
+          rw [List.getI_cons_succ]
+        simpa [hidx] using hih
+      · have hb : c3Pred t = false := by
+          unfold c3Pred
+          exact decide_eq_false ht
+        have hb' : ¬ c3Pred t = true := by
+          intro htrue
+          rw [hb] at htrue
+          contradiction
+        have hlen : c3PrefixLength (t :: ts) = 0 := by
+          dsimp [c3PrefixLength]
+          rw [List.takeWhile_cons_of_neg hb']
+          rfl
+        rw [hlen]
+        have htp : 1 ≤ t := hpos t (by simp)
+        have hnot : ¬ 3 ≤ t := by
+          intro hge
+          exact ht hge
+        have hlt : t < 3 := Nat.lt_of_not_ge hnot
+        interval_cases t <;> simp at htp ⊢
+
 /-- The cyclic version of the block-boundary interface.  This is the
 block-selection precondition; it deliberately allows `b = w.length`. -/
 theorem cycleQb8Input_exists_c3_rise_run :
