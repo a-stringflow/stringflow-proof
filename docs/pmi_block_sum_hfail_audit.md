@@ -169,6 +169,13 @@ hfail 仍未由 PMI 块层求和推出。
   `CycleRiseBlockDecomposition.c3Word r`；
 - `cycleRiseBlockTailRankSum_add_c3WeightSum`：对全循环求和
   `Σ tailRank + Σ c3Weight = 2K + Σ residual`。
+- `cycleRiseBlockSuffixEndpointRank_eq_two`：非回绕块的 endpoint
+  rank 恒为 2；
+- `cycleRiseBlockTailRankSum_le_endpointRankSum_add_two_add_residual`：
+  全局 C3 rank-gain telescoping
+  `Σ tailRank ≤ Σ endpointRank + 2 + Σ residual`；
+- `cycleRiseBlockTwoH2Sum_le_two_add_residual_add_charge`：
+  全局预算 `2ΣH2 ≤ 2 + Σ residual + Σ charge`。
 
 仍未闭合的正是本文第 4 节的全局比较 (6)：把周期闭合
 `2^S > 5^P` 接到 `2ΣH2 > Σ(2(tailDepth - tailReset) + 12 + F)`
