@@ -581,4 +581,17 @@ theorem blockAdvance_le_P
   have hr : blockRiseLen w b ≤ P := blockRiseLen_le_P w P b hw hb
   omega
 
+/-- From the first step on, every boundary of the iteration is a valid
+modular position. -/
+theorem riseBoundaryIter_mod
+    {P : Nat} (hP : 0 < P) (w : List Nat) (b : Nat) (n : Nat) :
+    riseBoundaryIter w P b (n + 1) < P := by
+  induction n with
+  | zero =>
+      simp [riseBoundaryIter]
+      exact nextRiseStart_lt hP w b
+  | succ n ih =>
+      simp [riseBoundaryIter]
+      exact nextRiseStart_lt hP w (riseBoundaryIter w P b (n + 1))
+
 end StringFlow.CycleBridge
