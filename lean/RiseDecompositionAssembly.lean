@@ -1457,6 +1457,45 @@ theorem cycleRiseBlockWindowFalse
   exact RealOrbitLocalLemma.cyclicDepthFailureWindow_false_of_outgoing_c3
     fw hLlt (cycleRiseBlockSuffixStopC3 d r hr hLlt)
 
+/-- Every cyclic rise block has a genuine real terminal at the depth
+before its C3-tail boundary.  This is the real orbit reachability that
+supplies the `hrt` input of the cyclic failure-window assembly: the
+terminal is constructed from the actual word prefix, not assumed. -/
+theorem cycleRiseBlockRealTerminal
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    ∃ rt : S6Audit.AngelinaGilbertaRealTerminal,
+      rt.r = (5 * StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2 := by
+  have hbpos : 1 ≤ cycleRiseBlockTailDepth d r :=
+    cycleRiseBlockTailDepth_pos d r hr
+  have hblt : cycleRiseBlockTailDepth d r - 1 < P :=
+    cycleRiseBlockTailDepth_lt_succ d r hr
+  have hble : cycleRiseBlockTailDepth d r ≤ w.length := by
+    rw [d.hperiod]
+    omega
+  have hprev3 : 3 ≤ w.getI (cycleRiseBlockTailDepth d r - 1) := by
+    have hCpos : 0 < (d.c3Word r).length :=
+      List.length_pos_iff.mpr (d.hc3_nonempty r hr)
+    have hk : (d.c3Word r).length - 1 < (d.c3Word r).length := by omega
+    have hseg := d.hc3_segment r hr ((d.c3Word r).length - 1) hk
+    have hidx : d.headDepth r + ((d.c3Word r).length - 1) =
+        cycleRiseBlockTailDepth d r - 1 := by
+      dsimp [cycleRiseBlockTailDepth]
+      omega
+    rw [hidx] at hseg
+    have hm : (d.c3Word r).getI ((d.c3Word r).length - 1) ∈ d.c3Word r := by
+      rw [List.getI_eq_getElem (l := d.c3Word r)
+        (n := (d.c3Word r).length - 1) hk]
+      exact List.getElem_mem hk
+    have hge := d.hc3_entries r hr
+      ((d.c3Word r).getI ((d.c3Word r).length - 1)) hm
+    rwa [hseg] at hge
+  exact cycleQb8Input_angelina_real_terminal h (cycleRiseBlockTailDepth d r)
+    hbpos hble hprev3
+
 /-- The complete real-block premises instantiation for a cyclic rise
 block (wrap-invariant): the word structure, the `q0` interval, the head
 bound and the prefix-orbit identities are all derived from the
