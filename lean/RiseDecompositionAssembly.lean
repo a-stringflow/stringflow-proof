@@ -1583,13 +1583,14 @@ theorem cycleRiseBlockHpred_of_real_terminal
     rw [List.length_take_of_le]
     · rw [cyclicSegmentAt_length w b hble]
       exact le_trans (Nat.sub_le L 1) hLle
-  -- Remaining real step.  The rise-prefix word equation above is the
-  -- exact instance of `cycleQb8Input_cyclic_local_block_data` at
-  -- length `L-1` (the cyclic block equation of `u'`).  After it and
-  -- the boundary-terminal identity `rt.r = 2^(c-1)*q`, the remaining
-  -- equation E5 is equivalent to the predecessor identity itself,
-  -- `o_local(L-1) = rt.r + delta*5^(L-1)`; the delta-zero block
-  -- structure of the cyclic word is the missing input.
+  -- E5 is not a new consequence of the block equation: the block
+  -- equation only rewrites the left-hand side to the word-equation
+  -- side.  E5 is equivalent to the predecessor identity itself,
+  -- `o_local(L-1) = rt.r + delta*5^(L-1)`, hence to `hterm`.  Its
+  -- source is therefore the delta-zero block property of this
+  -- specific block (the reset equation holds), which is exactly
+  -- `hterm`; whether the cycle closure/PMI forces this property is
+  -- exactly what remains to be derived.
   have hE5 : StringFlow.Word.wordA u' + 5 ^ (L - 1) * q =
       2 ^ ((StringFlow.wordWeight u' + w.getI (b - 1)) - 1) * q +
         delta * 2 ^ StringFlow.wordWeight u' * 5 ^ (L - 1) := by
