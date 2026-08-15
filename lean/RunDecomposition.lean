@@ -440,4 +440,16 @@ theorem blockTotalAdvance_ge_two_mul
       have ih' := ih (fun k hk => hall k (by omega))
       omega
 
+/-- A single rise run never exceeds the period. -/
+theorem blockRiseLen_le_P
+    (w : List Nat) (P b : Nat) (hw : w.length = P) (hb : b ≤ w.length) :
+    blockRiseLen w b ≤ P := by
+  unfold blockRiseLen
+  have hlen := cyclicSegmentAt_length w b hb
+  calc
+    risePrefixLength (cyclicSegmentAt w b) ≤
+        (cyclicSegmentAt w b).length := risePrefixLength_le _
+    _ = w.length := hlen
+    _ = P := hw
+
 end StringFlow.CycleBridge
