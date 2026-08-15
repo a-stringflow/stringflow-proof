@@ -876,4 +876,50 @@ theorem suffixWord_valid_of_cycleRiseBlock
         simpa [cycleRiseBlockC3TailState] using h)
   · exact d.hsuffix_one_two r hr
 
+/-- Prefixes of a real rise suffix are the corresponding real cycle
+prefixes: `wordOrbit (suffix.take j) (C3TailState) = wordOrbit (w.take (tailDepth + j)) m`
+for every prefix length `j` of the non-wrapping suffix.  This supplies
+the `hrj`/`hrs_eq` inputs of `premises_of_real_orbit_head`. -/
+theorem suffixWord_prefix_eq_word_prefix_nonwrap
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hrnext : r + 1 < d.blockCount)
+    (j : Nat) (hj : j ≤ (d.suffixWord r).length) :
+    StringFlow.Word.wordOrbit ((d.suffixWord r).take j)
+        (cycleRiseBlockC3TailState d r) =
+      StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r + j)) m := by
+  let start := cycleRiseBlockTailDepth d r
+  have hseg := cycleRiseBlockSuffixWord_eq_drop_nonwrap d r hr hrnext
+  have hq : cycleRiseBlockC3TailState d r =
+      StringFlow.Word.wordOrbit (w.take start) m := rfl
+  have hbL : start + j ≤ w.length := by
+    dsimp [start, cycleRiseBlockTailDepth]
+    have hnext : d.headDepth r + (d.c3Word r).length + (d.suffixWord r).length =
+        d.headDepth (r + 1) := by
+      have h := d.hnext r hr
+      have hcast : (d.headDepth (r + 1) : Nat) =
+          d.headDepth r + (d.c3Word r).length + (d.suffixWord r).length := by
+        simpa [hrnext] using h
+      exact hcast.symm
+    have hlt : d.headDepth (r + 1) < P := d.hhead_lt (r + 1) hrnext
+    rw [d.hperiod]
+    omega
+  have htake : ((w.drop start).take (d.suffixWord r).length).take j =
+      (w.drop start).take j := by
+    rw [List.take_take]
+    rw [Nat.min_eq_left hj]
+  have hmain : StringFlow.Word.wordOrbit ((d.suffixWord r).take j)
+        (cycleRiseBlockC3TailState d r) =
+      StringFlow.Word.wordOrbit ((w.take (start + j)).drop start)
+        (StringFlow.Word.wordOrbit (w.take start) m) := by
+    rw [hq]
+    rw [hseg]
+    dsimp [start, cycleRiseBlockTailDepth] at htake
+    rw [htake]
+    rw [← List.take_drop]
+    dsimp [start, cycleRiseBlockTailDepth]
+  have hwd := wordOrbit_take_drop w m start j hbL
+  exact hmain.trans hwd.symm
+
 end StringFlow.CycleBridge
