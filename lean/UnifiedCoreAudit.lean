@@ -1,4 +1,5 @@
 import Mathlib.Data.Nat.ModEq
+import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.IntervalCases
 import Mathlib.Tactic.Ring
@@ -746,6 +747,233 @@ theorem premises_of_block_word
     j_pos := hj_pos
     weight_step := hstep
     valid_prefix := hvalid }
+
+/-- Cumulative prefix weight of a word: `prefixWeightOf u k` is the
+sum of the first `k` entries. -/
+def prefixWeightOf (u : List Nat) : Nat → Nat
+  | 0 => 0
+  | k + 1 => prefixWeightOf u k + u.getI k
+
+/-- The prefix of length `k+1` is the prefix of length `k` followed by
+the `k`-th entry. -/
+lemma take_succ_append_getI (u : List Nat) (k : Nat) (hk : k < u.length) :
+    u.take (k + 1) = u.take k ++ [u.getI k] := by
+  induction k generalizing u with
+  | zero =>
+      cases u with
+      | nil => simp at hk
+      | cons a as =>
+          simp [List.getI]
+  | succ k ih =>
+      cases u with
+      | nil => simp at hk
+      | cons a as =>
+          have hk' : k < as.length := by
+            simp at hk
+            omega
+          have ih' := ih as hk'
+          have htake : (a :: as).take (k + 2) = a :: as.take (k + 1) :=
+            List.take_cons (by omega)
+          have hget : (a :: as).getI (k + 1) = as.getI k := by
+            rw [List.getI_cons_succ]
+          rw [htake, ih', hget]
+          simp [List.append_assoc]
+
+/-- Dropping preserves the head entry: `(u.drop k).getI 0 = u.getI k`. -/
+lemma getI_drop_zero (u : List Nat) (k : Nat) :
+    (u.drop k).getI 0 = u.getI k := by
+  cases k with
+  | zero => rfl
+  | succ k =>
+      cases u with
+      | nil => rfl
+      | cons a as =>
+          rw [List.getI_cons_succ]
+          change (as.drop k).getI 0 = as.getI k
+          exact getI_drop_zero as k
+
+/-- Validity of the whole word gives validity of every dropped suffix
+from the corresponding prefix endpoint. -/
+lemma wordValid_drop (u : List Nat) (q k : Nat)
+    (hvalid : StringFlow.Word.wordValid u q) :
+    StringFlow.Word.wordValid (u.drop k)
+      (StringFlow.Word.wordOrbit (u.take k) q) := by
+  have hsplit : u = u.take k ++ u.drop k := (List.take_append_drop k u).symm
+  have hvalid' : StringFlow.Word.wordValid (u.take k ++ u.drop k) q := by
+    rw [← hsplit]
+    exact hvalid
+  exact ((S6Audit.wordValid_append (u.take k) (u.drop k) q).mp hvalid').2
+
+/-- The `k`-th word step is exact: the next prefix endpoint is the
+quotient by `2 ^ u.getI k`. -/
+lemma wordValid_drop_head (u : List Nat) (q k : Nat)
+    (hvalid : StringFlow.Word.wordValid u q)
+    (hk : k < u.length) :
+    (5 * StringFlow.Word.wordOrbit (u.take k) q + 1) % 2 ^ u.getI k = 0 := by
+  have hdrop := wordValid_drop u q k hvalid
+  have hpos : 0 < (u.drop k).length := by
+    rw [List.length_drop]
+    omega
+  have hget : (u.drop k).getI 0 = u.getI k := getI_drop_zero u k
+  cases hd : u.drop k with
+  | nil =>
+      rw [hd] at hpos
+      simp at hpos
+  | cons t ts =>
+      rw [hd] at hdrop
+      change (5 * StringFlow.Word.wordOrbit (u.take k) q + 1) % 2 ^ t = 0 ∧
+        StringFlow.Word.wordValid ts
+          ((5 * StringFlow.Word.wordOrbit (u.take k) q + 1) / 2 ^ t) at hdrop
+      have hdvd : (5 * StringFlow.Word.wordOrbit (u.take k) q + 1) % 2 ^ t = 0 :=
+        hdrop.1
+      rw [hd] at hget
+      rw [← hget]
+      simp [List.getI]
+      exact hdvd
+
+/-- Under legal steps, the prefix weight increments by one or two. -/
+lemma prefixWeightOf_step (u : List Nat) (k : Nat)
+    (hsteps : ∀ t ∈ u, t = 1 ∨ t = 2) (hk : k < u.length) :
+    prefixWeightOf u (k + 1) = prefixWeightOf u k + 1 ∨
+      prefixWeightOf u (k + 1) = prefixWeightOf u k + 2 := by
+  have hmem : u.getI k ∈ u := by
+    rw [List.getI_eq_getElem (l := u) (n := k) hk]
+    exact List.getElem_mem hk
+  rcases hsteps (u.getI k) hmem with h1 | h2
+  · left
+    dsimp [prefixWeightOf]
+    rw [h1]
+  · right
+    dsimp [prefixWeightOf]
+    rw [h2]
+
+/-- One exact block step advances the block state by the quotient and
+keeps the next prefix integral. -/
+lemma blockState_succ_of_exact (weight : Nat → Nat) (q k t : Nat)
+    (hstep' : weight (k + 1) = weight k + t)
+    (hprev : (wordMolecule weight k + 5 ^ k * q) % 2 ^ weight k = 0)
+    (hdvd : (5 * blockState weight q k + 1) % 2 ^ t = 0) :
+    blockState weight q (k + 1) = (5 * blockState weight q k + 1) / 2 ^ t ∧
+      (wordMolecule weight (k + 1) + 5 ^ (k + 1) * q) % 2 ^ weight (k + 1) = 0 := by
+  have hprev' : wordMolecule weight k + 5 ^ k * q =
+      2 ^ weight k * blockState weight q k := by
+    have hdvdW : 2 ^ weight k ∣ wordMolecule weight k + 5 ^ k * q :=
+      Nat.dvd_iff_mod_eq_zero.mpr hprev
+    have hmul : 2 ^ weight k *
+        ((wordMolecule weight k + 5 ^ k * q) / 2 ^ weight k) =
+        wordMolecule weight k + 5 ^ k * q :=
+      Nat.mul_div_cancel' hdvdW
+    unfold blockState
+    exact hmul.symm
+  have hpow5 : 5 ^ (k + 1) = 5 * 5 ^ k := by
+    rw [Nat.pow_succ]
+    ring
+  have hpow2 : 2 ^ (weight k + t) = 2 ^ weight k * 2 ^ t := by
+    rw [Nat.pow_add]
+  have hnum : 2 ^ weight k + 5 * wordMolecule weight k + 5 * 5 ^ k * q =
+      2 ^ weight k * (5 * blockState weight q k + 1) := by
+    calc
+      2 ^ weight k + 5 * wordMolecule weight k + 5 * 5 ^ k * q
+          = 2 ^ weight k + 5 * wordMolecule weight k + 5 * 5 ^ k * q := by
+              rfl
+      _ = 2 ^ weight k + 5 * (wordMolecule weight k + 5 ^ k * q) := by ring
+      _ = 2 ^ weight k + 5 * (2 ^ weight k * blockState weight q k) := by
+              rw [hprev']
+      _ = 2 ^ weight k * (5 * blockState weight q k + 1) := by ring
+  have hdvdT : 2 ^ t ∣ 5 * blockState weight q k + 1 :=
+    Nat.dvd_iff_mod_eq_zero.mpr hdvd
+  let q' := (5 * blockState weight q k + 1) / 2 ^ t
+  have hb : 5 * blockState weight q k + 1 = 2 ^ t * q' := by
+    dsimp [q']
+    exact (Nat.div_mul_cancel hdvdT).symm.trans (by rw [Nat.mul_comm])
+  have hden : 0 < 2 ^ (weight k + t) := by positivity
+  have hq : 2 ^ (weight k + t) * q' =
+      2 ^ weight k * (5 * blockState weight q k + 1) := by
+    calc
+      2 ^ (weight k + t) * q' = (2 ^ weight k * 2 ^ t) * q' := by
+        rw [hpow2]
+      _ = 2 ^ weight k * (2 ^ t * q') := by ring
+      _ = 2 ^ weight k * (5 * blockState weight q k + 1) := by
+        rw [← hb]
+  have hmain : blockState weight q (k + 1) = q' := by
+    unfold blockState
+    rw [wordMolecule]
+    rw [hstep']
+    rw [hpow2]
+    rw [hpow5]
+    rw [hnum]
+    rw [← hq]
+    rw [← hpow2]
+    simpa [Nat.mul_comm] using Nat.mul_div_cancel q' hden
+  have htmp : 2 ^ weight k * (2 ^ t * q') =
+      wordMolecule weight (k + 1) + 5 ^ (k + 1) * q := by
+    rw [← hb]
+    rw [← hnum]
+    rw [wordMolecule]
+    rw [← hpow5]
+  have hid : 2 ^ weight (k + 1) * blockState weight q (k + 1) =
+      wordMolecule weight (k + 1) + 5 ^ (k + 1) * q := by
+    rw [hmain]
+    rw [hstep']
+    rw [hpow2]
+    rw [← htmp]
+    ring
+  have hdiv : 2 ^ weight (k + 1) ∣
+      wordMolecule weight (k + 1) + 5 ^ (k + 1) * q := by
+    refine ⟨blockState weight q (k + 1), ?_⟩
+    exact hid.symm
+  exact ⟨by simpa [q'] using hmain, Nat.dvd_iff_mod_eq_zero.mp hdiv⟩
+
+/-- One more prefix step is the exact quotient by the next entry. -/
+lemma wordOrbit_take_succ_of_getI (u : List Nat) (q k : Nat)
+    (hk : k < u.length) :
+    StringFlow.Word.wordOrbit (u.take (k + 1)) q =
+      (5 * StringFlow.Word.wordOrbit (u.take k) q + 1) / 2 ^ u.getI k := by
+  rw [take_succ_append_getI u k hk]
+  exact S6Audit.wordOrbit_append_singleton (u.take k) q (u.getI k)
+
+/-- The real-word prefix bridge: every prefix of an exact `{1,2}`-word
+is the corresponding block state, and every prefix is integral.  This
+is the word-side input to `premises_of_block_word` (`hvalid`, `hrs_eq`,
+`r_j_int`). -/
+theorem blockState_prefix_of_wordValid
+    (u : List Nat) (q k : Nat)
+    (hvalid : StringFlow.Word.wordValid u q)
+    (hsteps : ∀ t ∈ u, t = 1 ∨ t = 2)
+    (hk : k ≤ u.length) :
+    StringFlow.Word.wordOrbit (u.take k) q =
+        blockState (prefixWeightOf u) q k ∧
+      (wordMolecule (prefixWeightOf u) k + 5 ^ k * q) %
+        2 ^ prefixWeightOf u k = 0 := by
+  induction k with
+  | zero =>
+      simp [blockState, wordMolecule, prefixWeightOf, StringFlow.Word.wordOrbit,
+        Nat.mod_one]
+  | succ k ih =>
+      have hk' : k ≤ u.length := by omega
+      rcases ih hk' with ⟨horb, hint⟩
+      have hklt : k < u.length := by omega
+      let weight := prefixWeightOf u
+      have hdvd : (5 * StringFlow.Word.wordOrbit (u.take k) q + 1) %
+          2 ^ u.getI k = 0 :=
+        wordValid_drop_head u q k hvalid hklt
+      have hdvd' : (5 * blockState weight q k + 1) % 2 ^ u.getI k = 0 := by
+        dsimp [weight]
+        rw [horb] at hdvd
+        exact hdvd
+      have hstep' : weight (k + 1) = weight k + u.getI k := by
+        rfl
+      have hsucc := blockState_succ_of_exact weight q k (u.getI k)
+        hstep' hint hdvd'
+      have horb' : StringFlow.Word.wordOrbit (u.take (k + 1)) q =
+          blockState weight q (k + 1) := by
+        rw [wordOrbit_take_succ_of_getI u q k hklt]
+        dsimp [weight]
+        rw [horb]
+        rw [← hsucc.1]
+      have hint' : (wordMolecule weight (k + 1) + 5 ^ (k + 1) * q) %
+          2 ^ weight (k + 1) = 0 := hsucc.2
+      exact ⟨horb', by dsimp [weight] at hint' ⊢; exact hint'⟩
 
 /-- The exact block-tail relation:
 `2^(W_s-W_j)*r_s = 5^(s-j)*r_j + B`, where `B` is the block suffix
