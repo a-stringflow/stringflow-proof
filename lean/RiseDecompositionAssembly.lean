@@ -798,4 +798,31 @@ theorem cycleRiseBlockDecompositionExists_of_input
     · rw [if_neg hrK]
       exact hwrap r hr (by omega)
 
+/-- The real cyclic rise decomposition plus the tail-charged PMI
+comparison yield a C3-tail failure.  Structural existence is now
+closed; only the PMI comparison remains an input. -/
+theorem cycleRiseBlockFailure_of_real_input_and_global_comparison
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (hglobal : cycleRiseBlockPMIGlobalComparisonHolds) :
+    ∃ d : CycleRiseBlockDecomposition m S P w,
+      ∃ r : Nat, r < d.blockCount ∧
+        2 * (cycleRiseBlockTailDepth d r -
+            cycleRiseBlockTailResetWeight d r) + 13 ≤
+          cycleRiseBlockTailRank d r := by
+  rcases cycleRiseBlockDecompositionExists_of_input h with ⟨d, _hdpos⟩
+  exact ⟨d, cycleRiseBlockTailFailure_of_global_comparison d
+    (hglobal m S P w rise c3 h d)⟩
+
+/-- The real cyclic rise decomposition plus the tail-charged PMI
+comparison supply the C3-tail failure window. -/
+theorem cycleRiseBlockTailFailureWindowExistence_of_pmi
+    (hglobal : cycleRiseBlockPMIGlobalComparisonHolds) :
+    cycleRiseBlockTailFailureWindowExistence := by
+  intro m S P w rise c3 h
+  rcases cycleRiseBlockDecompositionExists_of_input h with ⟨d, _hdpos⟩
+  refine ⟨d, ?_⟩
+  exact cycleRiseBlockTailFailureWindow_of_global_comparison h d
+    (hglobal m S P w rise c3 h d)
+
 end StringFlow.CycleBridge

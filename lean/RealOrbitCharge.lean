@@ -1206,33 +1206,6 @@ def cycleRiseBlockPMIGlobalComparisonHolds : Prop :=
     CycleQb8Input m S P w rise c3 →
       cycleRiseBlockPMIGlobalComparison m S P w
 
-/-- Every real `CycleQb8Input` has a nonempty cyclic rise block
-decomposition.  This is the structural companion of
-`cycleRiseBlockPMIGlobalComparisonHolds`; the latter is only meaningful
-after this existence statement is established. -/
-def cycleRiseBlockDecompositionExists : Prop :=
-  ∀ m S P : Nat, ∀ w rise c3 : List Nat,
-    CycleQb8Input m S P w rise c3 →
-      ∃ d : CycleRiseBlockDecomposition m S P w,
-        1 ≤ d.blockCount
-
-/-- Once a nonempty cyclic rise decomposition exists and the tail-based
-PMI global comparison holds, some C3-tail rank crosses the decisive
-window. -/
-theorem cycleRiseBlockFailure_of_decomposition_and_global_comparison
-    {m S P : Nat} {w rise c3 : List Nat}
-    (h : CycleQb8Input m S P w rise c3)
-    (hexists : cycleRiseBlockDecompositionExists)
-    (hglobal : cycleRiseBlockPMIGlobalComparisonHolds) :
-    ∃ d : CycleRiseBlockDecomposition m S P w,
-      ∃ r : Nat, r < d.blockCount ∧
-        2 * (cycleRiseBlockTailDepth d r -
-            cycleRiseBlockTailResetWeight d r) + 13 ≤
-          cycleRiseBlockTailRank d r := by
-  rcases hexists m S P w rise c3 h with ⟨d, _hdpos⟩
-  exact ⟨d, cycleRiseBlockTailFailure_of_global_comparison d
-    (hglobal m S P w rise c3 h d)⟩
-
 /-- The exact remaining C3-tail failure-window input: every real
 `CycleQb8Input` has a cyclic rise decomposition whose last C3 step
 supplies a genuine C3 reset window and whose C3-tail rank crosses the
@@ -1248,18 +1221,6 @@ def cycleRiseBlockTailFailureWindowExistence : Prop :=
           w.getI (cycleRiseBlockTailDepth d r - 1) = t ∧
           2 * (cycleRiseBlockTailDepth d r - t) + 13 ≤
             twoValuation (cycleRiseBlockC3TailState d r + 1)
-
-/-- Conditional assembly: the structural existence input and the
-tail-charged PMI comparison jointly supply the C3-tail failure window. -/
-theorem cycleRiseBlockTailFailureWindowExistence_of_open_inputs
-    (hexists : cycleRiseBlockDecompositionExists)
-    (hglobal : cycleRiseBlockPMIGlobalComparisonHolds) :
-    cycleRiseBlockTailFailureWindowExistence := by
-  intro m S P w rise c3 h
-  rcases hexists m S P w rise c3 h with ⟨d, _hdpos⟩
-  refine ⟨d, ?_⟩
-  exact cycleRiseBlockTailFailureWindow_of_global_comparison h d
-    (hglobal m S P w rise c3 h d)
 
 /-- Rank of the head of a block. -/
 def cycleBlockHeadRank {m S P : Nat} {w : List Nat}
