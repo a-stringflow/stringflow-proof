@@ -50,28 +50,36 @@ theorem tailPerBlockCapacity_implies_weak_global_comparison
   have hc := hcap r hrlt
   omega
 
-/-- The open hfail rank target for one cyclic rise decomposition: some
-block head crosses the branchwise failure threshold.  This is the
-direct input needed by the hfail/rank valuation bridge; it no longer
-uses the rejected global comparison (6). -/
-def hfailRankLowerBoundOfDecomposition {m S P : Nat} {w : List Nat}
-    (d : CycleBridge.CycleRiseBlockDecomposition m S P w) : Prop :=
-  ∃ r : Nat, r < d.blockCount ∧
-    ((d.resetWeight r = 1 ∧
-        2 * d.headDepth r + 11 ≤ CycleBridge.cycleRiseBlockHeadRank d r) ∨
-     (d.resetWeight r = 2 ∧
-        2 * d.headDepth r + 9 ≤ CycleBridge.cycleRiseBlockHeadRank d r))
+/-- The rank lower bound attached to a word depth `j` and its incoming
+rise weight `t`.  This is the direct hfail input: once the reset
+equation at depth `j` is supplied, it converts to `hfail_t1`/`hfail_t2`
+through the valuation bridge. -/
+def hfailRankLowerBoundAt
+    (m : Nat) (w : List Nat) (j t : Nat) : Prop :=
+  (t = 1 → 2 * j + 11 ≤
+    twoValuation (StringFlow.Word.wordOrbit (w.take j) m + 1)) ∧
+  (t = 2 → 2 * j + 9 ≤
+    twoValuation (StringFlow.Word.wordOrbit (w.take j) m + 1))
 
 /-- The precise open hfail goal: every real `CycleQb8Input` with
-`5^P < 2^S` has a cyclic rise block whose head rank reaches the
-branchwise failure threshold.  The missing piece is exactly this rank
-lower bound, not the rejected strict global comparison. -/
+`5^P < 2^S` has a rise-block head, written at a word depth `j` with
+incoming rise weight `t`, whose rank reaches the branchwise failure
+threshold.  This target is deliberately not expressed through the
+`CycleRiseBlockDecomposition` block heads, because every such maximal
+rise endpoint has rank exactly two
+(`CycleBridge.cycleRiseBlockHeadRank_two`).  The missing piece is
+exactly this rank lower bound, not the rejected strict global
+comparison (6). -/
 def hfailRankLowerBoundTarget : Prop :=
   ∀ m S P : Nat, ∀ w rise c3 : List Nat,
     CycleBridge.CycleQb8Input m S P w rise c3 →
     5 ^ P < 2 ^ S →
-      ∃ d : CycleBridge.CycleRiseBlockDecomposition m S P w,
-        hfailRankLowerBoundOfDecomposition d
+      ∃ j t : Nat,
+        1 ≤ j ∧ j < P ∧
+        (t = 1 ∨ t = 2) ∧
+        w.getI (j - 1) = t ∧
+        (w.getI j = 1 ∨ w.getI j = 2) ∧
+        hfailRankLowerBoundAt m w j t
 
 /-- A `t=1` rank threshold is exactly the `hfail_t1` valuation bound,
 once the reset equation identifies the block head. -/
@@ -158,6 +166,40 @@ theorem hfail_t2_of_local_block_rank
     ⟨hreset, _hreach⟩
   subst t
   exact hfail_t2_of_rank j rt.k δ rt.s rj hreset hrank
+
+/-- The `t=1` hfail bound follows from the open rank-lower-bound target
+once the same depth `j` is supplied with a real local hident block. -/
+theorem hfail_t1_of_hfailRankLowerBoundAt
+    {m : Nat} {w : List Nat}
+    {j Wp Wj q Aj rj t δ : Nat}
+    {rt : S6Audit.AngelinaGilbertaRealTerminal}
+    (d : CycleBridge.LocalHidentBlock j Wp Wj q Aj rj t δ rt)
+    (ht1 : t = 1)
+    (hrj : rj = StringFlow.Word.wordOrbit (w.take j) m)
+    (hrank : hfailRankLowerBoundAt m w j t) :
+    2 * j + 12 ≤ twoValuation (5 ^ (rt.k + 1) * rt.s + 5 ^ j - 2) := by
+  have h0 : 2 * j + 11 ≤
+      twoValuation (StringFlow.Word.wordOrbit (w.take j) m + 1) := hrank.1 ht1
+  have hrank' : 2 * j + 11 ≤ twoValuation (rj + 1) := by
+    rwa [← hrj] at h0
+  exact hfail_t1_of_local_block_rank d ht1 hrank'
+
+/-- The `t=2` hfail bound follows from the open rank-lower-bound target
+once the same depth `j` is supplied with a real local hident block. -/
+theorem hfail_t2_of_hfailRankLowerBoundAt
+    {m : Nat} {w : List Nat}
+    {j Wp Wj q Aj rj t δ : Nat}
+    {rt : S6Audit.AngelinaGilbertaRealTerminal}
+    (d : CycleBridge.LocalHidentBlock j Wp Wj q Aj rj t δ rt)
+    (ht2 : t = 2)
+    (hrj : rj = StringFlow.Word.wordOrbit (w.take j) m)
+    (hrank : hfailRankLowerBoundAt m w j t) :
+    2 * j + 11 ≤ twoValuation (5 ^ (rt.k + 1) * rt.s + δ * 5 ^ j) := by
+  have h0 : 2 * j + 9 ≤
+      twoValuation (StringFlow.Word.wordOrbit (w.take j) m + 1) := hrank.2 ht2
+  have hrank' : 2 * j + 9 ≤ twoValuation (rj + 1) := by
+    rwa [← hrj] at h0
+  exact hfail_t2_of_local_block_rank d ht2 hrank'
 
 end Amiya
 
