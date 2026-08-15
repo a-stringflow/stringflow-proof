@@ -2958,6 +2958,149 @@ theorem c3_step_rank_gain_div
       _ = 4 * ((x + 1) / 4) := by rw [hodd]
   exact c3_step_rank_gain x ((x + 1) / 4) t rj hq ht hstep
 
+/-- Per-step residual used by the C3 rank-gain budget. -/
+def c3Residuals : List Nat → List Nat → List Nat
+  | _, [] => []
+  | ns, t :: ts =>
+      twoValuation (5 * ((ns.getI 0 + 1) / 4) + 2 ^ (t - 2) - 1) ::
+        c3Residuals (ns.drop 1) ts
+
+lemma twoValuation_eq_of_dvd_pow_not_dvd_succ
+    (n k : Nat) (hn : 0 < n)
+    (hdvd : 2 ^ k ∣ n) (hndvd : ¬ 2 ^ (k + 1) ∣ n) :
+    twoValuation n = k := by
+  have hge : k ≤ twoValuation n :=
+    StringFlow.Lte.twoValuation_le_of_dvd n k hn hdvd
+  have hle : twoValuation n ≤ k :=
+    (StringFlow.Lte.twoValuation_le_iff_not_dvd_pow n k hn).mpr hndvd
+  omega
+
+lemma IsOdd_of_rank_two (x : Nat) (h : twoValuation (x + 1) = 2) :
+    IsOdd x := by
+  by_contra hnot
+  have hxeven : x % 2 = 0 := by
+    rcases Nat.mod_two_eq_zero_or_one x with h0 | h1
+    · exact h0
+    · exact False.elim (hnot h1)
+  have hx1odd : (x + 1) % 2 = 1 := by omega
+  have hv : twoValuation (x + 1) = 0 :=
+    StringFlow.twoValuation_odd (x + 1) hx1odd
+  omega
+
+lemma odd_of_twoValuation_mul_eq_five_mul_add_one
+    (x t y : Nat)
+    (hvalid : twoValuation (5 * x + 1) = t)
+    (hstep : 2 ^ t * y = 5 * x + 1) :
+    IsOdd y := by
+  have hpos : 0 < 5 * x + 1 := by positivity
+  have hdec := StringFlow.n_eq_two_pow_mul_oddPart (5 * x + 1) hpos
+  rw [hvalid] at hdec
+  have hy : y = StringFlow.oddPart (5 * x + 1) := by
+    have hstep' : 2 ^ t * y = 2 ^ t * StringFlow.oddPart (5 * x + 1) := by
+      calc
+        2 ^ t * y = 5 * x + 1 := hstep
+        _ = 2 ^ t * StringFlow.oddPart (5 * x + 1) := hdec
+    exact Nat.mul_left_cancel (by positivity : 0 < 2 ^ t) hstep'
+  rw [hy]
+  exact StringFlow.oddPart_odd_of_pos (5 * x + 1) hpos
+
+/-- A maximal C3 chain controls the tail rank exactly:
+`tailRank + totalC3Weight = 2 + residualSum`.  The intermediate
+residuals cancel against their C3 weights, so only the final C3 step
+contributes to the rank gain. -/
+theorem c3Chain_rank_gain
+    (ns ts : List Nat)
+    (hQ : 0 < ts.length)
+    (h : StringFlow.GC.c3ExactMax ns ts)
+    (hweights : ∀ t ∈ ts, 3 ≤ t)
+    (hhead : twoValuation (StringFlow.GC.chainFirst ns + 1) = 2) :
+    twoValuation (StringFlow.GC.chainLast ns + 1) + ts.sum =
+      2 + (c3Residuals ns ts).sum := by
+  induction ts generalizing ns with
+  | nil => simp at hQ
+  | cons t ts' ih =>
+      cases ns with
+      | nil => simp [StringFlow.GC.c3ExactMax] at h
+      | cons n ns' =>
+          cases ns' with
+          | nil => simp [StringFlow.GC.c3ExactMax] at h
+          | cons n' ns'' =>
+              rcases h with ⟨hstep, hmax, htail⟩
+              have hheadN : twoValuation (n + 1) = 2 := by
+                simpa [StringFlow.GC.chainFirst] using hhead
+              have hpos5 : 0 < 5 * n + 1 := by positivity
+              have hdvd : 2 ^ t ∣ 5 * n + 1 := by
+                exact ⟨n', hstep.symm⟩
+              have hndvd : ¬ 2 ^ (t + 1) ∣ 5 * n + 1 := by
+                intro hd
+                have hmod : (5 * n + 1) % 2 ^ (t + 1) = 0 :=
+                  Nat.dvd_iff_mod_eq_zero.mp hd
+                omega
+              have hvalid : twoValuation (5 * n + 1) = t :=
+                twoValuation_eq_of_dvd_pow_not_dvd_succ
+                  (5 * n + 1) t hpos5 hdvd hndvd
+              have hodd : IsOdd n := IsOdd_of_rank_two n hheadN
+              have hodd' : IsOdd n' :=
+                odd_of_twoValuation_mul_eq_five_mul_add_one n t n' hvalid hstep
+              have htge : 3 ≤ t := hweights t (by simp)
+              have hstepGain := c3_step_rank_gain_div n t n' hheadN htge hstep
+              cases ts' with
+              | nil =>
+                  cases ns'' with
+                  | nil =>
+                      simpa [StringFlow.GC.chainLast, c3Residuals,
+                        Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+                        using hstepGain
+                  | cons _ _ => simp [StringFlow.GC.c3ExactMax] at htail
+              | cons t2 ts'' =>
+                  cases ns'' with
+                  | nil => simp [StringFlow.GC.c3ExactMax] at htail
+                  | cons n2 ns''' =>
+                      have htailFull : StringFlow.GC.c3ExactMax
+                          (n' :: n2 :: ns''') (t2 :: ts'') := htail
+                      rcases htail with ⟨hstep2, hmax2, htail2⟩
+                      have hvalid' : twoValuation (5 * n' + 1) = t2 := by
+                        have hpos5' : 0 < 5 * n' + 1 := by positivity
+                        have hdvd' : 2 ^ t2 ∣ 5 * n' + 1 := by
+                          exact ⟨n2, hstep2.symm⟩
+                        have hndvd' : ¬ 2 ^ (t2 + 1) ∣ 5 * n' + 1 := by
+                          intro hd
+                          have hmod : (5 * n' + 1) % 2 ^ (t2 + 1) = 0 :=
+                            Nat.dvd_iff_mod_eq_zero.mp hd
+                          omega
+                        exact twoValuation_eq_of_dvd_pow_not_dvd_succ
+                          (5 * n' + 1) t2 hpos5' hdvd' hndvd'
+                      have hge3' : 3 ≤ twoValuation (5 * n' + 1) := by
+                        have hw : 3 ≤ t2 := hweights t2 (by simp)
+                        omega
+                      have hheadTail : twoValuation (n' + 1) = 2 :=
+                        state_rank_eq_two_of_outgoing_c3 n' hodd' hge3'
+                      have hweights' : ∀ t ∈ (t2 :: ts''), 3 ≤ t := by
+                        intro u hu
+                        exact hweights u (List.mem_cons.mpr (Or.inr hu))
+                      have htailGain := ih (n' :: n2 :: ns''') (by simp)
+                        htailFull hweights' hheadTail
+                      have hresid_eq : twoValuation
+                          (5 * ((n + 1) / 4) + 2 ^ (t - 2) - 1) = t := by
+                        have hgain := c3_step_rank_gain_div n t n' hheadN htge hstep
+                        rw [hheadTail] at hgain
+                        omega
+                      have hresid_list : c3Residuals (n :: n' :: n2 :: ns''')
+                          (t :: t2 :: ts'') =
+                          twoValuation (5 * ((n + 1) / 4) + 2 ^ (t - 2) - 1) ::
+                            c3Residuals (n' :: n2 :: ns''') (t2 :: ts'') := rfl
+                      rw [hresid_list, hresid_eq]
+                      have hcomb : twoValuation
+                          (StringFlow.GC.chainLast (n :: n' :: n2 :: ns''') + 1) +
+                            (t + (t2 :: ts'').sum) =
+                          2 + (t + (c3Residuals (n' :: n2 :: ns''') (t2 :: ts'')).sum) := by
+                        have hlast_eq : StringFlow.GC.chainLast
+                            (n :: n' :: n2 :: ns''') =
+                            StringFlow.GC.chainLast (n' :: n2 :: ns''') := rfl
+                        rw [hlast_eq]
+                        omega
+                      exact hcomb
+
 /-- A real C3 step from a reachable head satisfying the `4 * 5^k * s0`
 form supplies the C3-tail reset window with the same head parameter. -/
 theorem c3_step_reset_window_reachability
