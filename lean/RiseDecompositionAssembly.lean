@@ -1294,6 +1294,79 @@ theorem cycleRiseBlockSuffixStopC3
     rw [hmod]
     simpa [hseg0] using hge0
 
+/-- Every entry of a block's rise suffix is a rise entry one or two in
+the cyclic rotation at the block's C3-tail depth.  This supplies the
+`hall` input of the cyclic failure-window assembly. -/
+theorem cycleRiseBlockSuffixHall
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hLle : (d.suffixWord r).length ≤ w.length)
+    (k : Nat) (hk : k < (d.suffixWord r).length) :
+    (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).getI k = 1 ∨
+      (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).getI k = 2 := by
+  have hblt : cycleRiseBlockTailDepth d r - 1 < P :=
+    cycleRiseBlockTailDepth_lt_succ d r hr
+  have hble : cycleRiseBlockTailDepth d r ≤ w.length := by
+    rw [d.hperiod]
+    omega
+  have hklt : k < w.length := by omega
+  have hrot := cyclicSegmentAt_getI_mod w (cycleRiseBlockTailDepth d r) k
+    hble hklt
+  have hseg := d.hsuffix_segment r hr k hk
+  rw [hrot]
+  rw [d.hperiod]
+  dsimp [cycleRiseBlockTailDepth]
+  rw [← hseg]
+  have hm : (d.suffixWord r).getI k ∈ d.suffixWord r := by
+    rw [List.getI_eq_getElem (l := d.suffixWord r) (n := k) hk]
+    exact List.getElem_mem hk
+  rcases d.hsuffix_one_two r hr ((d.suffixWord r).getI k) hm with h1 | h2
+  · left
+    exact h1
+  · right
+    exact h2
+
+/-- The last entry of a block's rise suffix is the corresponding entry
+of the cyclic rotation.  This supplies the `ht_last` input of the
+cyclic failure-window assembly. -/
+theorem cycleRiseBlockSuffixLastStep
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (hLpos : 1 ≤ (d.suffixWord r).length)
+    (hLle : (d.suffixWord r).length ≤ w.length) :
+    (d.suffixWord r).getI ((d.suffixWord r).length - 1) =
+      (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).getI
+        ((d.suffixWord r).length - 1) := by
+  have hblt : cycleRiseBlockTailDepth d r - 1 < P :=
+    cycleRiseBlockTailDepth_lt_succ d r hr
+  have hble : cycleRiseBlockTailDepth d r ≤ w.length := by
+    rw [d.hperiod]
+    omega
+  have hk : (d.suffixWord r).length - 1 < (d.suffixWord r).length := by omega
+  have hklt : (d.suffixWord r).length - 1 < w.length := by omega
+  have hseg := d.hsuffix_segment r hr ((d.suffixWord r).length - 1) hk
+  have hrot := cyclicSegmentAt_getI_mod w (cycleRiseBlockTailDepth d r)
+    ((d.suffixWord r).length - 1) hble hklt
+  rw [hseg]
+  rw [hrot]
+  dsimp [cycleRiseBlockTailDepth]
+  rw [d.hperiod]
+
+/-- The maximality stop of a block's rise suffix: either the suffix
+fills the whole period or the next rotated entry is a C3 entry.  This
+is the wrap-invariant form of the `hstop` input of the cyclic
+failure-window assembly. -/
+theorem cycleRiseBlockSuffixStopOr
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hLlt : (d.suffixWord r).length < w.length) :
+    (d.suffixWord r).length = w.length ∨
+      3 ≤ (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).getI
+        (d.suffixWord r).length := by
+  right
+  exact cycleRiseBlockSuffixStopC3 d r hr hLlt
+
 /-- The complete real-block premises instantiation for a cyclic rise
 block (wrap-invariant): the word structure, the `q0` interval, the head
 bound and the prefix-orbit identities are all derived from the
