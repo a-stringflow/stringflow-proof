@@ -1553,6 +1553,67 @@ theorem cycleQb8Input_rotated_wordA
   dsimp [q] at hgoal ⊢
   exact hgoal
 
+/-- Exact numerator decomposition over concatenation:
+`wordA (v ++ u)` keeps the `u`-terms at their own positions and
+multiplies the `v`-numerator by `5^|u|`, with the `v`-prefix weights
+shifted by `weight u` positions. -/
+theorem wordA_append (v u : List Nat) :
+    StringFlow.Word.wordA (v ++ u) =
+      5 ^ u.length * StringFlow.Word.wordA v +
+        ((List.range u.length).map
+          (fun j => 5 ^ (u.length - 1 - j) *
+            2 ^ (StringFlow.wordWeight v + StringFlow.wordWeight (u.take j)))).sum := by
+  induction u using List.reverseRecOn with
+  | nil =>
+      simp [StringFlow.Word.wordA, StringFlow.wordWeight]
+  | append_singleton u0 t ih =>
+      let m := u0.length
+      have hstep := StringFlow.Word.wordA_append_singleton (v ++ u0) t
+      have hweight := StringFlow.Word.wordWeight_append v u0
+      have hlen : (u0 ++ [t]).length = m + 1 := by
+        dsimp [m]
+        simp
+      have htake : ∀ j, j ≤ m →
+          ((u0 ++ [t]).take j) = u0.take j := by
+        intro j hj
+        exact List.take_append_of_le_length (l₁ := u0) (l₂ := [t]) (i := j)
+          (by simpa [m] using hj)
+      have hlast : ((u0 ++ [t]).take (m + 1)) = u0 ++ [t] := by
+        exact List.take_of_length_le (by simpa [hlen])
+      have ih' : StringFlow.Word.wordA (v ++ u0) =
+          5 ^ m * StringFlow.Word.wordA v +
+            ((List.range m).map
+              (fun j => 5 ^ (m - 1 - j) *
+                2 ^ (StringFlow.wordWeight v + StringFlow.wordWeight (u0.take j)))).sum := by
+        simpa [m] using ih
+      rw [← List.append_assoc]
+      rw [hstep, hweight, ih']
+      rw [hlen]
+      rw [List.range_succ, List.map_append, List.sum_append]
+      simp [hlen, htake, hlast, m, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+      rw [Nat.mul_add]
+      rw [Nat.pow_succ]
+      rw [← Nat.mul_assoc, Nat.mul_comm 5 (5 ^ u0.length)]
+      rw [← StringFlow.PMI.sum_map_mul_left (List.range m) 5
+        (fun j => 5 ^ (m - 1 - j) *
+          2 ^ (StringFlow.wordWeight v + StringFlow.wordWeight (u0.take j)))]
+      congr 1
+      change (List.map (fun j => 5 * (5 ^ (m - 1 - j) *
+          2 ^ (StringFlow.wordWeight v + StringFlow.wordWeight (u0.take j))))
+            (List.range m)).sum =
+        (List.map (fun j => 5 ^ (m - j) *
+          2 ^ (StringFlow.wordWeight v + StringFlow.wordWeight ((u0 ++ [t]).take j)))
+            (List.range m)).sum
+      apply congrArg List.sum
+      apply List.map_congr_left
+      intro j hj
+      have hjlt : j < m := (List.mem_range.mp hj)
+      have hjle : j ≤ m := le_of_lt hjlt
+      rw [htake j hjle]
+      have hsub : m - j = (m - 1 - j) + 1 := by omega
+      rw [hsub, Nat.pow_succ]
+      ring
+
 /-- Direct construction of the block-head predecessor identity
 (`hpred`) from the real boundary terminal.  The proof instantiates the
 real terminal, the cyclic prefix occurrence with its exact incoming
