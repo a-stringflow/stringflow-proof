@@ -148,6 +148,38 @@ theorem cycleRiseBlockTailRank_lower_of_endpoint_two
     simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hend0
   omega
 
+/-- The open budget side of the rank target: a rise block whose exact
+tail lower bound `2+2N-F` already crosses the tail-depth threshold. -/
+def hfailBudgetLowerBoundAt {m S P : Nat} {w : List Nat}
+    (d : CycleBridge.CycleRiseBlockDecomposition m S P w) (r : Nat) : Prop :=
+  2 * (CycleBridge.cycleRiseBlockTailDepth d r + 1) + 11 ≤
+    2 + 2 * CycleBridge.riseCountTwo (d.suffixWord r) -
+      CycleBridge.cycleRiseBlockCharge d r
+
+/-- The exact missing `N`/`F` budget: some cyclic rise block satisfies
+`2+2N-F` at or above the tail-depth threshold. -/
+def hfailBudgetLowerBound : Prop :=
+  ∀ m S P : Nat, ∀ w rise c3 : List Nat,
+    CycleBridge.CycleQb8Input m S P w rise c3 →
+    5 ^ P < 2 ^ S →
+      ∃ d : CycleBridge.CycleRiseBlockDecomposition m S P w,
+        ∃ r : Nat, r < d.blockCount ∧ hfailBudgetLowerBoundAt d r
+
+/-- The budget proposition is exactly what converts the exact
+tail-rank lower bound into a concrete tail-rank threshold. -/
+theorem tailRankThreshold_of_hfailBudget
+    (hbudget : hfailBudgetLowerBound)
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleBridge.CycleQb8Input m S P w rise c3)
+    (hpow : 5 ^ P < 2 ^ S) :
+    ∃ d : CycleBridge.CycleRiseBlockDecomposition m S P w,
+      ∃ r : Nat, r < d.blockCount ∧
+        2 * (CycleBridge.cycleRiseBlockTailDepth d r + 1) + 11 ≤
+          CycleBridge.cycleRiseBlockTailRank d r := by
+  rcases hbudget m S P w rise c3 h hpow with ⟨d, r, hr, hb⟩
+  exact ⟨d, r, hr, le_trans hb
+    (cycleRiseBlockTailRank_lower_of_endpoint_two d r hr)⟩
+
 /-- A `t=1` rank threshold is exactly the `hfail_t1` valuation bound,
 once the reset equation identifies the block head. -/
 theorem hfail_t1_of_rank
