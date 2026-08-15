@@ -1148,4 +1148,42 @@ theorem premises_of_cycleRiseBlock
     j s r_s L H_s t rj hvs.1 hvs.2 hj_pos hj_le_s hs_le ht hrj_local hhead
     hrs_local hrs_lt hrs_mod8 hL hH
 
+/-- The real reset-window version of the cyclic rise-block premises:
+the head-size interval is supplied by the genuine reset reachability
+`ResetHeadEq` / `ResetWindowReachability` (the output of
+`local_hident_to_reset_reachability` on the real block), so only the
+tail-size and failure-branch inputs remain. -/
+theorem premises_of_cycleRiseBlock_of_reset_window
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (j s t rj r_s L H_s k0 delta s0 : Nat)
+    (hj_pos : 1 ≤ j) (hj_le_s : j ≤ s) (hs_le : s ≤ (d.suffixWord r).length)
+    (ht : UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) j =
+      UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) (j - 1) + t)
+    (hrj : rj = StringFlow.Word.wordOrbit
+      (w.take ((cycleRiseBlockTailDepth d r + j) % P)) m)
+    (hreset : S6Audit.ResetHeadEq s0 j k0 t delta rj)
+    (hreach : S6Audit.ResetWindowReachability j k0 t delta s0)
+    (hrs_eq : r_s = StringFlow.Word.wordOrbit
+      (w.take ((cycleRiseBlockTailDepth d r + s) % P)) m)
+    (hrs_lt : r_s < 5 ^ s)
+    (hrs_mod8 : r_s % 8 = 5)
+    (hL : L + 4 = twoValuation (3 * r_s + 1))
+    (hH : H_s = 2 * s + 13 - 2 *
+      (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) s -
+        UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) (j - 1))) :
+    UnifiedCoreAudit.All36_20PremisesNoHge j
+      (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) (j - 1))
+      (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) j)
+      (cycleRiseBlockC3TailState d r)
+      (S6Audit.wordMolecule (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r)) j)
+      (S6Audit.wordMolecule (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r)) s) s
+      (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r) s) r_s L H_s
+      (UnifiedCoreAudit.prefixWeightOf (d.suffixWord r)) := by
+  have hhead := StringFlow.RealOrbitLocalLemma.reset_head_size_bounds_of_reachability
+    j k0 t delta s0 rj hreset hreach
+  exact premises_of_cycleRiseBlock d r hr j s t rj r_s L H_s
+    hj_pos hj_le_s hs_le ht hrj hhead hrs_eq hrs_lt hrs_mod8 hL hH
+
 end StringFlow.CycleBridge
