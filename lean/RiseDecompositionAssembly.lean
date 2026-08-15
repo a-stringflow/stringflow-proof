@@ -1651,6 +1651,34 @@ theorem cycleRiseBlockHpred_of_real_terminal
   have hE5 : StringFlow.Word.wordA u' + 5 ^ (L - 1) * q =
       2 ^ ((StringFlow.wordWeight u' + w.getI (b - 1)) - 1) * q +
         delta * 2 ^ StringFlow.wordWeight u' * 5 ^ (L - 1) := by
+    have hDpos : 0 < 2 ^ S - 5 ^ P := by
+      rcases h.hcycle with ⟨hcp⟩
+      rcases hcp with ⟨cp, hprops⟩
+      rcases hprops with ⟨hw, hm⟩
+      rcases hm with ⟨hm, hS⟩
+      rcases hS with ⟨hS, _hr, _hc⟩
+      have hclosed' : StringFlow.Word.wordOrbit
+          (cycleWord cp.1 cp.2) (fiveXPlusOneOrbit 7 cp.1) =
+          fiveXPlusOneOrbit 7 cp.1 := by
+        simpa [hw, hm] using h.hclosed
+      have hP : P = cp.2 := by
+        rw [← h.hlength, hw, cycleWord_length cp.1 cp.2]
+      have hp : 1 ≤ cp.2 := by
+        have hPge2 : 2 ≤ P := cycleQb8Input_P_ge_two h
+        omega
+      have hD := cycleWord_D_pos cp.1 cp.2 hclosed' hp
+      have hS' : S = cycleWordTotalWeight cp.1 cp.2 := by
+        dsimp [cycleWordTotalWeight]
+        exact hS
+      simpa [hS', hP] using hD
+    have hqD : q * (2 ^ S - 5 ^ P) =
+        StringFlow.Word.wordA (cyclicSegmentAt w b) := by
+      exact cycleQb8Input_rotated_wordA h b hble
+    apply Nat.eq_of_mul_eq_mul_left hDpos
+    rw [Nat.mul_add, Nat.mul_add]
+    ring_nf
+    rw [Nat.mul_comm (2 ^ S - 5 ^ P) q]
+    rw [hqD]
     sorry
   have heq' : 2 ^ StringFlow.wordWeight u' * StringFlow.Word.wordOrbit u' q =
       2 ^ StringFlow.wordWeight u' * (rt.r + delta * 5 ^ (L - 1)) := by
