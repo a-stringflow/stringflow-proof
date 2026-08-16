@@ -283,6 +283,35 @@ def trinityBlockExists : Prop :=
       ∃ b L t delta : Nat, ∃ rt : S6Audit.AngelinaGilbertaRealTerminal,
         TrinityBlock h b L t delta rt
 
+/-- Trinity final assembly from the selected hfail block.  The same
+`SelectedBlockData` carries `(b, L, hres)`; the selected block's
+maximality stop and the same-block hfail lower bounds are supplied at
+the trinity layer, so hterm/unified-core/hfail all compare the same
+rank. -/
+theorem trinityBlockExists_of_selected_hfail_and_stop
+    (hsel : cycleQb8InputSelectedHfailBlock)
+    (hstop : ∀ {m S P : Nat} {w rise c3 : List Nat}
+      (h : CycleBridge.CycleQb8Input m S P w rise c3)
+      (data : SelectedHfailBlockData h),
+      data.blockL = w.length ∨
+        3 ≤ (CycleBridge.cyclicSegmentAt w data.blockB).getI data.blockL)
+    (hfail : ∀ {m S P : Nat} {w rise c3 : List Nat}
+      (h : CycleBridge.CycleQb8Input m S P w rise c3)
+      (data : SelectedHfailBlockData h),
+      (data.stepT = 1 →
+        2 * data.blockL + 12 ≤
+          BlockAutomaton.t1WindowValue data.blockL data.rt.k data.rt.s) ∧
+      (data.stepT = 2 →
+        2 * data.blockL + 11 ≤
+          BlockAutomaton.t2WindowValue data.blockL data.rt.k
+            data.stepDelta data.rt.s)) :
+    trinityBlockExists := by
+  intro m S P w rise c3 h
+  rcases hsel m S P w rise c3 h with ⟨data, _⟩
+  refine ⟨data.blockB, data.blockL, data.stepT, data.stepDelta, data.rt,
+    TrinityBlock_of_selected_block h data.toSelectedBlockData
+      (hstop h data) (hfail h data).1 (hfail h data).2⟩
+
 /-- A trinity block in every `CycleQb8Input` rules out a positive cycle
 of `7`: the block's lower and upper bounds contradict. -/
 theorem trinity_no_cycle_of_block_exists

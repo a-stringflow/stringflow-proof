@@ -21,6 +21,14 @@ theorem five_x_plus_one_diverges_at_7_of_window_and_failure_window
   Trinity.five_x_plus_one_diverges_at_7_of_failure_window_and_window_bound
     hF hwin
 
+/-- Trinity-block route: once `trinityBlockExists` is supplied, the
+public statement is immediate.  This is the exact assembly requested
+for the final theorem; the remaining work is supplying `hA`. -/
+theorem five_x_plus_one_diverges_at_7_of_trinity_block
+    (hA : Trinity.trinityBlockExists) :
+    IsUnboundedOrbit 7 :=
+  Trinity.trinity_unbounded_of_block_exists hA
+
 /-- Internal assembly target for the public statement. -/
 theorem five_x_plus_one_diverges_at_7 : IsUnboundedOrbit 7 := by
   -- Internal assembly is not complete.

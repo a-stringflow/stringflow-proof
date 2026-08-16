@@ -1613,6 +1613,274 @@ theorem wordA_append (v u : List Nat) :
       rw [hsub, Nat.pow_succ]
       ring
 
+/-- Shifted form of `wordA_append`: appending `u` multiplies the
+`v`-numerator by `5^|u|` and the `u`-numerator by `2^weight v`.
+This is the exact block-partition identity used to decompose the
+whole-cycle `wordA` into the cyclic rise blocks. -/
+theorem wordA_append_shift (v u : List Nat) :
+    StringFlow.Word.wordA (v ++ u) =
+      5 ^ u.length * StringFlow.Word.wordA v +
+        2 ^ StringFlow.wordWeight v * StringFlow.Word.wordA u := by
+  induction u using List.reverseRecOn with
+  | nil =>
+      simp [StringFlow.Word.wordA, StringFlow.wordWeight]
+  | append_singleton u0 t ih =>
+      have hstep := StringFlow.Word.wordA_append_singleton (v ++ u0) t
+      have hweight := StringFlow.Word.wordWeight_append v u0
+      have hlen : (u0 ++ [t]).length = u0.length + 1 := by simp
+      have hlast : StringFlow.Word.wordA (u0 ++ [t]) =
+          5 * StringFlow.Word.wordA u0 + 2 ^ StringFlow.wordWeight u0 :=
+        StringFlow.Word.wordA_append_singleton u0 t
+      calc
+        StringFlow.Word.wordA (v ++ (u0 ++ [t]))
+            = StringFlow.Word.wordA ((v ++ u0) ++ [t]) := by
+                rw [← List.append_assoc]
+        _ = 5 * StringFlow.Word.wordA (v ++ u0) +
+              2 ^ StringFlow.wordWeight (v ++ u0) := hstep
+        _ = 5 * (5 ^ u0.length * StringFlow.Word.wordA v +
+              2 ^ StringFlow.wordWeight v * StringFlow.Word.wordA u0) +
+              2 ^ (StringFlow.wordWeight v + StringFlow.wordWeight u0) := by
+                rw [ih, hweight]
+        _ = 5 ^ (u0.length + 1) * StringFlow.Word.wordA v +
+              2 ^ StringFlow.wordWeight v *
+                (5 * StringFlow.Word.wordA u0 + 2 ^ StringFlow.wordWeight u0) := by ring
+        _ = 5 ^ (u0 ++ [t]).length * StringFlow.Word.wordA v +
+              2 ^ StringFlow.wordWeight v * StringFlow.Word.wordA (u0 ++ [t]) := by
+                rw [hlen, hlast]
+
+/-- Exact `wordA` expansion of one cyclic rise block segment
+`c3Word r ++ suffixWord r`: the C3 numerator is shifted by the suffix
+length, and the suffix contributes its own power-of-two terms at the
+local prefix weights.  This is the block-level entry to the sum lower
+bound `Σ R_r ≥ 2Σ b_r + 13K`. -/
+theorem cycleRiseBlockSegment_wordA_expansion
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat) :
+    StringFlow.Word.wordA (d.c3Word r ++ d.suffixWord r) =
+      5 ^ (d.suffixWord r).length * StringFlow.Word.wordA (d.c3Word r) +
+        ((List.range (d.suffixWord r).length).map
+          (fun j => 5 ^ ((d.suffixWord r).length - 1 - j) *
+          2 ^ (StringFlow.wordWeight (d.c3Word r) +
+               StringFlow.wordWeight ((d.suffixWord r).take j)))).sum :=
+  wordA_append (d.c3Word r) (d.suffixWord r)
+
+/-- The cyclic rotation at a block's C3-tail depth starts with the
+block's rise suffix, followed by the rotated remainder.  This is the
+wrap-invariant decomposition used to expand
+`cycleQb8Input_rotated_wordA` block by block. -/
+theorem cyclicSegmentAt_tail_eq_suffix_append
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (hLle : (d.suffixWord r).length ≤ w.length)
+    (hwpos : 0 < w.length) :
+    cyclicSegmentAt w (cycleRiseBlockTailDepth d r) =
+      d.suffixWord r ++
+        (cyclicSegmentAt w
+          ((cycleRiseBlockTailDepth d r + (d.suffixWord r).length) % w.length)).take
+            (w.length - (d.suffixWord r).length) := by
+  let b := cycleRiseBlockTailDepth d r
+  let L := (d.suffixWord r).length
+  have hb : b ≤ w.length := by
+    dsimp [b]
+    have hblt : cycleRiseBlockTailDepth d r - 1 < P :=
+      cycleRiseBlockTailDepth_lt_succ d r hr
+    rw [d.hperiod]
+    omega
+  have hL : L ≤ w.length := hLle
+  have htake : d.suffixWord r = (cyclicSegmentAt w b).take L := by
+    dsimp [b, L]
+    exact cycleRiseBlockSuffixWord_eq_cyclic_take d r hr hLle
+  have hsplit : cyclicSegmentAt w b =
+      (cyclicSegmentAt w b).take L ++ (cyclicSegmentAt w b).drop L :=
+    (List.take_append_drop L (cyclicSegmentAt w b)).symm
+  have hdrop := cyclicSegmentAt_drop_take w b L hb hL
+  calc
+    cyclicSegmentAt w b = (cyclicSegmentAt w b).take L ++
+        (cyclicSegmentAt w b).drop L := hsplit
+    _ = d.suffixWord r ++
+          (cyclicSegmentAt w ((b + L) % w.length)).take
+            (w.length - L) := by
+        rw [hdrop hwpos]
+        rw [htake]
+
+/-- The rotated-word cycle closure at a block's C3-tail boundary is
+the `wordA` of `suffixWord r` followed by the rotated remainder.  This
+instantiates `cycleQb8Input_rotated_wordA` on the block decomposition. -/
+theorem cycleRiseBlockRotatedWordA_eq_suffix_append
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleBridge.CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (hLle : (d.suffixWord r).length ≤ w.length) :
+    StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r)) m * (2 ^ S - 5 ^ P) =
+      StringFlow.Word.wordA
+        (d.suffixWord r ++
+          (cyclicSegmentAt w
+            ((cycleRiseBlockTailDepth d r + (d.suffixWord r).length) % w.length)).take
+              (w.length - (d.suffixWord r).length)) := by
+  have hwpos : 0 < w.length := by
+    have hP : 2 ≤ P := CycleBridge.cycleQb8Input_P_ge_two h
+    rw [d.hperiod]
+    omega
+  have hb : cycleRiseBlockTailDepth d r ≤ w.length := by
+    have hblt : cycleRiseBlockTailDepth d r - 1 < P :=
+      cycleRiseBlockTailDepth_lt_succ d r hr
+    rw [d.hperiod]
+    omega
+  rw [← cyclicSegmentAt_tail_eq_suffix_append d r hr hLle hwpos]
+  exact cycleQb8Input_rotated_wordA h (cycleRiseBlockTailDepth d r) hb
+
+/-- Exact suffix-side expansion of the same rotated-word identity:
+the boundary-state term equals the shifted `wordA` of the rise suffix
+plus the local power-of-two suffix terms. -/
+theorem cycleRiseBlockRotatedWordA_suffix_expansion
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleBridge.CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount)
+    (hLle : (d.suffixWord r).length ≤ w.length) :
+    StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r)) m * (2 ^ S - 5 ^ P) =
+      5 ^ (w.length - (d.suffixWord r).length) *
+          StringFlow.Word.wordA (d.suffixWord r) +
+        ((List.range (w.length - (d.suffixWord r).length)).map
+          (fun j => 5 ^ (w.length - (d.suffixWord r).length - 1 - j) *
+          2 ^ (StringFlow.wordWeight (d.suffixWord r) +
+               StringFlow.wordWeight
+                   ((cyclicSegmentAt w
+                     ((cycleRiseBlockTailDepth d r + (d.suffixWord r).length) % w.length)).take j)))).sum := by
+  have hwpos : 0 < w.length := by
+    have hP : 2 ≤ P := CycleBridge.cycleQb8Input_P_ge_two h
+    rw [d.hperiod]
+    omega
+  let mid := (cycleRiseBlockTailDepth d r + (d.suffixWord r).length) % w.length
+  have hb_mid : mid ≤ w.length := by
+    dsimp [mid]
+    exact le_of_lt (Nat.mod_lt _ hwpos)
+  have hlen_mid : (cyclicSegmentAt w mid).length = w.length :=
+    cyclicSegmentAt_length w mid hb_mid
+  have hrest_len : ((cyclicSegmentAt w mid).take
+      (w.length - (d.suffixWord r).length)).length =
+      w.length - (d.suffixWord r).length := by
+    rw [List.length_take_of_le]
+    rw [hlen_mid]
+    exact Nat.sub_le _ _
+  rw [cycleRiseBlockRotatedWordA_eq_suffix_append h d r hr hLle]
+  rw [wordA_append]
+  rw [hrest_len]
+  congr 1
+  apply congrArg List.sum
+  apply List.map_congr_left
+  intro j hj
+  have hjlt : j < w.length - (d.suffixWord r).length := List.mem_range.mp hj
+  have htake : (cyclicSegmentAt w mid).take j =
+      ((cyclicSegmentAt w mid).take (w.length - (d.suffixWord r).length)).take j := by
+    rw [List.take_take]
+    rw [Nat.min_eq_left (le_of_lt hjlt)]
+  dsimp [mid] at htake ⊢
+  rw [← htake]
+
+/-- The rise suffix `wordA` splits at its last step:
+`wordA(suffix) = 5·wordA(dropLast) + 2^{weight dropLast}`.  This is the
+`u = u' ++ [t]` decomposition needed to substitute the predecessor
+identity `cycleRiseBlockHpred_of_real_terminal`. -/
+theorem cycleRiseBlockSuffixWordA_last_step
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hne : d.suffixWord r ≠ []) :
+    StringFlow.Word.wordA (d.suffixWord r) =
+      5 * StringFlow.Word.wordA ((d.suffixWord r).dropLast) +
+        2 ^ StringFlow.wordWeight ((d.suffixWord r).dropLast) := by
+  have hsplit : d.suffixWord r =
+      (d.suffixWord r).dropLast ++ [StringFlow.Word.wordLast (d.suffixWord r)] :=
+    S6Audit.word_eq_dropLast_append_last (d.suffixWord r) hne
+  conv_lhs => rw [hsplit]
+  exact StringFlow.Word.wordA_append_singleton ((d.suffixWord r).dropLast)
+    (StringFlow.Word.wordLast (d.suffixWord r))
+
+/-- The rise suffix splits as `dropLast ++ [last]`, so the dropLast
+prefix has length `L-1`.  This is the `u'` length needed by
+`cycleRiseBlockHpred_of_real_terminal`. -/
+theorem cycleRiseBlockSuffixDropLast_length
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hne : d.suffixWord r ≠ []) :
+    (d.suffixWord r).dropLast.length = (d.suffixWord r).length - 1 := by
+  have hsplit := S6Audit.word_eq_dropLast_append_last (d.suffixWord r) hne
+  have hlen : (d.suffixWord r).length =
+      (d.suffixWord r).dropLast.length + 1 := by
+    have h := congrArg List.length hsplit
+    simpa [List.length_append] using h
+  omega
+
+/-- The rise suffix's `dropLast` equals the cyclic rotation's
+`take (L-1)`: the two `u'` forms in `cycleRiseBlockSuffixWordA_last_step`
+and `cycleRiseBlockWordA_prefix_add` are the same list. -/
+theorem cycleRiseBlockSuffixDropLast_eq_cyclic_take
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hne : d.suffixWord r ≠ [])
+    (hLle : (d.suffixWord r).length ≤ w.length) :
+    (d.suffixWord r).dropLast =
+      (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+        ((d.suffixWord r).length - 1) := by
+  have htake := cycleRiseBlockSuffixWord_eq_cyclic_take d r hr hLle
+  rw [htake]
+  have h1 := List.dropLast_take_eq_take_dropLast
+    (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)) ((d.suffixWord r).length)
+  rw [h1]
+  have hLpos : 0 < (d.suffixWord r).length := List.length_pos_iff.mpr hne
+  have hblt : cycleRiseBlockTailDepth d r - 1 < P :=
+    cycleRiseBlockTailDepth_lt_succ d r hr
+  have hble : cycleRiseBlockTailDepth d r ≤ w.length := by
+    rw [d.hperiod]
+    omega
+  have hseg_len : (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).length =
+      w.length :=
+    cyclicSegmentAt_length w (cycleRiseBlockTailDepth d r) hble
+  have htake_len : (List.take ((d.suffixWord r).length)
+      (cyclicSegmentAt w (cycleRiseBlockTailDepth d r))).length =
+      (d.suffixWord r).length := by
+    rw [List.length_take_of_le]
+    rw [hseg_len]
+    exact hLle
+  have hLle' : (d.suffixWord r).length - 1 ≤
+      (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).length - 1 := by
+    rw [hseg_len]
+    omega
+  rw [htake_len]
+  rw [List.dropLast_eq_take]
+  rw [List.take_take]
+  rw [Nat.min_eq_left hLle']
+
+/-- The last entry of `u ++ [t]` is `t`. -/
+lemma wordLast_append_singleton (u : List Nat) (t : Nat) :
+    StringFlow.Word.wordLast (u ++ [t]) = t := by
+  induction u with
+  | nil => simp [StringFlow.Word.wordLast]
+  | cons a as ih =>
+      cases as with
+      | nil => simp [StringFlow.Word.wordLast]
+      | cons b bs =>
+          change StringFlow.Word.wordLast ((b :: bs) ++ [t]) = t
+          exact ih
+
+/-- The suffix weight splits as `weight dropLast + last`, matching the
+`u = u' ++ [t]` decomposition of the predecessor identity. -/
+theorem cycleRiseBlockSuffixWeight_last_step
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hne : d.suffixWord r ≠ []) :
+    StringFlow.wordWeight (d.suffixWord r) =
+      StringFlow.wordWeight ((d.suffixWord r).dropLast) +
+        StringFlow.Word.wordLast (d.suffixWord r) := by
+  have hsplit := S6Audit.word_eq_dropLast_append_last (d.suffixWord r) hne
+  rw [hsplit]
+  rw [StringFlow.Word.wordWeight_append]
+  simp [StringFlow.wordWeight, wordLast_append_singleton]
+
 /-- Direct construction of the block-head predecessor identity
 (`hpred`) from the real boundary terminal and its genuine local reset
 (`hterm`).  The proof instantiates the real terminal, the cyclic prefix
@@ -1792,6 +2060,199 @@ theorem cycleRiseBlockHpred_of_real_terminal
   dsimp [u', q, b, L] at heq'''
   rw [← hprev] at heq'''
   exact heq'''
+
+/-- Combining `cycleRiseBlockHpred_of_real_terminal` with the cyclic
+local block equation exposes the rise-prefix numerator as an exact
+`q`-polynomial.  Addition form avoids Nat subtraction. -/
+theorem cycleRiseBlockWordA_prefix_add
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleBridge.CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hne : d.suffixWord r ≠ [])
+    (hLle : (d.suffixWord r).length ≤ w.length)
+    (hLge3 : 3 ≤ (d.suffixWord r).length)
+    (t delta : Nat)
+    (ht_last : t = (d.suffixWord r).getI ((d.suffixWord r).length - 1))
+    (ht : t = 1 ∨ t = 2)
+    (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
+    (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hterm : IsLocalResetTerminal t (d.suffixWord r).length
+      (StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+          (d.suffixWord r).length)
+        (StringFlow.Word.wordOrbit
+          (w.take (cycleRiseBlockTailDepth d r)) m)) delta rt)
+    (hrt : rt.r = (5 * StringFlow.Word.wordOrbit
+      (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2) :
+    let u' := (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+        ((d.suffixWord r).length - 1)
+    let q := StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r)) m
+    StringFlow.Word.wordA u' +
+        5 ^ ((d.suffixWord r).length - 1) * q =
+      2 ^ StringFlow.wordWeight u' *
+        (5 ^ rt.k * rt.s +
+          delta * 5 ^ ((d.suffixWord r).length - 1) - 1) := by
+  let u' := (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+      ((d.suffixWord r).length - 1)
+  let q := StringFlow.Word.wordOrbit
+      (w.take (cycleRiseBlockTailDepth d r)) m
+  have hpred := cycleRiseBlockHpred_of_real_terminal h d r hr hne hLle hLge3
+    t delta ht_last ht hdelta rt hterm hrt
+  have hLpos' : 1 ≤ (d.suffixWord r).length - 1 := by omega
+  have hLle' : (d.suffixWord r).length - 1 ≤ w.length := by omega
+  have hb : IsCyclicC3RiseBoundaryAt w (cycleRiseBlockTailDepth d r) :=
+    cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary d r hr hne
+  rcases cycleQb8Input_cyclic_local_block_data h (cycleRiseBlockTailDepth d r)
+      ((d.suffixWord r).length - 1) hb hLpos' hLle' with
+    ⟨Aj, Wp, Wj, t0, hAj, hWj, hWp, ht0, hW, hid', hdiv, hrjform⟩
+  have hAj' : Aj = StringFlow.Word.wordA u' := by
+    simpa [u'] using hAj
+  have hWj' : Wj = StringFlow.wordWeight u' := by
+    simpa [u'] using hWj
+  have hid'' : 2 ^ StringFlow.wordWeight u' *
+        (5 ^ rt.k * rt.s +
+          delta * 5 ^ ((d.suffixWord r).length - 1) - 1) =
+      StringFlow.Word.wordA u' +
+        5 ^ ((d.suffixWord r).length - 1) * q := by
+    rw [hWj', hAj', ← hpred] at hid'
+    exact hid'
+  exact hid''.symm
+
+/-- The suffix numerator plus the shifted boundary term collapses to
+the exact `q`-polynomial `2^{W'}·(5X+1)`.  This is the block-level
+form in which the boundary rank `R_r = v2(q+1)` can be extracted after
+substituting `rt.r = 2^{c-1}·q`. -/
+theorem cycleRiseBlockSuffixWordA_q_polynomial
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleBridge.CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hne : d.suffixWord r ≠ [])
+    (hLle : (d.suffixWord r).length ≤ w.length)
+    (hLge3 : 3 ≤ (d.suffixWord r).length)
+    (t delta : Nat)
+    (ht_last : t = (d.suffixWord r).getI ((d.suffixWord r).length - 1))
+    (ht : t = 1 ∨ t = 2)
+    (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
+    (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hterm : IsLocalResetTerminal t (d.suffixWord r).length
+      (StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+          (d.suffixWord r).length)
+        (StringFlow.Word.wordOrbit
+          (w.take (cycleRiseBlockTailDepth d r)) m)) delta rt)
+    (hrt : rt.r = (5 * StringFlow.Word.wordOrbit
+      (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2) :
+    let u' := (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+        ((d.suffixWord r).length - 1)
+    let q := StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r)) m
+    let L := (d.suffixWord r).length
+    let X := 5 ^ rt.k * rt.s + delta * 5 ^ (L - 1) - 1
+    StringFlow.Word.wordA (d.suffixWord r) + 5 ^ L * q =
+      2 ^ StringFlow.wordWeight u' * (5 * X + 1) := by
+  let u' := (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+      ((d.suffixWord r).length - 1)
+  let q := StringFlow.Word.wordOrbit
+      (w.take (cycleRiseBlockTailDepth d r)) m
+  let L := (d.suffixWord r).length
+  let X := 5 ^ rt.k * rt.s + delta * 5 ^ (L - 1) - 1
+  have hdrop := cycleRiseBlockSuffixDropLast_eq_cyclic_take d r hr hne hLle
+  have hlast := cycleRiseBlockSuffixWordA_last_step d r hne
+  have hlast' : StringFlow.Word.wordA (d.suffixWord r) =
+      5 * StringFlow.Word.wordA u' + 2 ^ StringFlow.wordWeight u' := by
+    rw [hdrop] at hlast
+    simpa [u'] using hlast
+  have hpref := cycleRiseBlockWordA_prefix_add h d r hr hne hLle hLge3 t delta
+    ht_last ht hdelta rt hterm hrt
+  have hmain : StringFlow.Word.wordA (d.suffixWord r) + 5 ^ L * q =
+      5 * (StringFlow.Word.wordA u' + 5 ^ (L - 1) * q) +
+        2 ^ StringFlow.wordWeight u' := by
+    rw [hlast']
+    have hpow : 5 ^ L = 5 * 5 ^ (L - 1) := by
+      have hLpos : 0 < L := by
+        dsimp [L]
+        exact List.length_pos_iff.mpr hne
+      have hL_eq : L = (L - 1) + 1 := by omega
+      rw [hL_eq, Nat.pow_succ]
+      have hsub : L - 1 + 1 - 1 = L - 1 := by omega
+      rw [hsub]
+      rw [Nat.mul_comm]
+    rw [hpow]
+    ring
+  calc
+    StringFlow.Word.wordA (d.suffixWord r) + 5 ^ L * q
+        = 5 * (StringFlow.Word.wordA u' + 5 ^ (L - 1) * q) +
+            2 ^ StringFlow.wordWeight u' := hmain
+    _ = 5 * (2 ^ StringFlow.wordWeight u' * X) +
+          2 ^ StringFlow.wordWeight u' := by
+        have hpref' : StringFlow.Word.wordA u' + 5 ^ (L - 1) * q =
+            2 ^ StringFlow.wordWeight u' * X := by
+          simpa [u', q, L, X] using hpref
+        rw [hpref']
+    _ = 2 ^ StringFlow.wordWeight u' * (5 * X + 1) := by ring
+
+/-- Boundary substitution: `rt.r = 2^{c-1}·q` and
+`5^rt.k·rt.s = rt.r+1` rewrite the `q`-polynomial into the explicit
+`2^{c-1}` form.  This is the block-level shape used for the whole-cycle
+rank sum. -/
+theorem cycleRiseBlockSuffixWordA_q_polynomial_boundary
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleBridge.CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hne : d.suffixWord r ≠ [])
+    (hLle : (d.suffixWord r).length ≤ w.length)
+    (hLge3 : 3 ≤ (d.suffixWord r).length)
+    (t delta : Nat)
+    (ht_last : t = (d.suffixWord r).getI ((d.suffixWord r).length - 1))
+    (ht : t = 1 ∨ t = 2)
+    (hdelta : (t = 1 → delta = 1) ∧ (t = 2 → delta = 1 ∨ delta = 3))
+    (rt : S6Audit.AngelinaGilbertaRealTerminal)
+    (hterm : IsLocalResetTerminal t (d.suffixWord r).length
+      (StringFlow.Word.wordOrbit
+        ((cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+          (d.suffixWord r).length)
+        (StringFlow.Word.wordOrbit
+          (w.take (cycleRiseBlockTailDepth d r)) m)) delta rt)
+    (hrt : rt.r = (5 * StringFlow.Word.wordOrbit
+      (w.take (cycleRiseBlockTailDepth d r - 1)) m + 1) / 2) :
+    let u' := (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+        ((d.suffixWord r).length - 1)
+    let q := StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r)) m
+    let L := (d.suffixWord r).length
+    StringFlow.Word.wordA (d.suffixWord r) + 5 ^ L * q =
+      2 ^ StringFlow.wordWeight u' *
+        (5 * 2 ^ (w.getI (cycleRiseBlockTailDepth d r - 1) - 1) * q +
+          5 * delta * 5 ^ (L - 1) + 1) := by
+  let u' := (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)).take
+      ((d.suffixWord r).length - 1)
+  let q := StringFlow.Word.wordOrbit
+      (w.take (cycleRiseBlockTailDepth d r)) m
+  let L := (d.suffixWord r).length
+  let X := 5 ^ rt.k * rt.s + delta * 5 ^ (L - 1) - 1
+  have hq0 := cycleRiseBlockSuffixWordA_q_polynomial h d r hr hne hLle hLge3 t delta
+    ht_last ht hdelta rt hterm hrt
+  have hb : IsCyclicC3RiseBoundaryAt w (cycleRiseBlockTailDepth d r) :=
+    cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary d r hr hne
+  have hbound := RealOrbitLocalLemma.cycleQb8Input_boundary_terminal_eq
+    h (cycleRiseBlockTailDepth d r) hb rt hrt
+  have hX0 : 5 ^ rt.k * rt.s + delta * 5 ^ (L - 1) - 1 =
+      rt.r + delta * 5 ^ (L - 1) := by
+    have hprod' : 5 ^ rt.k * rt.s = rt.r + 1 := by
+      simpa [Nat.mul_comm] using rt.hprod
+    rw [hprod']
+    omega
+  have hX : 5 * (5 ^ rt.k * rt.s + delta * 5 ^ (L - 1) - 1) + 1 =
+      5 * 2 ^ (w.getI (cycleRiseBlockTailDepth d r - 1) - 1) * q +
+        5 * delta * 5 ^ (L - 1) + 1 := by
+    rw [hX0, hbound]
+    ring
+  have hq1 : StringFlow.Word.wordA (d.suffixWord r) + 5 ^ L * q =
+      2 ^ StringFlow.wordWeight u' * (5 * X + 1) := by
+    simpa [u', q, L] using hq0
+  rw [hX] at hq1
+  simpa [u', q, L] using hq1
 
 /-- The real-orbit half of `hterm`: the genuine predecessor identity
 `5^rt.k * rt.s + delta * 5^(L-1) - 1 = wordOrbit u' q` constructs the
@@ -3296,5 +3757,268 @@ theorem premises_of_cycleRiseBlock_of_reset_window
     j k0 t delta s0 rj hreset hreach
   exact premises_of_cycleRiseBlock d r hr j s t rj r_s L H_s
     hj_pos hj_le_s hs_le ht hrj hhead hrs_eq hrs_lt hrs_mod8 hL hH
+
+/-! ## Uniform whole-cycle block summation
+
+The lemmas in this section are the uniform block-layer mechanism for
+the whole-cycle sum.  They instantiate
+`cycleQb8Input_cyclic_local_block_data` at every C3-tail boundary
+`b = cycleRiseBlockTailDepth d r` with `u = suffixWord r`, so no
+selected-block `hterm`/`rt` enters the summation.  The selected-block
+`q`-polynomial lemmas above remain available only after a block has
+been chosen. -/
+
+/-- Uniform cyclic local block data at every C3-tail boundary: the
+rise suffix `u = suffixWord r`, its boundary state
+`q = wordOrbit (w.take b) m`, and its exact local word equation,
+instantiated from `cycleQb8Input_cyclic_local_block_data` without any
+selected-block `hterm`/`rt`. -/
+theorem cycleRiseBlockUniformLocalBlockData
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) (hne : d.suffixWord r ≠ [])
+    (hLle : (d.suffixWord r).length ≤ w.length) :
+    ∃ Aj Wp Wj t : Nat,
+      Aj = StringFlow.Word.wordA (d.suffixWord r) ∧
+      Wj = StringFlow.wordWeight (d.suffixWord r) ∧
+      Wp = StringFlow.wordWeight ((d.suffixWord r).take
+        ((d.suffixWord r).length - 1)) ∧
+      t = (d.suffixWord r).getI ((d.suffixWord r).length - 1) ∧
+      Wj = Wp + t ∧
+      2 ^ Wj * StringFlow.Word.wordOrbit (d.suffixWord r)
+            (StringFlow.Word.wordOrbit
+              (w.take (cycleRiseBlockTailDepth d r)) m) =
+        StringFlow.Word.wordA (d.suffixWord r) +
+          5 ^ (d.suffixWord r).length *
+            StringFlow.Word.wordOrbit
+              (w.take (cycleRiseBlockTailDepth d r)) m ∧
+      (StringFlow.Word.wordA (d.suffixWord r) +
+          5 ^ (d.suffixWord r).length *
+            StringFlow.Word.wordOrbit
+              (w.take (cycleRiseBlockTailDepth d r)) m) %
+            2 ^ Wj = 0 ∧
+      StringFlow.Word.wordOrbit (d.suffixWord r)
+            (StringFlow.Word.wordOrbit
+              (w.take (cycleRiseBlockTailDepth d r)) m) =
+        (StringFlow.Word.wordA (d.suffixWord r) +
+          5 ^ (d.suffixWord r).length *
+            StringFlow.Word.wordOrbit
+              (w.take (cycleRiseBlockTailDepth d r)) m) /
+            2 ^ Wj := by
+  let u := d.suffixWord r
+  let b := cycleRiseBlockTailDepth d r
+  let L := u.length
+  let q := StringFlow.Word.wordOrbit (w.take b) m
+  have hb : IsCyclicC3RiseBoundaryAt w b := by
+    dsimp [b]
+    exact cycleRiseBlockTailDepth_is_cyclic_c3_rise_boundary d r hr hne
+  have hLpos : 1 ≤ L := by
+    dsimp [L, u]
+    exact List.length_pos_iff.mpr hne
+  have hLle' : L ≤ w.length := by
+    dsimp [L, u]
+    exact hLle
+  have hsuff : (cyclicSegmentAt w b).take L = u := by
+    dsimp [u, L, b]
+    exact (cycleRiseBlockSuffixWord_eq_cyclic_take d r hr hLle).symm
+  rcases cycleQb8Input_cyclic_local_block_data h b L hb hLpos hLle' with
+    ⟨Aj, Wp, Wj, t, hAj, hWj, hWp, ht, hW, hid, hdiv, hrjform⟩
+  refine ⟨Aj, Wp, Wj, t, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · simpa [u, hsuff] using hAj
+  · simpa [u, hsuff] using hWj
+  · simpa [u, L, hsuff] using hWp
+  · simpa [u, L, hsuff] using ht
+  · exact hW
+  · simpa [u, q, b, L, hsuff, hAj] using hid
+  · simpa [u, q, b, L, hsuff, hAj] using hdiv
+  · simpa [u, q, b, L, hsuff, hAj] using hrjform
+
+/-- Sum of the uniform local block equations over the whole cyclic
+decomposition:
+`Σ (wordA suffix_r + 5^{L_r}·q_r) = Σ (2^{W_r}·y_r)`. -/
+theorem cycleRiseBlockUniformSuffixEquationSum
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w)
+    (hsuff_pos : ∀ r : Nat, r < d.blockCount → d.suffixWord r ≠ [])
+    (hLle : ∀ r : Nat, r < d.blockCount →
+      (d.suffixWord r).length ≤ w.length) :
+    ((List.range d.blockCount).map
+      (fun r => StringFlow.Word.wordA (d.suffixWord r) +
+        5 ^ (d.suffixWord r).length *
+          StringFlow.Word.wordOrbit
+            (w.take (cycleRiseBlockTailDepth d r)) m)).sum =
+    ((List.range d.blockCount).map
+      (fun r => 2 ^ StringFlow.wordWeight (d.suffixWord r) *
+          StringFlow.Word.wordOrbit (d.suffixWord r)
+            (cycleRiseBlockC3TailState d r))).sum := by
+  have hmap : (List.range d.blockCount).map
+      (fun r => StringFlow.Word.wordA (d.suffixWord r) +
+        5 ^ (d.suffixWord r).length *
+          StringFlow.Word.wordOrbit
+            (w.take (cycleRiseBlockTailDepth d r)) m) =
+    (List.range d.blockCount).map
+      (fun r => 2 ^ StringFlow.wordWeight (d.suffixWord r) *
+          StringFlow.Word.wordOrbit (d.suffixWord r)
+            (cycleRiseBlockC3TailState d r)) := by
+    apply List.map_congr_left
+    intro r hr
+    have hrlt : r < d.blockCount := List.mem_range.mp hr
+    rcases cycleRiseBlockUniformLocalBlockData h d r hrlt
+      (hsuff_pos r hrlt) (hLle r hrlt) with
+      ⟨Aj, Wp, Wj, t, hAj, hWj, hWp, ht, hW, hid, hdiv, hrjform⟩
+    have hhid : 2 ^ Wj * StringFlow.Word.wordOrbit (d.suffixWord r)
+          (cycleRiseBlockC3TailState d r) =
+        StringFlow.Word.wordA (d.suffixWord r) +
+          5 ^ (d.suffixWord r).length *
+            StringFlow.Word.wordOrbit
+              (w.take (cycleRiseBlockTailDepth d r)) m := by
+      simpa [cycleRiseBlockC3TailState, cycleRiseBlockTailDepth] using hid
+    simpa [hWj] using hhid.symm
+  rw [hmap]
+
+/-- Sum of the rotated-word equations at every C3-tail boundary:
+`Σ q_r·(2^S−5^P)` is the sum of the block-rotated `wordA` values. -/
+theorem cycleRiseBlockRotatedWordAEquationSum
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w)
+    (hLle : ∀ r : Nat, r < d.blockCount →
+      (d.suffixWord r).length ≤ w.length) :
+    ((List.range d.blockCount).map
+      (fun r => StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r)) m * (2 ^ S - 5 ^ P))).sum =
+      ((List.range d.blockCount).map
+        (fun r => StringFlow.Word.wordA
+          (d.suffixWord r ++
+            (cyclicSegmentAt w
+              ((cycleRiseBlockTailDepth d r + (d.suffixWord r).length) %
+                w.length)).take
+                (w.length - (d.suffixWord r).length)))).sum := by
+  have hmap : (List.range d.blockCount).map
+      (fun r => StringFlow.Word.wordOrbit
+        (w.take (cycleRiseBlockTailDepth d r)) m * (2 ^ S - 5 ^ P)) =
+    (List.range d.blockCount).map
+      (fun r => StringFlow.Word.wordA
+        (d.suffixWord r ++
+          (cyclicSegmentAt w
+            ((cycleRiseBlockTailDepth d r + (d.suffixWord r).length) %
+              w.length)).take
+              (w.length - (d.suffixWord r).length))) := by
+    apply List.map_congr_left
+    intro r hr
+    have hrlt : r < d.blockCount := List.mem_range.mp hr
+    exact cycleRiseBlockRotatedWordA_eq_suffix_append h d r hrlt (hLle r hrlt)
+  rw [hmap]
+
+/-- The exact per-block residual rearrangement of
+`cycleRiseBlockC3ChainRankGain`:
+`Σresidual_r = R_r + Σ(c3Word r) − 2`. -/
+theorem cycleRiseBlockC3ResidualSum_eq_tailRank_add_c3Weight_sub_two
+    {m S P : Nat} {w : List Nat}
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    cycleRiseBlockC3ResidualSum d r =
+      cycleRiseBlockTailRank d r + (d.c3Word r).sum - 2 := by
+  have h := cycleRiseBlockC3ChainRankGain d r hr
+  simp [cycleRiseBlockC3ResidualSum] at h ⊢
+  omega
+
+/-- The boundary rank is the 2-adic valuation of the rotated-word
+numerator plus the cycle slack:
+`R_r = v2(wordA (rotation at b_r) + (2^S − 5^P))`.
+This follows from `q_r·(2^S−5^P) = wordA (rotation at b_r)` and the
+oddness of `2^S−5^P`; it is the exact bridge that lets the whole-cycle
+`A_P` expansion speak about the boundary ranks. -/
+theorem cycleRiseBlockTailRank_eq_v2_rotated_plus_delta
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) (r : Nat)
+    (hr : r < d.blockCount) :
+    cycleRiseBlockTailRank d r =
+      twoValuation (StringFlow.Word.wordA
+        (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)) + (2 ^ S - 5 ^ P)) := by
+  let b := cycleRiseBlockTailDepth d r
+  let q := StringFlow.Word.wordOrbit (w.take b) m
+  have hb : b ≤ w.length := by
+    dsimp [b]
+    have hblt : cycleRiseBlockTailDepth d r - 1 < P :=
+      cycleRiseBlockTailDepth_lt_succ d r hr
+    rw [d.hperiod]
+    omega
+  have hrot := cycleQb8Input_rotated_wordA h b hb
+  have hlt := cycleQb8Input_weak_comparison h
+  have hSpos : 1 ≤ S := by
+    by_contra hnot
+    have hS0 : S = 0 := by omega
+    rw [hS0] at hlt
+    norm_num at hlt
+  have hdelta_pos : 0 < 2 ^ S - 5 ^ P := by omega
+  have h2even : ∃ k, 2 ^ S = 2 * k := by
+    refine ⟨2 ^ (S - 1), ?_⟩
+    have hS : S = (S - 1) + 1 := by omega
+    nth_rewrite 1 [hS]
+    rw [Nat.pow_succ]
+    ring
+  have h5odd : ∃ l, 5 ^ P = 2 * l + 1 :=
+    Nat.odd_iff.mpr (StringFlow.Lte.five_pow_odd P)
+  have hdelta_odd' : ∃ m, 2 ^ S - 5 ^ P = 2 * m + 1 := by
+    rcases h2even with ⟨k, hk⟩
+    rcases h5odd with ⟨l, hl⟩
+    have hlt2 : 2 * l + 1 < 2 * k := by
+      rw [← hl, ← hk]
+      exact hlt
+    have hlk : l + 1 ≤ k := by omega
+    refine ⟨k - l - 1, ?_⟩
+    rw [hk, hl]
+    omega
+  have hdelta_odd : (2 ^ S - 5 ^ P) % 2 = 1 :=
+    Nat.odd_iff.mp hdelta_odd'
+  have hv2 : twoValuation
+      ((2 ^ S - 5 ^ P) * (q + 1)) = twoValuation (q + 1) :=
+    StringFlow.Lte.twoValuation_mul_odd (2 ^ S - 5 ^ P) (q + 1)
+      hdelta_odd (by positivity)
+  have hval : twoValuation
+      (StringFlow.Word.wordA (cyclicSegmentAt w b) + (2 ^ S - 5 ^ P)) =
+      twoValuation (q + 1) := by
+    calc
+      twoValuation (StringFlow.Word.wordA (cyclicSegmentAt w b) + (2 ^ S - 5 ^ P))
+          = twoValuation (q * (2 ^ S - 5 ^ P) + (2 ^ S - 5 ^ P)) := by
+              rw [← hrot]
+      _ = twoValuation ((2 ^ S - 5 ^ P) * (q + 1)) := by
+              congr 1
+              ring
+      _ = twoValuation (q + 1) := hv2
+  simp [cycleRiseBlockTailRank, cycleRiseBlockC3TailState, cycleRiseBlockTailDepth, b, q] at hval ⊢
+  exact hval.symm
+
+/-- Summed form of the boundary-rank valuation bridge:
+`Σ R_r = Σ v2(wordA (rotation at b_r) + Δ)`.  This is the exact shape
+in which the whole-cycle `A_P` expansion and `2^S > 5^P` can speak to
+the summed boundary ranks. -/
+theorem cycleRiseBlockTailRankSum_eq_v2_rotated_plus_delta_sum
+    {m S P : Nat} {w rise c3 : List Nat}
+    (h : CycleQb8Input m S P w rise c3)
+    (d : CycleRiseBlockDecomposition m S P w) :
+    ((List.range d.blockCount).map
+      (fun r => cycleRiseBlockTailRank d r)).sum =
+      ((List.range d.blockCount).map
+        (fun r => twoValuation
+          (StringFlow.Word.wordA
+            (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)) +
+            (2 ^ S - 5 ^ P)))).sum := by
+  have hmap : (List.range d.blockCount).map
+      (fun r => cycleRiseBlockTailRank d r) =
+    (List.range d.blockCount).map
+      (fun r => twoValuation
+        (StringFlow.Word.wordA
+          (cyclicSegmentAt w (cycleRiseBlockTailDepth d r)) +
+          (2 ^ S - 5 ^ P))) := by
+    apply List.map_congr_left
+    intro r hr
+    exact cycleRiseBlockTailRank_eq_v2_rotated_plus_delta
+      h d r (List.mem_range.mp hr)
+  rw [hmap]
 
 end StringFlow.CycleBridge

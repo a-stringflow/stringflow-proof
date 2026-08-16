@@ -154,6 +154,24 @@ formal claim must pass the Lean 4 kernel, and declarations that still
 depend on `sorry` are rejected by the CI zero-sorry audit until they are
 proved.
 
+Special thanks to OpenCode Go for providing large amounts of
+DeepSeek V4 Flash tokens at low cost; the subscription was purchased
+by the author himself, and it made the long-running formalization
+sessions practical.
+
+### AI contribution ranking
+
+Ordered by the author's assessment of useful contributions to the
+formalization:
+
+1. DeepSeek V4 Flash
+2. Gemini free web conversation
+3. GPT 5.6 SOL / DeepSeek V4 Pro (tied)
+
+The ranking reflects useful output produced under the author's
+direction; it does not change the authorship or verification policy
+above.
+
 ### Corrections and negative contributions
 
 The AI outputs also included incorrect or unusable material: wrong
@@ -161,13 +179,19 @@ proof routes, false or overbroad claims, invalid formal statements,
 dead-end frameworks, and repeated attempts to reintroduce already
 rejected approaches. The AI frequently misjudged proof difficulty and
 described straightforward, directly transferable methods as open
-research routes. Correcting the AI's mistaken ideas, redirecting false
-starts, and rejecting misleading goal prompts took a substantial
-portion of the author's effort. The author continuously reviewed,
-corrected, redirected, and rejected those outputs. No AI output was
-accepted as a proof without author review, and the final proof exists
-because of the author's corrections and filtering, not because AI
-output was adopted as-is.
+research routes. It also repeatedly confused the roles of the Lean
+tactics `omega` (linear arithmetic) and `ring` (ring normalization),
+misapplying them to simple algebraic goals and blocking progress on
+steps that a correctly chosen tactic closes directly. Correcting the
+AI's mistaken ideas, redirecting false starts, and rejecting misleading
+goal prompts took a substantial portion of the author's effort. The
+author continuously reviewed, corrected, redirected, and rejected those
+outputs. There were also two file-level incidents in the working tree:
+an AI draft overwrote an existing Markdown file, and an AI run deleted
+`lean/kaltsit.lean`. Both were restored and re-verified by the author.
+No AI output was accepted as a proof without author review, and the
+final proof exists because of the author's corrections and filtering,
+not because AI output was adopted as-is.
 
 All formal statements, proof obligations, and verification results are
 reproducible from the pinned toolchain and dependencies in this
