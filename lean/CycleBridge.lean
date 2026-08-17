@@ -1,10 +1,9 @@
 import BlockAutomaton
 import FinalStatement
 import S6AuditStage1
-import PhOne
 import SurvExAudit
 import Td0Real
-import AngelinaGilberta_Bridge
+import Angelina_Gilberta_Bridge
 
 /-!
 # Cycle bridge: corrected decisive window valuation -> no positive cycle of 7
