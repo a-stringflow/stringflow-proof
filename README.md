@@ -3,7 +3,7 @@
 Lean 4 formalization and complete machine-checked proof for the 5x+1 7-divergence
 theorem via the string-flow framework.
 
-![Lean CI](https://github.com/a-stringflow/stringflow-proof/actions/workflows/lean.yml/badge.svg?branch=proof)
+![Lean CI](https://github.com/a-stringflow/stringflow/actions/workflows/lean.yml/badge.svg?branch=proof)
 
 ## Authorship
 
