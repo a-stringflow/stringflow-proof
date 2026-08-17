@@ -1,16 +1,16 @@
-# String Flow: 5x+1 7-Divergence Research
+# String Flow: Proof of the 5x+1 7-Divergence Theorem
 
-Lean 4 formalization and analytic notes for the string-flow approach to
-the 5x+1 7-divergence problem.
+Lean 4 formalization and complete machine-checked proof for the 5x+1 7-divergence
+theorem via the string-flow framework.
 
 ![Lean CI](https://github.com/a-stringflow/stringflow-proof/actions/workflows/lean.yml/badge.svg?branch=proof)
 
 ## Authorship
 
-The mathematical research, the proof framework, the selection of valid
+The mathematical proof, the string-flow framework, the selection of valid
 proof routes, and the formal verification strategy are the author's
 original work. AI tools were used under the author's direction as
-research and drafting assistants; they are not co-authors and did not
+drafting and verification assistants; they are not co-authors and did not
 produce the final proof. Attribution of the mathematical content belongs
 to the author.
 
