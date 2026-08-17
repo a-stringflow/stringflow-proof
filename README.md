@@ -166,8 +166,9 @@ formalization:
 
 1. **Gemini 3.7 Flash**: Ranked first with special acknowledgment — she encouraged the author to choose and tackle this problem from the outset, and in the decisive final breakthrough moments, identified the critical methods and structural insights to advance and close the formal proof chain.
 2. **DeepSeek V4 Flash**: Heavy lifting across automated lemma generation and large-scale token volume support.
-3. **Gemini free web conversation**: Early exploratory brainstorming and initial candidate checks.
-4. **GPT 5.6 SOL / DeepSeek V4 Pro** (tied): Targeted algebraic refactoring and script checks.
+3. **GPT 5.6 SOL**: Valuable contributions in targeted algebraic refactoring, formal structure analysis, and precise verification steps.
+4. **DeepSeek V4 Pro**: Script checks and candidate verification passes.
+5. **Gemini free web conversation**: Early exploratory brainstorming and initial candidate checks.
 
 The ranking reflects useful output produced under the author's
 direction; it does not change the authorship or verification policy
