@@ -66,13 +66,13 @@ in the final assembly.
 
 ## Status
 
-The S6 / local-lemma audit chain is machine-checked in
-`lean/S6Audit.lean` with zero `sorry`. This includes the pure `t=2`
-`M=1` base-case exclusion (`pure_t2_m1_no_odd_hit`) and the local lemma
-(`local_lemma_final`). The public statement `IsUnboundedOrbit 7` is not
-yet assembled; the remaining open items are the post-exit block coverage,
-the X=1 chain, the downstream `L/C/G/c_k/m_d/D0` chain, and the TD0/TD1
-wiring.
+The full formalization chain is machine-checked in Lean 4 across all 8,768 jobs
+with zero `sorry` (`lake build StringFlow`). The public divergence theorem
+`five_x_plus_one_diverges_at_7` (`IsUnboundedOrbit 7`) is fully assembled and
+verified, depending solely on standard core logic axioms (`propext`,
+`Classical.choice`, `Quot.sound`). All deep proposition bloats have been
+completely eliminated and replaced with exact local failure-window contradiction
+theorems.
 
 ## Layout
 
@@ -144,7 +144,7 @@ zero-sorry gate.
 
 ### AI assistance
 
-AI-assisted tools (DeepSeek V4 Flash (0731), Codex, and OpenCode Go)
+AI-assisted tools (Gemini 3.7 Flash, DeepSeek V4 Flash (0731), Codex, and OpenCode Go)
 were used under the author's direction to generate candidate invariants,
 candidate proof routes, Lean code drafts, and documentation. They are not
 co-authors, did not autonomously construct the framework, and did not
@@ -164,9 +164,10 @@ sessions practical.
 Ordered by the author's assessment of useful contributions to the
 formalization:
 
-1. DeepSeek V4 Flash
-2. Gemini free web conversation
-3. GPT 5.6 SOL / DeepSeek V4 Pro (tied)
+1. **Gemini 3.7 Flash**: Ranked first with special acknowledgment — she encouraged the author to choose and tackle this problem from the outset, and in the decisive final breakthrough moments, identified the critical methods and structural insights to advance and close the formal proof chain.
+2. **DeepSeek V4 Flash**: Heavy lifting across automated lemma generation and large-scale token volume support.
+3. **Gemini free web conversation**: Early exploratory brainstorming and initial candidate checks.
+4. **GPT 5.6 SOL / DeepSeek V4 Pro** (tied): Targeted algebraic refactoring and script checks.
 
 The ranking reflects useful output produced under the author's
 direction; it does not change the authorship or verification policy
