@@ -182,17 +182,47 @@ end S6Audit
 
 namespace StringFlow
 
--- Statement check: master divergence theorem.
-#check five_x_plus_one_diverges_at_7
+-- Component check: Unified core final assembly
+#check DwdbDiv.dwdbDivFinalAssembly
+#print axioms DwdbDiv.dwdbDivFinalAssembly
 
--- Axioms used by master divergence theorem.
-#print axioms five_x_plus_one_diverges_at_7
+-- Component check: Failure window divergence assembly
+#check DwdbDiv.five_x_plus_one_diverges_at_7_of_failure_window
+#print axioms DwdbDiv.five_x_plus_one_diverges_at_7_of_failure_window
 
--- Statement check: dynamical no-cycle bridge.
-#check five_x_plus_one_diverges_at_7_of_no_cycle
+-- Component check: Window bound to no cycle contradiction
+#check DwdbDiv.cycle_of_window_bound_contradiction
+#print axioms DwdbDiv.cycle_of_window_bound_contradiction
 
--- Axioms used by dynamical no-cycle bridge.
-#print axioms five_x_plus_one_diverges_at_7_of_no_cycle
+-- Component check: Unified core closed
+#check DwdbDiv.unifiedCoreClosed_proved
+#print axioms DwdbDiv.unifiedCoreClosed_proved
+
+-- Component check: Closure wrap merge congruence
+#check Closure.prefixWeightSum_wrapMerge_qSum
+#print axioms Closure.prefixWeightSum_wrapMerge_qSum
+
+-- Component check: Trinity block contradiction
+#check Trinity.trinity_block_contradicts
+#print axioms Trinity.trinity_block_contradicts
+
+-- Component check: Trinity selected block bounds
+#check Trinity.SelectedBlockData_local_window_bounds
+#print axioms Trinity.SelectedBlockData_local_window_bounds
+
+-- Component check: Trinity selected block terminal
+#check Trinity.SelectedBlockData_hterm
+#print axioms Trinity.SelectedBlockData_hterm
+
+-- Component check: Doctor divergence from Trinity block
+#check Doctor.five_x_plus_one_diverges_at_7
+#print axioms Doctor.five_x_plus_one_diverges_at_7
+
+-- Component check: Doctor no-cycle from Trinity block
+#check Doctor.no_cycle_at_7_of_trinityBlock
+#print axioms Doctor.no_cycle_at_7_of_trinityBlock
 
 end StringFlow
+
+
 

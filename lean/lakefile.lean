@@ -17,7 +17,7 @@ lean_lib StringFlow where
     `UnifiedCoreBridge, `UnifiedCoreAudit, `PureCore, `PmiLocalLemma,
     `RealOrbitLocalLemma, `Angelina_Gilberta_Bridge, `kaltsit,
     `RealOrbitCharge, `RunDecomposition, `RiseDecompositionAssembly,
-    `amiya, `trinity, `Closure, `Priestess]
+    `amiya, `trinity, `Closure, `Priestess, `doctor]
 
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git" @ "v4.33.0-rc2"

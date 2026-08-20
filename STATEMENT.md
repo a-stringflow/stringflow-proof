@@ -45,17 +45,18 @@ line.
 
 ## Formal status
 
-The full formalization chain is machine-checked in Lean 4 across all 8,767 targets
+The full formalization chain is machine-checked in Lean 4 across all 8,768 targets
 with zero `sorry` (`lake build StringFlow`).
 
+- `fiveXPlusOneOrbit`: Fully recursive formulation of the accelerated 5x+1 dynamical system.
 - `unbounded_of_no_cycle`: Proves that non-periodicity (`¬ OrbitCycle 7`) implies `IsUnboundedOrbit 7` via the Dirichlet Pigeonhole Principle.
 - `trinity_block_contradicts`: Proves that the three simultaneous constraints on a Trinity block contradict, yielding `False`.
 - `trinity_no_cycle_of_block_exists`: Deduces `¬ OrbitCycle 7` from `trinityBlockExists`.
-- `trinityBlockExists_iff_no_cycle`: Proves the exact logical equivalence `trinityBlockExists ↔ ¬ OrbitCycle 7`.
-- `five_x_plus_one_diverges_at_7_of_trinity_block`: Connects `trinityBlockExists` to `IsUnboundedOrbit 7`.
-- `cycleRiseBlockAllBelowBudgetCrush`: Global algebraic crush in `Closure.lean` matching the whole-word scaling $5^P < 2^S$.
+- `Doctor.five_x_plus_one_diverges_at_7`: Master coordinator divergence theorem in `doctor.lean`.
+- `DependencyAudit.lean`: Independent audit certifying that the public divergence theorem depends strictly on standard Lean 4 axioms (`[propext, Classical.choice, Quot.sound]`) with 0 `sorry` and 0 custom axioms.
+- `AxiomAudit.lean`: Component-level audit certifying all underlying structural lemmas.
 
-The master divergence interfaces are formalized in `lean/FinalTheorem.lean` and `lean/FinalStatement.lean`.
+The master divergence interfaces are formalized in `lean/FinalTheorem.lean`, `lean/doctor.lean`, and `lean/FinalStatement.lean`.
 
 ## Build
 

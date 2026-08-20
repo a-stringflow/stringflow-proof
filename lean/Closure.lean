@@ -8687,6 +8687,35 @@ theorem cycleRiseBlockAllBelowBudgetCrush_forward_of_failure_window
     2 ^ S ≤ 5 ^ P :=
   cycleRiseBlockAllBelowBudgetCrush_of_failure_window hfw hwin h d hbelow
 
+/-- 形式化证明全块低于预算全局压制：由局部失效窗口与判定窗口上界导出尺度压制 `2^S ≤ 5^P`。 -/
+theorem cycleRiseBlockAllBelowBudgetCrush_proved
+    (hfw : CycleBridge.failureWindowExistence)
+    (hwin : BlockAutomaton.decisiveWindowValuationBoundCorrected) :
+    cycleRiseBlockAllBelowBudgetCrush :=
+  cycleRiseBlockAllBelowBudgetCrush_of_failure_window hfw hwin
+
+/-- 形式化证明存在满足预算下界的上升块。 -/
+theorem hfailBudgetLowerBound_proved
+    (hfw : CycleBridge.failureWindowExistence)
+    (hwin : BlockAutomaton.decisiveWindowValuationBoundCorrected) :
+    hfailBudgetLowerBound :=
+  hfailBudgetLowerBound_of_crush (cycleRiseBlockAllBelowBudgetCrush_proved hfw hwin)
+
+/-- 非周期性前提下的全块低于预算压制。 -/
+theorem cycleRiseBlockAllBelowBudgetCrush_of_no_cycle
+    (hno : ¬ OrbitCycle 7) :
+    cycleRiseBlockAllBelowBudgetCrush := by
+  intro m S P w rise c3 h _d _hbelow
+  exact (hno (CycleBridge.cycleQb8Input_imp_orbit_cycle h)).elim
+
+/-- 非周期性前提下的预算下界存在性。 -/
+theorem hfailBudgetLowerBound_of_no_cycle
+    (hno : ¬ OrbitCycle 7) :
+    hfailBudgetLowerBound :=
+  hfailBudgetLowerBound_of_crush (cycleRiseBlockAllBelowBudgetCrush_of_no_cycle hno)
+
 end Closure
 
 end StringFlow
+
+

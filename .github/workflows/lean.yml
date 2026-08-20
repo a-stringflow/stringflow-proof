@@ -21,15 +21,28 @@ jobs:
           test: false
           lint: false
           mk_all-check: false
-      - name: Axiom and Dependency Audit
+      - name: Dependency Audit (IsUnboundedOrbit 7)
         working-directory: lean
         run: |
-          echo "=== Running Lean 4 Axiom and Dependency Audit ==="
-          lake env lean AxiomAudit.lean > audit_output.txt 2>&1
-          cat audit_output.txt
-          if grep -q "sorryAx" audit_output.txt; then
+          echo "=== Running Top-Level Dependency Audit for IsUnboundedOrbit 7 ==="
+          lake env lean DependencyAudit.lean > dep_audit_output.txt 2>&1
+          cat dep_audit_output.txt
+          if grep -q "sorryAx" dep_audit_output.txt; then
             echo "ERROR: sorryAx detected in dependency closure!"
             exit 1
           fi
-          echo "=== Axiom and Dependency Audit Passed ==="
+          echo "=== Top-Level Dependency Audit Passed ==="
+
+      - name: Component Axiom Audit (Structural Lemmas)
+        working-directory: lean
+        run: |
+          echo "=== Running Full Component-Level Axiom Audit ==="
+          lake env lean AxiomAudit.lean > axiom_audit_output.txt 2>&1
+          cat axiom_audit_output.txt
+          if grep -q "sorryAx" axiom_audit_output.txt; then
+            echo "ERROR: sorryAx detected in component axiom audit!"
+            exit 1
+          fi
+          echo "=== Component Axiom Audit Passed ==="
+
 
