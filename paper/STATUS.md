@@ -26,7 +26,7 @@ paper/
 | String-flow framework | complete draft |
 | Unified core | complete draft |
 | Divergence bridge and block crush | complete draft |
-| Lean verification | complete draft (8,749 targets compiled) |
+| Lean verification | complete draft (8,767 targets compiled) |
 | Supplementary manual | draft, 102 pages |
 
 ## Main theorem
@@ -52,5 +52,5 @@ paper/
 - Core definitions and main theorem: written and aligned with Lean names.
 - Framework, unified core, cyclic block decomposition, and Lean chapters: written with statuses.
 - Constants `13`, `+10`, `+11`, `+12`: preserved.
-- Lean compilation: `lake build StringFlow` passes 100% (8,749 jobs).
+- Lean compilation: `lake build StringFlow` passes 100% (8,767 jobs).
 - PDF compilation: `pdflatex main.tex` produces `main.pdf` cleanly with exit code 0.

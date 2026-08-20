@@ -66,7 +66,7 @@ in the final assembly.
 
 ## Status and Architecture
 
-The full formalization chain is machine-checked in Lean 4 across all 8,749 targets
+The full formalization chain is machine-checked in Lean 4 across all 8,767 targets
 with zero `sorry` (`lake build StringFlow`). 
 
 ### 1. Pure Target Definition (Zero Extra Hypotheses)
@@ -82,8 +82,8 @@ Under the assumption of a periodic cycle (`CycleQb8Input`), three simultaneous d
 - **C3 (`HfailComponent` / Layer Condition Valuation Lower Bound)**: The cyclic layer condition and rank lower bound at the failure point strictly bound the 2-adic valuation from below:
   $$\operatorname{Valuation} \ge 2L + 12 \quad (t=1), \qquad \operatorname{Valuation} \ge 2L + 11 \quad (t=2)$$
 
-**The Contradiction (`trinity_block_contradicts` in `trinity.lean:256`)**:
-The intersection of C1, C2, and C3 forces the valuation into the empty interval $[2L+12, 2L+11]$, yielding a direct arithmetic contradiction ($\text{False}$ by `omega`). This proves $\neg \operatorname{OrbitCycle} 7$, which via the Dirichlet Pigeonhole Principle (`unbounded_of_no_cycle`) strictly proves $\operatorname{IsUnboundedOrbit} 7$.
+**The Contradiction and Equivalence (`trinity_block_contradicts` and `trinityBlockExists_iff_no_cycle`)**:
+The intersection of C1, C2, and C3 forces the valuation into the empty interval $[2L+12, 2L+11]$, yielding a direct arithmetic contradiction ($\text{False}$ by `omega`). This proves $\neg \operatorname{OrbitCycle} 7$ and establishes `trinityBlockExists ↔ ¬ OrbitCycle 7`, which via the Dirichlet Pigeonhole Principle (`unbounded_of_no_cycle`) strictly proves $\operatorname{IsUnboundedOrbit} 7$.
 
 ### 3. Master Assembly in `FinalTheorem.lean`
 The top-level assembly interface provides clean entry points:
