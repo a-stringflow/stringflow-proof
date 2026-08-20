@@ -1,0 +1,252 @@
+\section{Theorem-by-theorem status matrix}
+
+This chapter records the status of every theorem consumed by the main
+chain.  The matrix is organised by file.  The statuses are the current
+audit state; they are re-checked whenever the repository changes.
+
+\begingroup
+\setlength{\tabcolsep}{4pt}
+
+\subsection{Legend}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Math: proven}: the mathematical argument is written out
+  in this paper or the manual.
+\item \textbf{Lean: compiled}: the Lean theorem compiles without
+  \texttt{sorry}.
+\item \textbf{Lean: pending}: the Lean theorem is not yet closed.
+\item \textbf{compiled (conditional)}: the theorem compiles but
+  consumes an open input such as \texttt{unifiedCoreClosed} or
+  \texttt{failureWindowExistence}.
+\end{itemize}
+
+\subsection{WordWindow.lean}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.34\textwidth}p{0.30\textwidth}p{0.10\textwidth}p{0.18\textwidth}@{}}
+\toprule
+Statement & Role & Math & Lean \\
+\midrule
+\texttt{wordA} & word molecule & proven & compiled \\
+\texttt{wordOrbit} & word orbit & proven & compiled \\
+\texttt{wordValid} & validity predicate & proven & compiled \\
+word-orbit identity & exact ledger & proven & compiled \\
+valuation toolkit & 2-adic facts & proven & compiled \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Pmi.lean}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.34\textwidth}p{0.30\textwidth}p{0.10\textwidth}p{0.18\textwidth}@{}}
+\toprule
+Statement & Role & Math & Lean \\
+\midrule
+\texttt{aTotal5} clearing & PMI identity & proven & compiled \\
+\texttt{pmi\_\allowbreak algebraic} & cycle form & proven & compiled \\
+\texttt{pmi\_\allowbreak b\_\allowbreak count} & counting bound & proven & compiled \\
+\texttt{pmi\_\allowbreak b\_\allowbreak no\_\allowbreak bad\_\allowbreak
+prefix} & small budget & proven & compiled \\
+margin balance & weight counts & proven & compiled \\
+margin balance strict & closed words & proven & compiled \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{FinitePrefix.lean}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.40\textwidth}p{0.26\textwidth}p{0.10\textwidth}p{0.16\textwidth}@{}}
+\toprule
+Statement & Role & Math & Lean \\
+\midrule
+\texttt{fullOrbitIter\_\allowbreak prefix\_\allowbreak expand} &
+  seventeen states & proven & compiled \\
+\texttt{fullOrbit\_\allowbreak prefix\_\allowbreak step\_\allowbreak
+weights} & exact weights & proven & compiled \\
+\texttt{fullOrbit\_\allowbreak first\_\allowbreak t\_\allowbreak ge3\_
+\allowbreak is\_\allowbreak exactly\_\allowbreak 3} & first big step &
+  proven & compiled \\
+\texttt{first\_\allowbreak big\_\allowbreak step\_\allowbreak unique} &
+  uniqueness & proven & compiled \\
+\texttt{candidate\_\allowbreak first\_\allowbreak big\_\allowbreak
+step\_\allowbreak weight\_\allowbreak ne\_\allowbreak three} & d=3 use &
+  proven & compiled \\
+\texttt{candidate\_\allowbreak first\_\allowbreak big\_\allowbreak
+step\_\allowbreak weight\_\allowbreak ge\_\allowbreak five} & $d\ge4$ use &
+  proven & compiled \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{UnifiedCoreBridge.lean}
+
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}p{0.38\textwidth}p{0.30\textwidth}p{0.10\textwidth}p{0.14\textwidth}@{}}
+\toprule
+Statement & Role & Math & Lean \\
+\midrule
+\texttt{reset\_\allowbreak head\_\allowbreak predecessor} & reset
+  predecessor & proven & compiled \\
+\texttt{candidateX\_\allowbreak of\_\allowbreak reset\_\allowbreak
+and\_\allowbreak terminal} & candidate X & proven & compiled \\
+\texttt{first\_\allowbreak block\_\allowbreak terminal\_\allowbreak eq} &
+  terminal state & proven & compiled \\
+\texttt{reset\_\allowbreak q0\_\allowbreak form} & q0 interval &
+  proven & compiled \\
+\texttt{block\_\allowbreak head\_\allowbreak identity\_\allowbreak
+of\_\allowbreak reset} & block identity & proven & compiled \\
+\texttt{q0\_\allowbreak interval\_\allowbreak iff\_\allowbreak
+rj\_\allowbreak bound} & interval form & proven & compiled \\
+\texttt{orbitSegmentWord\_\allowbreak equation} & segment identity &
+  proven & compiled \\
+\texttt{orbitSegmentWord\_\allowbreak candidate\_\allowbreak equation} &
+  candidate form & proven & compiled \\
+\texttt{d1\_\allowbreak exclusion} & d=1 & proven & compiled \\
+\texttt{d2\_\allowbreak exclusion} & d=2 & proven & compiled \\
+\texttt{d3\_\allowbreak family\_\allowbreak big\_\allowbreak
+weight\_\allowbreak excluded} & d=3 & proven & compiled \\
+\texttt{dge4\_\allowbreak e2\_\allowbreak a\_\allowbreak ge1\_\allowbreak
+excluded} & $d\ge4$ branch & proven & compiled \\
+\texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak t1\_\allowbreak
+excluded} & e=3 branch & proven & compiled \\
+\texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak t2\_\allowbreak
+delta3\_\allowbreak excluded} & e=3 branch & proven & compiled \\
+full derivation from premises and $\FullOrbit$ & candidate layer &
+  proven & pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{UnifiedCoreAudit.lean}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.40\textwidth}p{0.28\textwidth}p{0.10\textwidth}p{0.14\textwidth}@{}}
+\toprule
+Statement & Role & Math & Lean \\
+\midrule
+\texttt{All36\_\allowbreak 20PremisesNoHge} & premises record &
+  definition & compiled \\
+\texttt{blockB\_\allowbreak bound\_\allowbreak of\_\allowbreak
+no\_\allowbreak hge} & tail bound & proven & compiled \\
+\texttt{rj0\_\allowbreak spec\_\allowbreak eq} & CRT equation &
+  proven & compiled \\
+\texttt{terminal\_\allowbreak bound\_\allowbreak iff\_\allowbreak
+yStar\_\allowbreak ne\_\allowbreak zero} & residue equivalence &
+  proven & compiled \\
+\texttt{rj0\_\allowbreak ge\_\allowbreak of\_\allowbreak
+size\_\allowbreak conditions\_\allowbreak no\_\allowbreak hge} &
+  lower bound & proven & compiled \\
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge} & final inequality & proven & pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{CycleBridge.lean}
+
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}p{0.40\textwidth}p{0.30\textwidth}p{0.10\textwidth}p{0.14\textwidth}@{}}
+\toprule
+Statement & Role & Math & Lean \\
+\midrule
+\texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+min\_\allowbreak rise\_\allowbreak start} & rise start & proven &
+  compiled \\
+\texttt{orbit\_\allowbreak reset\_\allowbreak head\_\allowbreak
+eq\_\allowbreak of\_\allowbreak rise\_\allowbreak start} & reset
+  equation & proven & compiled \\
+\texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+min\_\allowbreak rise\_\allowbreak witness} & witness data & proven &
+  compiled \\
+\texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+cycle\_\allowbreak qb8\_\allowbreak input} & closed word & proven &
+  compiled \\
+\texttt{cycleWord\_\allowbreak step\_\allowbreak exact} & exact
+  weights & proven & compiled \\
+\texttt{cycleWord\_\allowbreak take\_\allowbreak eq} & prefixes &
+  proven & compiled \\
+\texttt{cycleWord\_\allowbreak cycle\_\allowbreak equation} & cycle
+  equation & proven & compiled \\
+\texttt{CycleQb8Input} & split record & definition & compiled \\
+\texttt{cycleQb8Input\_\allowbreak exists\_\allowbreak rise\_\allowbreak
+index} & rise position & proven & compiled \\
+\texttt{cycleQb8Input\_\allowbreak exists\_\allowbreak c3\_\allowbreak
+index} & C3 position & proven & compiled \\
+\texttt{rise\_\allowbreak block\_\allowbreak balance} & lower bound &
+  proven & compiled \\
+\texttt{failure\_\allowbreak window\_\allowbreak contradicts\_\allowbreak
+window\_\allowbreak corrected} & contradiction & proven & compiled \\
+\texttt{failureWindowExistence} & window existence & proven & pending \\
+\texttt{windowBoundToNoCycle\_\allowbreak of\_\allowbreak
+failureWindowExistence} & bridge & proven & compiled (conditional) \\
+\texttt{unbounded\_\allowbreak of\_\allowbreak no\_\allowbreak cycle} &
+  final step & proven & compiled \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{BlockAutomaton.lean}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.44\textwidth}p{0.26\textwidth}p{0.10\textwidth}p{0.14\textwidth}@{}}
+\toprule
+Statement & Role & Math & Lean \\
+\midrule
+\texttt{t1WindowBoundCorrected} & t=1 bound & proven & compiled \\
+\texttt{t2WindowBoundCorrected} & t=2 bound & proven & compiled \\
+\texttt{decisiveWindowValuation\allowbreak BoundCorrected} &
+  corrected bound & proven & compiled \\
+\texttt{decisiveWindowValuationBoundCorrected\_\allowbreak
+of\_\allowbreak unified\_\allowbreak core} & projection & proven &
+  compiled (conditional) \\
+\texttt{failureWindowExistenceOfUnifiedCore} & projection & proven &
+  compiled (conditional) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{DwdbDiv.lean and FinalStatement.lean}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.44\textwidth}p{0.26\textwidth}p{0.10\textwidth}p{0.14\textwidth}@{}}
+\toprule
+Statement & Role & Math & Lean \\
+\midrule
+\texttt{dwdbDivFinalAssembly} & final assembly & proven &
+  compiled (conditional) \\
+\texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak one\_\allowbreak
+diverges\_\allowbreak at\_\allowbreak 7\_\allowbreak of\_\allowbreak
+window\_\allowbreak bound} & assembly variant & proven &
+  compiled (conditional) \\
+\texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak one\_\allowbreak
+diverges\_\allowbreak at\_\allowbreak 7} & main theorem & proven &
+  pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{How to update the matrix}
+
+The matrix is updated only after the following checks:
+\begin{enumerate}[leftmargin=*]
+\item \texttt{lake build} passes for the affected files;
+\item \texttt{\#print axioms} returns only the allowlist for the
+  affected theorems;
+\item the \texttt{sorry} search is re-run for
+  \texttt{UnifiedCoreAudit.lean};
+\item the \texttt{native\_decide} search is re-run for the main chain.
+\end{enumerate}
+No row is promoted from pending to compiled on the basis of this
+document alone.
+
+\endgroup

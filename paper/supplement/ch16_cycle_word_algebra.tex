@@ -1,0 +1,223 @@
+\section{Cycle word algebra}
+
+This chapter develops the algebra of the cycle word: the recursive
+construction, the prefix equalities, the closedness equation, and the
+QB-8 split.
+
+\subsection{The cycle word}
+
+For a starting depth $c$ and a period length $p$, define
+\begin{equation*}
+  \mathrm{cycleWord}(c,0)=[],
+\end{equation*}
+\begin{equation*}
+  \mathrm{cycleWord}(c,p+1)
+    =\mathrm{cycleWord}(c,p)
+    ++ \left[\vtwo{5\,\Orbit_7(c+p)+1}\right].
+\end{equation*}
+The appended entry is the exact step weight at depth $c+p$.
+
+\subsection{Prefix orbit equality}
+
+\begin{lemma}
+For every $c,p$,
+\begin{equation*}
+  \wordOrbit(\mathrm{cycleWord}(c,p),\Orbit_7(c))
+    =\Orbit_7(c+p).
+\end{equation*}
+\end{lemma}
+
+\begin{proof}
+Proceed by induction on $p$.  For $p=0$, the word is empty and both
+sides equal $\Orbit_7(c)$.  For $p+1$, write
+\begin{equation*}
+  w=\mathrm{cycleWord}(c,p),
+  \qquad
+  t=\vtwo{5\,\Orbit_7(c+p)+1}.
+\end{equation*}
+By the induction hypothesis,
+\begin{equation*}
+  \wordOrbit(w,\Orbit_7(c))=\Orbit_7(c+p).
+\end{equation*}
+Appending $t$ gives
+\begin{equation*}
+  \wordOrbit(w{++}[t],\Orbit_7(c))
+    =\frac{5\,\Orbit_7(c+p)+1}{2^t}
+    =\Orbit_7(c+p+1),
+\end{equation*}
+by the definition of the accelerated step.
+\end{proof}
+
+The Lean statement
+\texttt{cycleWord\_\allowbreak prefix\_\allowbreak orbit\_\allowbreak eq}
+records this equality.
+
+\subsection{Exact step weights}
+
+\begin{lemma}
+For every $k<p$,
+\begin{equation*}
+  \vtwo{5\,\wordOrbit(\mathrm{cycleWord}(c,p){\upharpoonright}k,
+  \Orbit_7(c))+1}
+  =\mathrm{cycleWord}(c,p)_k.
+\end{equation*}
+\end{lemma}
+
+\begin{proof}
+By the prefix equality, the state after $k$ steps is
+$\Orbit_7(c+k)$.  The $k$-th entry of the cycle word was defined to be
+the exact valuation at that state.
+\end{proof}
+
+This is \texttt{cycleWord\_\allowbreak step\_\allowbreak exact}.  The
+companion statement \texttt{cycleWord\_\allowbreak take\_\allowbreak eq}
+records the prefix equality for every truncation of the cycle word.
+
+\subsection{Closedness}
+
+Assume $\OrbitCycle(7)$.  There are indices $m<n$ with
+\begin{equation*}
+  \Orbit_7(m)=\Orbit_7(n).
+\end{equation*}
+Put $c=m$ and $p=n-m$.  The prefix equality gives
+\begin{equation*}
+  \wordOrbit(\mathrm{cycleWord}(c,p),\Orbit_7(c))=\Orbit_7(n)
+  =\Orbit_7(c),
+\end{equation*}
+so the cycle word is closed.
+
+\subsection{The cycle equation}
+
+Let $w=\mathrm{cycleWord}(c,p)$, let $m_0=\Orbit_7(c)$, and let
+$T=\wordWeight(w)$.  The word-orbit identity gives
+\begin{equation*}
+  2^T\,m_0=5^p\,m_0+\wordA(w).
+\end{equation*}
+Closedness supplies the left-hand side through the exact step
+division; the identity itself is the compiled statement
+\texttt{cycleWord\_\allowbreak cycle\_\allowbreak equation}.
+
+From the equation,
+\begin{equation*}
+  2^T=5^p+\frac{\wordA(w)}{m_0}>5^p,
+\end{equation*}
+so
+\begin{equation*}
+  T>p\log_2 5.
+\end{equation*}
+This strict inequality is used by the QB-8 split below.
+
+\subsection{The rise/C3 filters}
+
+Define
+\begin{equation*}
+  \mathrm{rise}=\{t\in w:t<3\},
+  \qquad
+  \mathrm{c3}=\{t\in w:t\ge3\}.
+\end{equation*}
+Every rise entry is $1$ or $2$, every C3 entry is at least $3$, and
+the two filters partition the word and its total weight:
+\begin{equation*}
+  |\mathrm{rise}|+|\mathrm{c3}|=p,
+  \qquad
+  \wordWeight(\mathrm{rise})+\wordWeight(\mathrm{c3})=T.
+\end{equation*}
+
+\subsection{Both filters are nonempty}
+
+\begin{proposition}
+For a closed cycle word, $\mathrm{rise}$ and $\mathrm{c3}$ are both
+nonempty.
+\end{proposition}
+
+\begin{proof}
+If $\mathrm{c3}$ were empty, then every entry would be at most $2$,
+so $T\le2p$.  But the cycle equation gives $T>p\log_2 5$, and
+$\log_2 5>2$, contradiction.
+
+If $\mathrm{rise}$ were empty, then every entry would be at least
+$3$.  For every positive state $x$ and every $t\ge3$,
+\begin{equation*}
+  \frac{5x+1}{2^t}\le\frac{5x+1}{8}<x,
+\end{equation*}
+because $5x+1<8x$ for $x\ge1$.  Hence every step would strictly
+decrease the state, and the word could not be closed.
+\end{proof}
+
+The Lean records are \texttt{cycleQb8Input\_\allowbreak
+hrise\_\allowbreak pos}, \texttt{cycleQb8Input\_\allowbreak
+hc3\_\allowbreak pos}, and
+\texttt{cycleQb8Input\_\allowbreak P\_\allowbreak ge\_\allowbreak two}.
+
+\subsection{Rise residues modulo 5}
+
+A rise step of weight $1$ satisfies
+\begin{equation*}
+  2y=5x+1,
+\end{equation*}
+so modulo $5$,
+\begin{equation*}
+  2y\equiv1\pmod5,
+  \qquad
+  y\equiv3\pmod5.
+\end{equation*}
+A rise step of weight $2$ satisfies
+\begin{equation*}
+  4y=5x+1,
+\end{equation*}
+so
+\begin{equation*}
+  4y\equiv1\pmod5,
+  \qquad
+  y\equiv4\pmod5.
+\end{equation*}
+These are the only residue constraints used at the block level; the
+Lean statement is
+\texttt{rise\_\allowbreak step\_\allowbreak next\_\allowbreak
+mod\_\allowbreak five}.
+
+\subsection{The QB-8 input record}
+
+The Lean structure \texttt{CycleQb8Input m S P w rise c3} records the
+cycle word together with its filter split, the exact step equations,
+the closedness, and the positivity and residue data.  It is produced
+from $\OrbitCycle(7)$ by
+\texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+cycle\_\allowbreak qb8\_\allowbreak input}.  The extraction is
+compiled.
+
+\subsection{Statement shapes}
+
+\begin{verbatim}
+theorem cycleWord_prefix_orbit_eq (c p : Nat) :
+    wordOrbit (cycleWord c p) (Orbit 7 c) = Orbit 7 (c + p)
+
+theorem cycleWord_step_exact (c p k : Nat) (hk : k < p) :
+    twoValuation
+      (5 * wordOrbit ((cycleWord c p).take k) (Orbit 7 c) + 1)
+      = (cycleWord c p).getI k
+
+theorem cycleWord_cycle_equation (c p : Nat)
+    (hclosed : wordOrbit (cycleWord c p) (Orbit 7 c) = Orbit 7 c) :
+    2 ^ wordWeight (cycleWord c p) * Orbit 7 c
+      = 5 ^ p * Orbit 7 c + wordA (cycleWord c p)
+\end{verbatim}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Statement & Status \\
+\midrule
+cycle-word recursion & compiled \\
+prefix orbit equality & compiled \\
+exact step weights & compiled \\
+cycle equation & compiled \\
+QB-8 split and nonemptiness & compiled \\
+rise residue rules & compiled \\
+cycle-word extraction from $\OrbitCycle(7)$ & compiled \\
+\bottomrule
+\end{tabular}
+\end{center}

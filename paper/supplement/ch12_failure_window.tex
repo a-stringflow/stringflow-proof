@@ -1,0 +1,208 @@
+\section{Failure window construction}
+
+This chapter records the intended construction of a failure window
+from a positive cycle.  The construction is the mathematical content
+of \texttt{failureWindowExistence}; in the Lean repository that
+statement remains pending, while every named ingredient below is
+either compiled or compiled as a conditional interface.
+
+\subsection{Input: a positive cycle}
+
+Assume
+\begin{equation*}
+  \OrbitCycle(7).
+\end{equation*}
+The compiled cycle-word layer produces a starting depth $c$, a period
+$p$, a state $m=\Orbit_7(c)$, and a word $w$ of length $p$ such that
+\begin{itemize}[leftmargin=*]
+\item $w$ is valid from $m$;
+\item $\wordOrbit(w,m)=m$;
+\item every entry of $w$ is the exact step weight at the
+  corresponding orbit position;
+\item the cycle equation
+  \begin{equation*}
+    2^{\wordWeight(w)}\,m=5^p\,m+\wordA(w)
+  \end{equation*}
+  holds.
+\end{itemize}
+This is the compiled input
+\texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+cycle\_\allowbreak qb8\_\allowbreak input}.
+
+\subsection{The QB-8 split}
+
+The word is filtered into rise entries and C3 entries:
+\begin{equation*}
+  \mathrm{rise}=\{t\in w:t<3\},
+  \qquad
+  \mathrm{c3}=\{t\in w:t\ge3\}.
+\end{equation*}
+Both lists are nonempty:
+\begin{itemize}[leftmargin=*]
+\item a cycle cannot consist only of rise steps, because their total
+  weight is at most $2P$, contradicting the cycle equation;
+\item a cycle cannot consist only of C3 steps, because every C3 step
+  satisfies $(5x+1)/2^t<x$ for $x\ge1$, so the states would strictly
+  decrease and could not close.
+\end{itemize}
+The compiled lemmas
+\texttt{cycleQb8Input\_\allowbreak exists\_\allowbreak rise\_\allowbreak
+index} and
+\texttt{cycleQb8Input\_\allowbreak exists\_\allowbreak c3\_\allowbreak
+index} provide genuine positions inside the word.
+
+\subsection{The reset start}
+
+The construction chooses a global-minimum rise start.  The compiled
+extraction lemmas
+\begin{itemize}[leftmargin=*]
+\item \texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+  min\_\allowbreak rise\_\allowbreak start};
+\item \texttt{orbit\_\allowbreak reset\_\allowbreak head\_\allowbreak
+  eq\_\allowbreak of\_\allowbreak rise\_\allowbreak start};
+\item \texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+  min\_\allowbreak rise\_\allowbreak witness};
+\end{itemize}
+produce parameters $j,k_0,t,\delta,s$ and states $r,r_j$ such that
+\begin{itemize}[leftmargin=*]
+\item $t\in\{1,2\}$ and $\delta=1$ for $t=1$,
+  $\delta\in\{1,3\}$ for $t=2$;
+\item $s5^{k_0}=r+1$;
+\item $\GeneralOrbit(r)$ and $\FullOrbit(r_j)$;
+\item the reset equation
+  $\mathrm{ResetHeadEq}(s,j,k_0,t,\delta,r_j)$ holds;
+\item $s<5^{j-1-k_0}$, $s$ is odd, and $5\nmid s$.
+\end{itemize}
+This is exactly the corrected reachability predicate
+$\ResetWindow(j,k_0,t,\delta,s)$.
+
+\subsection{The block decomposition}
+
+The block head $r_j$ is followed by a tail of length $L$ ending at the
+terminal state $r_s$.  Let
+\begin{equation*}
+  n=s-j,\qquad \Delta=W_s-W_j,
+\end{equation*}
+and let $B$ be the block molecule of the tail.  The tail is a valid
+word, so the exact word-orbit identity gives
+\begin{equation*}
+  2^{\Delta}\,r_s=5^n\,r_{j,0}+B.
+\end{equation*}
+The unified core studies exactly this block: the CRT candidate, the
+terminal residue, and the size conditions live in the coordinates of
+this tail.
+
+\subsection{The unified-core projection}
+
+The corrected decisive window bound is a projection of the unified
+core.  In the Lean repository the interface
+\begin{verbatim}
+decisiveWindowValuationBoundCorrected_of_unified_core :
+  unifiedCoreClosed -> decisiveWindowValuationBoundCorrected
+\end{verbatim}
+is compiled as a conditional interface.  Its input
+\texttt{unifiedCoreClosed} is the mathematical statement whose Lean
+representative is
+\texttt{UnifiedCoreAudit.unified\_\allowbreak core\_\allowbreak
+final\_\allowbreak no\_\allowbreak hge}; that statement is pending.
+
+\subsection{The block-layer lower bound}
+
+The compiled lemma \texttt{rise\_\allowbreak block\_\allowbreak
+balance} gives the valuation lower bound from the reset block:
+\begin{equation*}
+  t=2:\qquad
+  \vtwo{5^{k_0+1}s+\delta5^j}\ge2j+11,
+\end{equation*}
+\begin{equation*}
+  t=1:\qquad
+  \vtwo{5^{k_0+1}s+5^j-2}\ge2j+12.
+\end{equation*}
+The lower bound comes from the exact block-layer count of the rise and
+C3 steps, not from a size estimate.
+
+\subsection{The corrected upper bound}
+
+For a reachable reset window, the corrected decisive window bound
+gives
+\begin{equation*}
+  t=2:\qquad
+  \vtwo{5^{k_0+1}s+\delta5^j}\le2j+10,
+\end{equation*}
+\begin{equation*}
+  t=1:\qquad
+  \vtwo{5^{k_0+1}s+5^j-2}\le2j+11.
+\end{equation*}
+The two bounds contradict the lower bounds above.  The contradiction
+is packaged by the compiled lemma
+\texttt{failure\_\allowbreak window\_\allowbreak contradicts\_\allowbreak
+window\_\allowbreak corrected}.
+
+\subsection{The failure window record}
+
+The construction assembles the fields of
+\begin{equation*}
+  \mathrm{FailureWindow}(m,S,P,w,\mathrm{rise},\mathrm{c3},
+  j,k_0,t,\delta,s):
+\end{equation*}
+\begin{itemize}[leftmargin=*]
+\item \texttt{hj\_lt}: $j<P$;
+\item \texttt{ht}: $t\in\{1,2\}$;
+\item \texttt{hdelta}: the matching $\delta$;
+\item \texttt{hreset}: the exact reset equation with the prefix state
+  $\wordOrbit(w{\upharpoonright}j,m)$;
+\item \texttt{hreach}: $\ResetWindow(j,k_0,t,\delta,s)$;
+\item \texttt{hs\_odd}, \texttt{hs\_not\_five}, \texttt{hk},
+  \texttt{hs\_lt}: parity, coprimality, and size;
+\item \texttt{hfail\_t1}, \texttt{hfail\_t2}: the valuation lower
+  bounds.
+\end{itemize}
+The existence of this record is
+\texttt{failureWindowExistence}, pending.
+
+\subsection{The full chain}
+
+\begin{verbatim}
+OrbitCycle 7
+  -> cycleQb8Input (compiled)
+  -> rise and C3 indices (compiled)
+  -> reset start witness (compiled)
+  -> reset equation and reachability (compiled)
+  -> block tail and unified core (unifiedCoreClosed pending)
+  -> decisive window bound (compiled conditional)
+  -> rise_block_balance lower bound (compiled)
+  -> FailureWindow fields (assembly pending)
+  -> failure_window_contradicts_window_corrected (compiled)
+  -> not OrbitCycle 7 (compiled conditional)
+  -> IsUnboundedOrbit 7 (compiled conditional)
+\end{verbatim}
+
+\subsection{What is and is not claimed}
+
+Every step before the failure-window assembly is either compiled or a
+direct projection of the unified core.  The paper does not claim that
+\texttt{failureWindowExistence} is compiled: it is the pending input
+of the cycle bridge.  The construction also does not claim that the
+unified core is closed; that closure is exactly the pending statement
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge}.
+
+\subsection{Status ledger}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.60\textwidth}p{0.34\textwidth}@{}}
+\toprule
+Statement & Status \\
+\midrule
+cycle-word extraction and QB-8 split & compiled \\
+rise-start reset witness & compiled \\
+block-layer lower bound & compiled \\
+failure-window contradiction lemma & compiled \\
+corrected bound as a projection & compiled (conditional) \\
+\texttt{failureWindowExistence} & pending \\
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge} & pending \\
+\bottomrule
+\end{tabular}
+\end{center}

@@ -1,0 +1,116 @@
+\section{Glossary, notation, and reading guide}
+
+This chapter collects the notation and terminology used in the paper
+and in this manual, and gives reading routes for different audiences.
+
+\subsection{Mathematical symbols}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.20\textwidth}p{0.74\textwidth}@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$T(x)$ & accelerated step $(5x+1)/2^{\vtwo{5x+1}}$ \\
+$\Orbit_x(n)$ & $n$-th accelerated orbit value of $x$ \\
+$t_j$ & exact step weight at depth $j$ \\
+$\wordWeight_j$ & accumulated weight before step $j$ \\
+$w$ & a word of step weights \\
+$\wordA(w)$ & word molecule of $w$ \\
+$m_j$ & margin $j\log_2 5-\wordWeight_j$ \\
+$\alpha$ & $\log_2 5$ \\
+$C_1,C_2,C_3$ & counts of weights $1$, $2$, at least $3$ \\
+$g$ & orbit state $\Orbit_7(j-1)$ \\
+$x$ & candidate predecessor \\
+$r_j$ & block head \\
+$r_s$ & terminal state \\
+$B$ & block molecule \\
+$u_i$ & segment step weights \\
+$W_i$ & segment prefix weights \\
+$H_s$ & unified-core threshold parameter \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Reset-window symbols}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.20\textwidth}p{0.74\textwidth}@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$j$ & reset step depth \\
+$k_0$ & exponent in $s5^{k_0}=r+1$ \\
+$t$ & reset step weight, $t\in\{1,2\}$ \\
+$\delta$ & reset parameter: $1$ for $t=1$, $\{1,3\}$ for $t=2$ \\
+$s$ & odd terminal part with $5\nmid s$ \\
+$r$ & previous terminal state \\
+$n$ & tail length $s-j$ \\
+$\Delta$ & weight difference $W_s-W_j$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Status terms}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Math: proven}: the mathematical argument is written out.
+\item \textbf{Lean: compiled}: the Lean theorem compiles without
+  \texttt{sorry}.
+\item \textbf{Lean: pending}: the Lean theorem is not yet closed.
+\item \textbf{compiled (conditional)}: the theorem compiles but
+  consumes an open input.
+\end{itemize}
+
+\subsection{Reading routes}
+
+\paragraph{For a mathematician.}
+Read the main paper in order: definitions, framework, unified core,
+bridge, Lean.  Use the supplementary chapters for the full derivations:
+the block calculus chapter, the unified-core chapter, the CRT chapter,
+and the divergence-bridge chapter.
+
+\paragraph{For a Lean reader.}
+Begin with the Lean theorem index and the reproducibility guide, then
+read the statement shapes in the status matrix.  Follow the import
+order: \texttt{WordWindow}, \texttt{Pmi}, \texttt{FinitePrefix},
+\texttt{UnifiedCoreBridge}, \texttt{UnifiedCoreAudit},
+\texttt{CycleBridge}, \texttt{DwdbDiv}.
+
+\paragraph{For a referee.}
+Check the pending ledger first.  Two statements are pending:
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge} and
+\texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak one\_\allowbreak
+diverges\_\allowbreak at\_\allowbreak 7}.  Then audit the dependency
+graph to confirm that every compiled claim has a build.
+
+\subsection{Cross-reference map}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.34\textwidth}p{0.60\textwidth}@{}}
+\toprule
+Main-paper section & Supplementary chapters \\
+\midrule
+introduction and main theorem & glossary, status matrix \\
+string-flow framework & vocabulary, PMI-B, block calculus \\
+unified core & unified core, CRT, candidate exclusion \\
+divergence bridge & cycle word algebra, window architecture,
+  divergence bridge in full \\
+Lean verification & Lean theorem index, reproducibility guide \\
+appendix & all chapters \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{How to use the manual}
+
+\begin{enumerate}[leftmargin=*]
+\item Start with the glossary to fix notation.
+\item Follow the reading route for your audience.
+\item Use the status matrix for any Lean claim.
+\item Use the dependency graph to find what a statement needs.
+\item Never cite a pending statement as closed.
+\end{enumerate}

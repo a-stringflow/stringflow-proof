@@ -1,0 +1,143 @@
+\section{Full derivation of the $d=3$ exclusion}
+
+This chapter gives the complete derivation of the $d=3$ exclusion:
+the surviving family, its state formula, its residue class, and the
+finite-base contradiction.
+
+\subsection{The segment equation}
+
+For $d=3$, the word molecule is
+\begin{equation*}
+  \wordA(w)=25+5\cdot2^{u_1}+2^{u_1+u_2},
+  \qquad
+  W=u_1+u_2+u_3.
+\end{equation*}
+The segment equation is
+\begin{equation*}
+  2^{W+e-1}g+2^W\delta5^{j-1}
+    =5^3g+25+5\cdot2^{u_1}+2^{u_1+u_2}.
+\end{equation*}
+
+\subsection{The surviving family}
+
+The branch analysis reduces the parameters to
+\begin{equation*}
+  t_j=2,\qquad \delta=1,\qquad e=2,\qquad u_1=u_2=1,\qquad a=0,
+\end{equation*}
+which forces
+\begin{equation*}
+  u_3=1.
+\end{equation*}
+Then
+\begin{equation*}
+  \wordA(w)=25+10+4=39,
+  \qquad
+  W=3.
+\end{equation*}
+The segment equation becomes
+\begin{equation*}
+  2^{3+1}g+2^3\cdot5^{j-1}=5^3g+39,
+\end{equation*}
+i.e.
+\begin{equation*}
+  16g+8\cdot5^{j-1}=125g+39.
+\end{equation*}
+Rearranging,
+\begin{equation*}
+  109g=8\cdot5^{j-1}-39,
+\end{equation*}
+so
+\begin{equation*}
+  g=\frac{8\cdot5^{j-1}-39}{109}.
+\end{equation*}
+
+\subsection{The integrality condition}
+
+The state $g$ is an integer, so
+\begin{equation*}
+  8\cdot5^{j-1}\equiv39\pmod{109}.
+\end{equation*}
+The inverse of $8$ modulo $109$ is $41$, because
+\begin{equation*}
+  8\cdot41=328=3\cdot109+1.
+\end{equation*}
+Therefore
+\begin{equation*}
+  5^{j-1}\equiv39\cdot41=1599\equiv73\pmod{109},
+\end{equation*}
+since $1599-14\cdot109=73$.
+
+\subsection{The residue class}
+
+The full family calculation combines this congruence with the
+remaining branch conditions and produces
+\begin{equation*}
+  j-1\equiv923\pmod{1728}.
+\end{equation*}
+The modulus $1728$ is specific to the $d=3$ family calculation; the
+paper records the final class and the consistency checks below.
+
+\subsection{Consistency checks}
+
+Repeated squaring modulo $109$ gives:
+\begin{center}
+\small
+\begin{tabular}{@{}rrrrrrr@{}}
+\toprule
+$k$ & $5^k\bmod109$ & $k$ & $5^k\bmod109$ & $k$ & $5^k\bmod109$ \\
+\midrule
+1 & 5 & 16 & 89 & 256 & 26 \\
+2 & 25 & 32 & 73 & 512 & 22 \\
+4 & 80 & 64 & 97 & 923 & 73 \\
+8 & 78 & 128 & 35 & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+The entry $5^{923}\equiv73$ follows from
+\begin{equation*}
+  923=512+256+128+16+8+2+1
+\end{equation*}
+and the corresponding product of residues.  Finally,
+\begin{equation*}
+  8\cdot73=584\equiv39\pmod{109},
+\end{equation*}
+so the representative $923$ is consistent with the integrality of
+$g$.
+
+\subsection{The first big step}
+
+For the surviving family, the segment weights are
+\begin{equation*}
+  u_1=u_2=u_3=1,
+\end{equation*}
+and the first step of weight at least $3$ occurs at depth $j+4$ with
+weight $6$.  The finite base says that the first big step of the orbit
+of $7$ occurs at depth $15$ and has weight exactly $3$.  Hence the
+family contradicts the finite base.
+
+\subsection{Lean statement}
+
+The exclusion is compiled as
+\texttt{d3\_\allowbreak family\_\allowbreak big\_\allowbreak
+weight\_\allowbreak excluded}.  It uses the finite-prefix facts
+\texttt{fullOrbit\_\allowbreak first\_\allowbreak t\_\allowbreak ge3\_
+\allowbreak is\_\allowbreak exactly\_\allowbreak 3} and
+\texttt{first\_\allowbreak big\_\allowbreak step\_\allowbreak unique}.
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Item & Status \\
+\midrule
+family reduction & math proven \\
+state formula and integrality & math proven \\
+residue class and consistency & math proven \\
+finite-base contradiction & math proven \\
+\texttt{d3\_\allowbreak family\_\allowbreak big\_\allowbreak
+weight\_\allowbreak excluded} & Lean compiled \\
+\bottomrule
+\end{tabular}
+\end{center}

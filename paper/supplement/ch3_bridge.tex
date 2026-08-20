@@ -1,0 +1,293 @@
+\section{Divergence bridge}
+
+This chapter expands the cycle bridge and the DWDB-DIV assembly.
+
+\subsection{Cycle words}
+
+A positive cycle gives a closed word
+\begin{equation*}
+  \wordOrbit(w,\Orbit_7(c))=\Orbit_7(c).
+\end{equation*}
+The word is split into rise steps ($t=1$ or $t=2$) and C3 steps
+($t\ge3$).
+
+\subsection{Construction of the period word}
+
+Define the period word recursively by
+\begin{equation*}
+  \mathrm{cycleWord}(c,0)=[],
+\end{equation*}
+\begin{equation*}
+  \mathrm{cycleWord}(c,p+1)=\mathrm{cycleWord}(c,p)
+    ++ \left[\vtwo{5\,\Orbit_7(c+p)+1}\right].
+\end{equation*}
+By induction on $p$,
+\begin{equation*}
+  \wordOrbit(\mathrm{cycleWord}(c,p),\Orbit_7(c))
+    =\Orbit_7(c+p),
+\end{equation*}
+and each appended entry is exact by definition.  Hence the compiled
+lemmas \texttt{cycleWord\_step\_exact} and
+\texttt{cycleWord\_take\_eq} hold.  If
+$\Orbit_7(c)=\Orbit_7(c+p)$, the word is closed and
+\texttt{cycleWord\_cycle\_equation} applies.
+
+\subsection{Cycle word lemmas}
+
+The following Lean lemmas extract the cycle word and its QB-8 split:
+\begin{itemize}[leftmargin=*]
+\item \texttt{orbit\_cycle\_imp\_min\_rise\_start};
+\item \texttt{orbit\_reset\_head\_eq\_of\_rise\_start};
+\item \texttt{orbit\_cycle\_imp\_min\_rise\_witness};
+\item \texttt{cycleWord\_step\_exact};
+\item \texttt{cycleWord\_take\_eq};
+\item \texttt{cycleQb8Input\_exists\_rise\_index};
+\item \texttt{cycleQb8Input\_exists\_c3\_index};
+\item \texttt{cycleQb8Input\_exists\_block\_head\_mod\_five};
+\item \texttt{rise\_block\_balance}.
+\end{itemize}
+
+\subsection{Extraction and split proof sketch}
+
+Given a positive cycle, choose equal orbit values at depths $m<n$ and
+put $c=m$, $p=n-m$, $m_0=\Orbit_7(c)$.  Define the word by
+\begin{equation*}
+  t_i=\vtwo{5\,\Orbit_7(c+i)+1},\qquad 0\le i<p.
+\end{equation*}
+The compiled lemmas \texttt{cycleWord\_step\_exact},
+\texttt{cycleWord\_take\_eq}, and \texttt{cycleWord\_cycle\_equation}
+give validity, closedness, and the exact cycle equation.
+
+The QB-8 split is obtained by filtering the word into rise entries
+$t<3$ and C3 entries $t\ge3$.  Closedness implies both filters are
+nonempty: a cycle cannot consist only of rise steps, because their
+total weight would be at most $2P$, contradicting the cycle equation
+$2^Wm=5^Pm+A(w)$; and it cannot consist only of C3 steps, because each
+such step satisfies $(5x+1)/2^t<x$ for $x\ge1$, so the states would
+strictly decrease and could not close.  The precise statements are
+\texttt{cycleQb8Input} and
+\texttt{cycleQb8Input\_P\_ge\_two}.
+
+\subsection{The QB-8 input record}
+
+The Lean structure \texttt{CycleQb8Input m S P w rise c3} records
+everything that follows from a positive cycle without range
+assumptions:
+\begin{itemize}[leftmargin=*]
+\item \texttt{hvalid}: the word $w$ is valid from $m$;
+\item \texttt{hclosed}: $\wordOrbit(w,m)=m$;
+\item \texttt{hlength}, \texttt{hweight}: length $P$ and total
+  weight $S$;
+\item \texttt{hrise\_ok}, \texttt{hc3\_ok}: rise entries lie in
+  $\{1,2\}$ and C3 entries are at least $3$;
+\item \texttt{hlen\_split}, \texttt{hweight\_split}: the rise and C3
+  lists decompose the word and its weight;
+\item \texttt{hrise\_filter}, \texttt{hc3\_filter}: the split is the
+  exact filter split;
+\item \texttt{hc3\_pos}, \texttt{hrise\_pos}: both parts are
+  nonempty;
+\item \texttt{hexact}: every word step equals the orbit valuation;
+\item \texttt{hm\_pos}, \texttt{hm\_odd}, \texttt{hm\_not\_five}:
+  $m$ is positive, odd, and not divisible by $5$.
+\end{itemize}
+
+The structure is produced by
+\texttt{orbit\_cycle\_imp\_cycle\_qb8\_input}.
+
+\subsection{Failure window fields}
+
+The structure \texttt{FailureWindow m S P w rise c3 j k0 t delta s}
+adds to the QB-8 input:
+\begin{itemize}[leftmargin=*]
+\item \texttt{hj\_lt}: $j<P$;
+\item \texttt{ht}: $t\in\{1,2\}$;
+\item \texttt{hdelta}: $\delta=1$ when $t=1$, and
+  $\delta\in\{1,3\}$ when $t=2$;
+\item \texttt{hreset}: the exact reset equation with the prefix state
+  $\wordOrbit(w{\upharpoonright}j,m)$;
+\item \texttt{hreach}: the corrected reachability predicate
+  $\ResetWindow(j,k_0,t,\delta,s)$;
+\item \texttt{hs\_odd}, \texttt{hs\_not\_five}, \texttt{hk},
+  \texttt{hs\_lt}: parity, coprimality, and size conditions;
+\item \texttt{hfail\_t1}, \texttt{hfail\_t2}: the valuation lower
+  bounds $2j+12$ and $2j+11$.
+\end{itemize}
+
+\subsection{Construction checklist}
+
+The intended construction from a closed QB-8 word is conditional on
+the unified core; the statement \texttt{failureWindowExistence} is not
+claimed as proved in Lean.
+\begin{enumerate}[leftmargin=*]
+\item Extract the closed word and its rise/C3 split.
+\item Choose the block head from the rise and C3 position lemmas.
+\item Obtain the reset equation and the corrected reachability witness.
+\item Apply the unified core to the block tail.
+\item Read off the valuation lower bound.
+\item Compare with the corrected decisive window bound.
+\end{enumerate}
+
+\subsection{Corrected window bound}
+
+The corrected decisive window bound requires
+$\ResetWindow(j,k_0,t,\delta,s)$ and asserts
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+\delta5^j}\le2j+10
+\qquad(t=2),
+\end{equation*}
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+5^j-2}\le2j+11
+\qquad(t=1).
+\end{equation*}
+
+The old unconstrained bound is false; the counterexample is
+\begin{equation*}
+  j=36,\ k_0=0,\ t=2,\ \delta=3,\
+  s=2^{83}-3\cdot5^{35},
+\end{equation*}
+with valuation $83>82$.  The corrected predicate
+$\ResetWindow(j,k_0,t,\delta,s)$ fixes the exact block parameters and
+carries full orbit reachability.
+
+The valuation is 83 because the $5$-adic parts cancel exactly:
+\begin{equation*}
+  5s+3\cdot5^{36}
+    =5(2^{83}-3\cdot5^{35})+3\cdot5^{36}
+    =5\cdot2^{83}.
+\end{equation*}
+The witness satisfies the size, parity, and coprimality conditions;
+it fails only because it carries no orbit reachability data.
+
+\subsection{Corrected bound as a projection}
+
+The corrected bound is not introduced as a separate analytic
+hypothesis.  In the Lean repository it is recorded as a definition
+with the unified core as an input:
+\begin{itemize}[leftmargin=*]
+\item \texttt{unifiedCoreClosed}: the unified-core valuation
+  inequality under the no-$H_{\ge}$ premises, reachability, and
+  $2\le H_s$;
+\item \texttt{decisiveWindowValuationBoundCorrected\_of\_unified\_core}:
+  \texttt{unifiedCoreClosed} $\to$
+  \texttt{BlockAutomaton.decisiveWindowValuationBoundCorrected};
+\item \texttt{failureWindowExistenceOfUnifiedCore}:
+  \texttt{unifiedCoreClosed} $\to$
+  \texttt{CycleBridge.failureWindowExistence}.
+\end{itemize}
+
+These are conditional interfaces.  None of them claims that the
+unified core is already closed in Lean.
+
+\subsection{Projection field mapping}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.34\textwidth}p{0.30\textwidth}p{0.30\textwidth}@{}}
+\toprule
+\texttt{ResetWindowReachability} field & Role & Unified-core input \\
+\midrule
+$s5^{k_0}=r+1$ & previous terminal & block-tail terminal \\
+$\GeneralOrbit(r)$ & terminal reachability & general-orbit input \\
+$\FullOrbit(r_j)$ & reset-head reachability & block-head reachability \\
+$\mathrm{ResetHeadEq}$ & exact reset equation & block equation \\
+$s<5^{j-1-k_0}$, oddness, $5\nmid s$ & size and parity & candidate size \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Corrected bound statement shape}
+
+\begin{verbatim}
+def t2WindowBoundCorrected (j k0 a t delta s : Nat) : Prop :=
+  a = j - k0 - 1 ->
+  t = 2 -> delta = 1 \/ delta = 3 ->
+  S6Audit.ResetWindowReachability j k0 t delta s ->
+  t2WindowValue j k0 delta s <= 2 * j + 10
+
+def t1WindowBoundCorrected (j k0 a t s : Nat) : Prop :=
+  a = j - k0 - 1 -> t = 1 ->
+  S6Audit.ResetWindowReachability j k0 t 1 s ->
+  t1WindowValue j k0 s <= 2 * j + 11
+
+def decisiveWindowValuationBoundCorrected : Prop :=
+  (forall j k0 a t delta s,
+     t2WindowBoundCorrected j k0 a t delta s) /\
+  (forall j k0 a t s,
+     t1WindowBoundCorrected j k0 a t s)
+\end{verbatim}
+
+\subsection{No cycle implies unbounded: full proof}
+
+Assume that the orbit of $x$ is bounded by $B$.  Then every value lies
+in the finite set $\{0,\dots,B\}$, so the pigeonhole principle gives
+indices $m<n$ with $\Orbit_x(m)=\Orbit_x(n)$.  This is a positive
+cycle.  Contrapositively, the absence of a positive cycle implies that
+the orbit is unbounded.  The statement is
+\texttt{unbounded\_of\_no\_cycle}.
+
+\subsection{Failure windows}
+
+A failure window is a reachable reset block whose valuation lower bound
+exceeds the corrected upper bound.  Its existence is
+\texttt{failureWindowExistence}, an input to the assembly.
+
+\subsection{Assembly}
+
+\begin{equation*}
+  \text{corrected window bound}\ \Rightarrow\ \neg\OrbitCycle(7)
+  \ \Rightarrow\ \mathrm{IsUnboundedOrbit}(7).
+\end{equation*}
+
+The Lean interfaces are:
+\begin{itemize}[leftmargin=*]
+\item \texttt{CycleBridge.windowBoundToNoCycle};
+\item \texttt{CycleBridge.failure\_window\_contradicts\_window\_corrected};
+\item \texttt{DwdbDiv.dwdbDivFinalAssembly}.
+\end{itemize}
+
+All downstream statements that consume the corrected window bound or
+the failure-window existence are conditional interfaces; they do not
+claim those inputs are already proved.
+
+\subsection{Failure window contradiction}
+
+For $t=2$, the failure window gives
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+\delta5^j}\ge2j+11,
+\end{equation*}
+while the corrected bound gives
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+\delta5^j}\le2j+10.
+\end{equation*}
+For $t=1$, the lower bound is $2j+12$ and the upper bound is $2j+11$.
+Both are contradictions.  The Lean theorem is
+\texttt{failure\_window\_contradicts\_window\_corrected}.
+
+\subsection{Contradiction lemma shapes}
+
+The two elementary contradiction lemmas are:
+\begin{verbatim}
+theorem failure_window_contradicts_t2
+    (j k0 delta s v : Nat)
+    (hfail : 2 * j + 11 <= v)
+    (hwin : v <= 2 * j + 10) : False
+
+theorem failure_window_contradicts_t1
+    (j k0 s v : Nat)
+    (hfail : 2 * j + 12 <= v)
+    (hwin : v <= 2 * j + 11) : False
+\end{verbatim}
+
+\subsection{DwdbDiv assembly}
+
+The final assembly theorems are:
+\begin{itemize}[leftmargin=*]
+\item \texttt{DwdbDiv.dwdbDivFinalAssembly};
+\item \texttt{DwdbDiv.five\_x\_plus\_one\_diverges\_at\_7\_of\_window\_bound};
+\item \texttt{DwdbDiv.cycle\_of\_window\_bound\_contradiction};
+\item \texttt{DwdbDiv.five\_x\_plus\_one\_diverges\_at\_7\_of\_failure\_window}.
+\end{itemize}
+
+These theorems are conditional on the corrected window bound and on
+\texttt{failureWindowExistence}; neither input is claimed as already
+proved.

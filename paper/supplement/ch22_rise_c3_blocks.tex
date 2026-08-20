@@ -1,0 +1,152 @@
+\section{Rise blocks, C3 blocks, and the block-layer balance}
+
+This chapter records the algebra of rise steps, C3 steps, and the
+block-layer balance that produces the valuation lower bounds.
+
+\subsection{Rise steps}
+
+A rise step has weight $t=1$ or $t=2$.
+
+For $t=1$,
+\begin{equation*}
+  2y=5x+1,
+\end{equation*}
+so modulo $5$,
+\begin{equation*}
+  2y\equiv1\pmod5,
+  \qquad
+  y\equiv3\pmod5.
+\end{equation*}
+For $t=2$,
+\begin{equation*}
+  4y=5x+1,
+\end{equation*}
+so
+\begin{equation*}
+  4y\equiv1\pmod5,
+  \qquad
+  y\equiv4\pmod5.
+\end{equation*}
+These are the two residue rules recorded by
+\texttt{rise\_\allowbreak step\_\allowbreak next\_\allowbreak
+mod\_\allowbreak five}.
+
+\subsection{C3 steps}
+
+A C3 step has weight $t\ge3$.  For every positive state $x$,
+\begin{equation*}
+  \frac{5x+1}{2^t}\le\frac{5x+1}{8}<x,
+\end{equation*}
+because $5x+1<8x$ for $x\ge1$.  Hence every C3 step strictly
+decreases the state.  This is the elementary fact
+\texttt{c3Step\_\allowbreak lt\_\allowbreak of\_\allowbreak pos}.
+
+\subsection{Small block molecules}
+
+For rise blocks, the molecule formulas are:
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+block word & molecule $B$ & total weight $U$ \\
+\midrule
+$[1]$ & $1$ & $1$ \\
+$[2]$ & $1$ & $2$ \\
+$[1,1]$ & $7$ & $2$ \\
+$[1,2]$ & $7$ & $3$ \\
+$[2,1]$ & $9$ & $3$ \\
+$[2,2]$ & $9$ & $4$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+For example,
+\begin{equation*}
+  \wordA([1,2])=5+2=7,
+  \qquad
+  \wordA([2,1])=5+4=9.
+\end{equation*}
+
+\subsection{A C3 block}
+
+The word $[3,1]$ has molecule
+\begin{equation*}
+  \wordA([3,1])=5+8=13,
+  \qquad
+  U=4.
+\end{equation*}
+Its margins were analysed in the PMI-B chapter: the proper prefix of
+length $1$ is bad.
+
+\subsection{Block equation}
+
+For any block with weights $u_1,\dots,u_L$ and total weight $U$,
+\begin{equation*}
+  2^U\,r_L=5^L\,r_0+B.
+\end{equation*}
+This is the exact word-orbit identity restricted to the block.
+
+\subsection{The reset block}
+
+The reset block starts at the candidate predecessor $x$ and maps it
+to the block head $r_j$ with weight $t\in\{1,2\}$:
+\begin{equation*}
+  2^t\,r_j=5x+1.
+\end{equation*}
+With
+\begin{equation*}
+  x=5^{k_0}s+\delta5^{j-1}-1,
+\end{equation*}
+this becomes
+\begin{equation*}
+  t=2:\quad 4(r_j+1)=5^{k_0+1}s+\delta5^j,
+\end{equation*}
+\begin{equation*}
+  t=1:\quad 2(r_j+1)=5^{k_0+1}s+5^j-2.
+\end{equation*}
+These are the reset equations used by the corrected window bound.
+
+\subsection{The block-layer balance}
+
+The compiled lemma \texttt{rise\_\allowbreak block\_\allowbreak balance}
+derives the valuation lower bounds from the block structure:
+\begin{equation*}
+  t=2:\quad
+  \vtwo{5^{k_0+1}s+\delta5^j}\ge2j+11,
+\end{equation*}
+\begin{equation*}
+  t=1:\quad
+  \vtwo{5^{k_0+1}s+5^j-2}\ge2j+12.
+\end{equation*}
+The lower bounds come from counting the rise and C3 steps in the
+block and from the exact divisibility of the reset equation.  The
+paper treats the lemma as compiled input; it does not re-derive it in
+the main text.
+
+\subsection{Why the lower bounds are sharp}
+
+The arithmetic counterexample
+\begin{equation*}
+  (j,k_0,t,\delta,s)=(36,0,2,3,2^{83}-3\cdot5^{35})
+\end{equation*}
+attains valuation $83=2\cdot36+11$, exactly the lower bound of the
+$t=2$ balance.  The corrected window bound would require at most
+$82$.  This is the sharpness point: the block-layer lower bound and
+the reachable upper bound are separated by exactly one.
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Statement & Status \\
+\midrule
+rise residue rules & compiled \\
+C3 decrease fact & compiled \\
+block molecule formulas & math proven \\
+reset equations & compiled \\
+\texttt{rise\_\allowbreak block\_\allowbreak balance} & compiled \\
+corrected window bound & compiled (conditional) \\
+\bottomrule
+\end{tabular}
+\end{center}

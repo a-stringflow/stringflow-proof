@@ -1,0 +1,125 @@
+\section{The CRT layer: statement-by-statement commentary}
+
+This chapter comments on each statement in the CRT layer of
+\texttt{UnifiedCoreAudit.lean}.  The statements are recorded together
+with their mathematical role and their current status.
+
+\subsection{\texttt{All36\_20PremisesNoHge}}
+
+This is the record of the no-$H_{\ge}$ premises.  It carries the
+block-head data
+\begin{equation*}
+  j,\ W_p,\ W_j,\ q,\ A_j,\ A_s,\ s,\ W_s,\ r_s,\ L,\ H_s
+\end{equation*}
+and the step-weight function $\mathrm{weight}$.  The record is a
+definition, not a theorem; it is compiled.
+
+\subsection{\texttt{blockB\_\allowbreak bound\_\allowbreak of\_\allowbreak
+no\_\allowbreak hge}}
+
+This statement derives the block-tail bound
+\begin{equation*}
+  3B+2^{\Delta}\le3\cdot5^n-2\cdot4^n,
+\end{equation*}
+where $n=s-j$ and $\Delta=W_s-W_j$.  It is the first size condition
+used by the CRT argument.  The statement is compiled.
+
+\subsection{\texttt{rj0\_\allowbreak spec\_\allowbreak eq}}
+
+This statement packages the CRT equation
+\begin{equation*}
+  3\cdot5^n\,r_{j,0}+3B+2^{\Delta}
+    =2^{\Delta+L+4}\left(u+m'\,2^{H_s-1}\right)
+\end{equation*}
+and the definition of the candidate $r_{j,0}$ as its least
+nonnegative solution.  The statement is compiled.
+
+\subsection{\texttt{terminal\_\allowbreak bound\_\allowbreak iff\_\allowbreak
+yStar\_\allowbreak ne\_\allowbreak zero}}
+
+This statement records the equivalence
+\begin{equation*}
+  \vtwo{5^{L+3}w_{\mathrm{term}}+1}\le H_s-2
+  \iff y^*\ne0.
+\end{equation*}
+The residue $y^*$ is defined by
+\begin{equation*}
+  y^*=
+  -\left(w_{\mathrm{term}}+5^{-(L+3)}\right)
+  \left(3\cdot5^s\right)^{-1}
+  \pmod{2^{H_s-1}}.
+\end{equation*}
+The statement is compiled.
+
+\subsection{\texttt{rj0\_\allowbreak ge\_\allowbreak of\_\allowbreak
+size\_\allowbreak conditions\_\allowbreak no\_\allowbreak hge}}
+
+This statement derives
+\begin{equation*}
+  r_{j,0}\ge5^j
+\end{equation*}
+from the two size conditions.  The derivation is the inequality chain
+recorded in the main paper.  The statement is compiled.
+
+\subsection{\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge}}
+
+This is the final valuation inequality
+\begin{equation*}
+  \vtwo{5^{L+3}w_{\mathrm{term}}+1}\le H_s-2
+\end{equation*}
+under the no-$H_{\ge}$ premises, the block-head equality, the
+full-orbit reachability of $r$, and $2\le H_s$.  The statement is
+the unique \texttt{sorry} in the unified-core audit and is pending.
+
+\subsection{How the layer fits}
+
+\begin{verbatim}
+premises record
+  -> block tail bound (compiled)
+  -> CRT equation and candidate (compiled)
+  -> terminal residue equivalence (compiled)
+  -> size-condition lower bound (compiled)
+  -> final valuation inequality (pending)
+\end{verbatim}
+
+\subsection{Statement shapes}
+
+\begin{verbatim}
+theorem terminal_bound_iff_yStar_ne_zero
+    (L H_s s r_s : Nat) (hH : 2 <= H_s) :
+    twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) <= H_s - 2 <->
+      yStar L H_s s r_s != 0
+
+theorem rj0_ge_of_size_conditions_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat)
+    (weight : Nat -> Nat)
+    (hPrem : All36_20PremisesNoHge
+       j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hH : 1 <= H_s)
+    (hBase2 : 3 * 5 ^ s
+      + (3 * 5 ^ (s - j) - 2 * 4 ^ (s - j))
+      <= 2 ^ (W_s - Wj + L + 4) * uResidue L (H_s - 1))
+    (hPow3 : 3 * 5 ^ s
+      + (3 * 5 ^ (s - j) - 2 * 4 ^ (s - j))
+      <= 2 ^ (W_s - Wj + L + H_s + 3)) :
+    5 ^ j <= rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight
+\end{verbatim}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Statement & Status \\
+\midrule
+premises record & compiled \\
+block-tail bound & compiled \\
+CRT equation and candidate & compiled \\
+terminal residue equivalence & compiled \\
+size-condition lower bound & compiled \\
+final valuation inequality & pending \\
+\bottomrule
+\end{tabular}
+\end{center}

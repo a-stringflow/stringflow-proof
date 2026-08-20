@@ -1,0 +1,194 @@
+\section{Supplementary material: proof manual}\label{sec:appendix}
+
+The supplementary material is a complete proof manual, targeted at
+100--150 pages, and is organised as follows.
+
+\subsection{Page budget}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Chapter & Planned pages \\
+\midrule
+String-flow vocabulary & 15--20 \\
+Block calculus & 20--30 \\
+Unified core proof & 30--40 \\
+Divergence bridge & 15--20 \\
+Lean theorem index & 15--25 \\
+Dependency graph and ledger & 5--10 \\
+\midrule
+Total & 100--145 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The current compiled companion draft is
+\texttt{paper/supplement\_manual.tex}; it currently contains the
+vocabulary, block calculus, unified core, bridge, Lean index,
+dependency ledger, finite base, CRT layer, and interface chapters,
+and is maintained incrementally toward the target length.
+
+\subsection{Chapter contents and current status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.24\textwidth}p{0.48\textwidth}p{0.22\textwidth}@{}}
+\toprule
+Chapter & Contents & Status \\
+\midrule
+1 & vocabulary, PMI, block equations & draft \\
+2 & unified core, segment exclusions, CRT & draft \\
+3 & cycle bridge, corrected window, failure window & draft \\
+4 & Lean theorem index & partial list \\
+5 & dependency graph and ledger & draft \\
+6 & finite-prefix base and explicit expansion & draft \\
+7 & CRT candidate and terminal residue & draft \\
+8 & Lean bridge interfaces & draft \\
+9 & block calculus and reset equations & draft \\
+10 & PMI and PMI-B budgets & draft \\
+11 & arithmetic counterexample and corrected window & draft \\
+12 & failure window construction & draft \\
+13 & worked computations ledger & draft \\
+14 & theorem-by-theorem status matrix & draft \\
+15 & genericity ledger for $(a,b)$ & draft \\
+16 & cycle word algebra & draft \\
+17 & corrected window bound architecture & draft \\
+18 & Lean build and reproducibility guide & draft \\
+19 & block-head candidate exclusion and remaining bridge & draft \\
+20 & finite-prefix verification details & draft \\
+21 & divergence bridge in full & draft \\
+22 & rise blocks, C3 blocks, and block-layer balance & draft \\
+23 & glossary, notation, and reading guide & draft \\
+24 & proof architecture and dependency diagrams & draft \\
+25 & why the proof is exact & draft \\
+26 & full derivation of the $d=2$ exclusion & draft \\
+27 & full derivation of the $d=3$ exclusion & draft \\
+28 & full derivation of the $d\ge4$ exclusions & draft \\
+29 & finite-prefix proof script outline & draft \\
+30 & CRT layer: statement-by-statement commentary & draft \\
+31 & corrected reachability predicate & draft \\
+32 & worked examples of the exact ledger & draft \\
+33 & submission and release checklist & draft \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Reading guide}
+
+\begin{enumerate}[leftmargin=*]
+\item Readers who want the exact vocabulary should begin with the
+  string-flow chapter and check the Lean correspondence table in
+  \S2 of the main paper.
+\item Readers who want the proof of the unified core should begin with
+  the core chapter, then follow the segment-exclusion details.
+\item Readers who want the formalisation status should begin with the
+  Lean index and the dependency graph.
+\item The status ledger is authoritative: a lemma marked pending must
+  not be cited as closed.
+\end{enumerate}
+
+\subsection{Manual outline}
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{String-flow vocabulary.}  Exact definitions of words,
+validity, weight, molecules, prefix margins, and the PMI identity.
+\item \textbf{Block calculus.}  Rise blocks, C3 blocks, reset equations,
+block-head candidates, and the corrected reachability predicate.
+\item \textbf{Unified core proof.}  Full derivations for
+\S36.30.22 and \S36.30.23, including the candidate parameterisation,
+segment-length exclusions, and the finite-prefix base.
+\item \textbf{Divergence bridge.}  The corrected window bound, failure
+windows, and the no-cycle assembly.
+\item \textbf{Lean index.}  A theorem-by-theorem index of the files
+\texttt{FinitePrefix.lean}, \texttt{UnifiedCoreBridge.lean},
+\texttt{UnifiedCoreAudit.lean}, \texttt{CycleBridge.lean}, and
+\texttt{DwdbDiv.lean}.
+\item \textbf{Dependency graph.}  Each mathematical lemma is linked to
+its Lean statement and to the sections of this paper.
+\end{enumerate}
+
+\subsection{Cross-reference policy}
+
+The supplementary material does not paste Lean files line by line.  For
+each definition and theorem it gives:
+\begin{itemize}[leftmargin=*]
+\item the mathematical statement;
+\item the Lean name;
+\item the file and line region;
+\item the proof status;
+\item the list of dependencies.
+\end{itemize}
+
+\subsection{Reproducing the paper}
+
+The main document is built with:
+\begin{verbatim}
+pdflatex main
+bibtex main
+pdflatex main
+pdflatex main
+\end{verbatim}
+The supplementary manual is built with:
+\begin{verbatim}
+pdflatex supplement_manual
+pdflatex supplement_manual
+\end{verbatim}
+
+\subsection{Manual maintenance checklist}
+
+Whenever a Lean statement changes status, the paper and the manual are
+updated together:
+\begin{itemize}[leftmargin=*]
+\item re-run the relevant \texttt{lake build} target;
+\item re-run \texttt{\#print axioms} for changed bridge theorems;
+\item update every status table and the dependency-edge table;
+\item update \texttt{STATUS.md} and the page counts;
+\item do not promote \texttt{unified\_core\_final\_no\_hge} or
+  \texttt{FinalStatement.five\_\allowbreak x\_\allowbreak plus\_\allowbreak
+  one\_\allowbreak diverges\_\allowbreak at\_\allowbreak 7} until
+  their ledger entries are changed;
+\item keep every mathematical statement aligned with the Lean name
+  that is cited for it.
+\end{itemize}
+
+\subsection{Status ledger}
+
+The status ledger is kept in \texttt{docs/lean\_assembly\_plan.md},
+\texttt{docs/cycle\_bridge\_window\_to\_no\_cycle.md}, and
+\texttt{docs/dwdb\_div\_assembly.md}.  The paper and the supplementary manual
+must not claim a Lean statement is closed when its ledger entry is
+pending.
+
+\subsection{Requirements checklist}
+
+The following table maps the manuscript requirements to their
+locations and current status.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.34\textwidth}p{0.34\textwidth}p{0.24\textwidth}@{}}
+\toprule
+Requirement & Location & Status \\
+\midrule
+project structure and \texttt{refs.bib} & \texttt{main.tex},
+  \texttt{sections/*.tex} & done \\
+core definitions and main theorem & \texttt{intro.tex},
+  \texttt{framework.tex} & done \\
+string-flow framework and PMI/PMI-B & \texttt{framework.tex} & done \\
+full vs general orbit reachability & \texttt{framework.tex} & done \\
+unified core outline and statuses & \texttt{core.tex} & done \\
+divergence bridge and conditional chain & \texttt{bridge.tex} & done \\
+Lean verification setup and audit & \texttt{lean.tex} & done \\
+supplementary proof manual & \texttt{supplement\_manual.tex} &
+  102 pages \\
+constants $13$ and thresholds $+10,+11,+12$ & throughout & preserved \\
+forbidden phrases absent & throughout & verified \\
+pending statements not promoted & throughout & verified \\
+Lean build final confirmation & Lean repository & pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The final row is the release gate: the manuscript is complete as a
+draft with the pending statuses recorded, but the final authority is
+the Lean build, which is not yet closed.

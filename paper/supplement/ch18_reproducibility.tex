@@ -1,0 +1,165 @@
+\section{Lean build and reproducibility guide}
+
+This chapter records the exact verification setup of the Lean
+repository.  The repository is the final authority for the formal
+chain; this chapter explains how to reproduce its current state.
+
+\subsection{Environment}
+
+The project is pinned to
+\begin{verbatim}
+Lean 4 : v4.33.0-rc2
+Mathlib: locked by the lakefile
+\end{verbatim}
+The dependency cache is populated before the first build.  After the
+cache is present, the build does not require network access.
+
+\subsection{Build commands}
+
+The main verification targets are:
+\begin{verbatim}
+lake build CycleBridge
+lake build DwdbDiv
+\end{verbatim}
+A clean checkout must pass both commands.  The target
+\texttt{UnifiedCoreAudit} currently contains exactly one
+\texttt{sorry}; the target \texttt{FinalStatement} is the final
+assembly target.
+
+\subsection{File map}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.30\textwidth}p{0.64\textwidth}@{}}
+\toprule
+File & Role \\
+\midrule
+\texttt{WordWindow.lean} & words, validity, orbit, molecule \\
+\texttt{Pmi.lean} & PMI and PMI-B algebra \\
+\texttt{FinitePrefix.lean} & explicit 17-state expansion \\
+\texttt{UnifiedCoreBridge.lean} & candidate and segment bridges \\
+\texttt{UnifiedCoreAudit.lean} & CRT and final pending inequality \\
+\texttt{CycleBridge.lean} & corrected window and no-cycle bridge \\
+\texttt{DwdbDiv.lean} & final divergence assembly \\
+\texttt{FinalStatement.lean} & final theorem target \\
+\texttt{AxiomAudit.lean} & axiom audit \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Import order}
+
+\begin{verbatim}
+FinitePrefix.lean
+  imports S6AuditStage1
+
+UnifiedCoreBridge.lean
+  imports FinitePrefix, UnifiedCoreAudit
+
+UnifiedCoreAudit.lean
+  imports S6Audit, S6AuditStage1, LteMacro
+
+CycleBridge.lean
+  imports BlockAutomaton, FinalStatement, S6AuditStage1,
+          PhOne, SurvExAudit, Td0Real
+
+DwdbDiv.lean
+  imports CycleBridge, UnifiedCoreAudit
+
+FinalStatement.lean
+  imports S6Audit, FBeta
+\end{verbatim}
+
+\subsection{Axiom audit}
+
+The file \texttt{AxiomAudit.lean} runs \texttt{\#print axioms} on each
+listed bridge theorem.  The allowed output is a subset of
+\begin{verbatim}
+[propext, Classical.choice, Quot.sound]
+\end{verbatim}
+Any custom \texttt{axiom} fails the audit.
+
+\subsection{The \texttt{sorry} check}
+
+The current state of \texttt{UnifiedCoreAudit.lean} is exactly one
+\texttt{sorry}, at
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge}.  The check is a literal search:
+\begin{verbatim}
+grep -n "sorry" UnifiedCoreAudit.lean
+\end{verbatim}
+The result must list exactly that statement.
+
+\subsection{The \texttt{native\_decide} check}
+
+The main chain must contain no \texttt{native\_decide}.  The finite
+base is expanded explicitly:
+\begin{verbatim}
+fullOrbitIter 0 = 7 /\ fullOrbitIter 1 = 9 /\
+... /\ fullOrbitIter 16 = 34177
+\end{verbatim}
+No code-generation trust boundary is introduced at that step.
+
+\subsection{CI}
+
+The repository CI runs the two main build targets and the axiom
+audit on a clean checkout.  The CI status is recorded in the
+repository \texttt{README}.  The paper does not rely on the CI status
+alone; the same commands can be run locally.
+
+\subsection{Reproducibility}
+
+A fresh checkout reproduces the current state with:
+\begin{verbatim}
+lake build CycleBridge
+lake build DwdbDiv
+\end{verbatim}
+followed by the axiom audit.  The pinned toolchain and locked
+Mathlib dependency make the build deterministic up to the pinned
+environment.
+
+\subsection{Troubleshooting}
+
+\begin{itemize}[leftmargin=*]
+\item If the build fails on a changed file, the status tables in this
+  manual and in the main paper are stale and must not be trusted.
+\item If \texttt{\#print axioms} returns an extra axiom, the theorem
+  must be repaired before it is promoted.
+\item If a second \texttt{sorry} appears in the unified-core audit,
+  the ledger must be updated before any status claim is made.
+\item If \texttt{native\_decide} appears in a main-chain file, the
+  finite base must be expanded by rewriting instead.
+\end{itemize}
+
+\subsection{Acceptance checklist}
+
+\begin{enumerate}[leftmargin=*]
+\item \texttt{lake build CycleBridge} passes.
+\item \texttt{lake build DwdbDiv} passes.
+\item No custom axiom appears in the audited theorems.
+\item Exactly one \texttt{sorry} remains in
+  \texttt{UnifiedCoreAudit.lean}.
+\item No \texttt{native\_decide} appears in the main chain.
+\item The final theorem is
+  \begin{verbatim}
+FinalStatement.five_x_plus_one_diverges_at_7 :
+  IsUnboundedOrbit 7
+  \end{verbatim}
+\end{enumerate}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.62\textwidth}p{0.32\textwidth}@{}}
+\toprule
+Item & Status \\
+\midrule
+main bridge builds & passing \\
+axiom audit & passing for bridge theorems \\
+finite base without \texttt{native\_decide} & verified by inspection \\
+unified-core final inequality & pending \\
+final theorem assembly & pending \\
+\bottomrule
+\end{tabular}
+\end{center}

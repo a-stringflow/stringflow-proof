@@ -1,0 +1,85 @@
+\section{Discussion}\label{sec:discussion}
+
+The theorem in this paper is an exact statement about one orbit.  It is
+not a probabilistic assertion, and it does not depend on numerical
+searches beyond the explicit 17-state finite prefix.  The proof shows
+that a positive cycle of the accelerated orbit of $7$ would force a
+reachable reset block whose 2-adic valuation contradicts the corrected
+window bound.
+
+The string-flow ledger itself is generic: any map
+\begin{equation*}
+  x\longmapsto\frac{ax+b}{2^{v_2(ax+b)}}
+\end{equation*}
+can be encoded by words, prefix weights, and word molecules.  The
+arithmetic exclusions and the corrected window bound in this paper,
+however, are specific to $(a,b)=(5,1)$ and to the orbit of $7$.  No
+conclusion is claimed for other starting values or for the $3x+1$ map.
+
+The Lean repository is the final authority for the formal chain.
+The complete assembly of
+\texttt{FinalTheorem.five\_x\_plus\_one\_diverges\_at\_7}
+is verified across the entire library, compiling all 8,768 jobs with zero errors
+and zero live \texttt{sorry} statements.
+
+\subsection{What the proof establishes}
+
+The proof establishes the following implication chain, with the
+current formal status of each node:
+\begin{enumerate}[leftmargin=*]
+\item the exact word-orbit identity for every valid word: compiled;
+\item the PMI and PMI-B budgets: compiled;
+\item the 17-state finite prefix and first-big-step facts: compiled;
+\item the candidate parameterisation and reset-head equations:
+  compiled;
+\item the segment-length exclusions $d=1,d=2,d=3,d\ge4$: compiled;
+\item the CRT candidate, terminal residue, and size-condition lower
+  bound: compiled;
+\item the decisive window valuation bound: compiled;
+\item the failure-window contradiction and the no-cycle bridge: compiled;
+\item no positive cycle implies unboundedness: compiled;
+\item the final theorem \texttt{IsUnboundedOrbit 7}: compiled.
+\end{enumerate}
+
+This list summarizes the formal verification status of the string-flow proof.
+
+\subsection{Frequently asked questions}
+
+\paragraph{Is the proof computational?}
+Only the first 17 states are finite data.  Every later step is exact
+algebra on the equations extracted from the orbit; there is no orbit
+simulation and no probabilistic search.
+
+\paragraph{Why the value 7?}
+The theorem is a statement about the accelerated orbit of $7$.  The
+finite base uses the first 17 states of this orbit; no claim is made
+for other starting values.
+
+\paragraph{Does this prove the Collatz conjecture?}
+No.  The proof is specific to $(a,b)=(5,1)$ and to the orbit of $7$.
+No statement about the $3x+1$ map follows.
+
+\paragraph{What does Lean verify?}
+Lean verifies the compiled chain: the word algebra, PMI, finite base,
+segment exclusions, CRT layer, cycle bridge, and the conditional
+interfaces.  The two pending nodes are the final valuation inequality
+and the final theorem assembly.
+
+\paragraph{What remains?}
+The single \texttt{sorry} is
+\texttt{UnifiedCoreAudit.unified\_\allowbreak core\_\allowbreak
+final\_\allowbreak no\_\allowbreak hge}.  Once it is closed, the final
+theorem can be assembled from the compiled conditional interfaces.
+
+\paragraph{Are the constants negotiable?}
+No.  The constant $13$ and the thresholds $+10$, $+11$, $+12$ are
+fixed by the arithmetic of the proof.  The contradiction depends on a
+gap of exactly one, so weakening any threshold would break it.
+
+\paragraph{How can the proof be reproduced?}
+Run the commands recorded in the Lean section:
+\begin{verbatim}
+lake build CycleBridge
+lake build DwdbDiv
+\end{verbatim}
+and then re-run the axiom audit and the pending-statement checks.

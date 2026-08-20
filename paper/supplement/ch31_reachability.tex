@@ -1,0 +1,93 @@
+\section{The corrected reachability predicate}
+
+This chapter explains the corrected reachability predicate
+$\ResetWindow(j,k_0,t,\delta,s)$ field by field, and why each field is
+necessary.
+
+\subsection{The fields}
+
+The predicate $\ResetWindow(j,k_0,t,\delta,s)$ asserts the existence
+of states $r$ and $r_j$ such that:
+\begin{enumerate}[leftmargin=*]
+\item $s5^{k_0}=r+1$;
+\item $\GeneralOrbit(r)$;
+\item $\FullOrbit(r_j)$;
+\item $\mathrm{ResetHeadEq}(s,j,k_0,t,\delta,r_j)$;
+\item $s<5^{j-1-k_0}$;
+\item $s$ is odd;
+\item $5\nmid s$.
+\end{enumerate}
+The first four items are reachability data; the last three are size
+and parity conditions.
+
+\subsection{Why the same indices}
+
+The predicate fixes the same $j,k_0,t$ in every field.  The reset
+equation, the size bound, and the two reachability predicates all use
+the same depth and weight.  This prevents a witness from combining a
+reset equation at one depth with a size bound at another.
+
+\subsection{A weaker predicate would fail}
+
+A predicate that only fixed the difference $j-k_0-1$ would allow a
+reset equation with different absolute indices than the reachability
+witness.  The corrected predicate is written with the absolute
+indices precisely to block that gap.
+
+\subsection{The arithmetic witness}
+
+The witness
+\begin{equation*}
+  j=36,\quad k_0=0,\quad t=2,\quad \delta=3,\quad
+  s=2^{83}-3\cdot5^{35}
+\end{equation*}
+satisfies the size and parity conditions:
+\begin{itemize}[leftmargin=*]
+\item $s<5^{35}$ because $2^{81}<5^{35}$;
+\item $s$ is odd;
+\item $s\equiv3\pmod5$, so $5\nmid s$.
+\end{itemize}
+It also satisfies the valuation identity
+\begin{equation*}
+  5s+3\cdot5^{36}=5\cdot2^{83},
+\end{equation*}
+which is why it breaks the arithmetic-only bound.
+
+\subsection{What the witness lacks}
+
+The witness supplies no $r$ with
+\begin{equation*}
+  s5^{0}=r+1,
+\end{equation*}
+no general-orbit reachability $\GeneralOrbit(r)$, no full-orbit reset
+head $\FullOrbit(r_j)$, and no reset equation
+\begin{equation*}
+  \mathrm{ResetHeadEq}(s,36,0,2,3,r_j).
+\end{equation*}
+It is arithmetic-only, so it is not a counterexample to the corrected
+bound.
+
+\subsection{Statement shape}
+
+The repository definition is
+\texttt{S6Audit.ResetWindowReachability}.  The paper writes it
+schematically as an existence predicate over $r$ and $r_j$ with the
+seven fields listed above; the precise record structure lives in the
+repository and may use different field names.  The mathematical
+content is the seven fields, not the layout of the record.
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Item & Status \\
+\midrule
+predicate definition & compiled \\
+arithmetic witness & verified exactly \\
+corrected bound using the predicate & compiled (conditional) \\
+failure-window construction & pending \\
+\bottomrule
+\end{tabular}
+\end{center}

@@ -1,0 +1,160 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\emergencystretch=3em
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\vtwo}[1]{v_2\!\left(#1\right)}
+\newcommand{\wordWeight}{W}
+\newcommand{\wordOrbit}{\mathrm{wordOrbit}}
+\newcommand{\wordA}{A}
+\newcommand{\Orbit}{\mathrm{Orbit}}
+\newcommand{\OrbitCycle}{\mathrm{OrbitCycle}}
+\newcommand{\FullOrbit}{\mathrm{FullOrbitFrom7}}
+\newcommand{\GeneralOrbit}{\mathrm{GeneralOrbitFrom7}}
+\newcommand{\ResetWindow}{\mathrm{ResetWindowReachability}}
+
+\title{Supplementary proof manual\\ for the string-flow proof of unboundedness of $5x+1$ at $7$}
+\author{StringFlow}
+\date{\today}
+
+\begin{document}
+
+\sloppy
+
+\maketitle
+
+\begin{abstract}
+This manual is the companion to the main paper.  It records the full
+proof chain, the Lean theorem index, and the dependency ledger.  The
+current compiled length is 102 pages; the target length is 100 to 150
+pages, and the chapters are maintained incrementally.
+\end{abstract}
+
+\tableofcontents
+
+\input{supplement/ch1_framework}
+\input{supplement/ch10_pmi_budgets}
+\input{supplement/ch9_block_calculus}
+\input{supplement/ch2_core}
+\input{supplement/ch3_bridge}
+\input{supplement/ch11_counterexample}
+\input{supplement/ch12_failure_window}
+\input{supplement/ch13_workbook}
+\input{supplement/ch14_status_matrix}
+\input{supplement/ch15_genericity}
+\input{supplement/ch16_cycle_word_algebra}
+\input{supplement/ch17_window_architecture}
+\input{supplement/ch18_reproducibility}
+\input{supplement/ch19_candidate_exclusion}
+\input{supplement/ch20_finite_prefix_details}
+\input{supplement/ch21_divergence_bridge_full}
+\input{supplement/ch22_rise_c3_blocks}
+\input{supplement/ch23_glossary}
+\input{supplement/ch24_architecture}
+\input{supplement/ch25_exactness}
+\input{supplement/ch26_d2_exclusion}
+\input{supplement/ch27_d3_exclusion}
+\input{supplement/ch28_dge4_exclusion}
+\input{supplement/ch29_finite_prefix_script}
+\input{supplement/ch30_crt_commentary}
+\input{supplement/ch31_reachability}
+\input{supplement/ch32_worked_examples}
+\input{supplement/ch33_submission_checklist}
+\input{supplement/ch4_lean}
+\input{supplement/ch5_dependencies}
+\input{supplement/ch6_finitebase}
+\input{supplement/ch7_crt}
+\input{supplement/ch8_lean_interfaces}
+
+\section{Manual chapters}
+
+\begin{enumerate}[leftmargin=*]
+\item String-flow vocabulary and exact word identities.
+\item PMI and PMI-B budgets.
+\item Block calculus and reset equations.
+\item Corrected reachability and the decisive window bound.
+\item Unified core: candidate parameterisation and segment exclusions.
+\item Finite-prefix base and explicit orbit expansion.
+\item CRT candidate and terminal residue.
+\item Lean bridge interfaces.
+\item Divergence bridge and failure windows.
+\item Arithmetic counterexample and corrected window.
+\item Failure window construction.
+\item Worked computations ledger.
+\item Theorem-by-theorem status matrix.
+\item Genericity ledger for $(a,b)$.
+\item Cycle word algebra.
+\item Corrected window bound architecture.
+\item Lean build and reproducibility guide.
+\item Block-head candidate exclusion and the remaining bridge.
+\item Finite-prefix verification details.
+\item The divergence bridge in full.
+\item Rise blocks, C3 blocks, and the block-layer balance.
+\item Glossary, notation, and reading guide.
+\item Proof architecture and dependency diagrams.
+\item Why the proof is exact.
+\item Full derivation of the $d=2$ exclusion.
+\item Full derivation of the $d=3$ exclusion.
+\item Full derivation of the $d\ge4$ exclusions.
+\item Finite-prefix proof script outline.
+\item The CRT layer: statement-by-statement commentary.
+\item The corrected reachability predicate.
+\item Worked examples of the exact ledger.
+\item Submission and release checklist.
+\item Lean theorem index.
+\item Dependency graph and status ledger.
+\end{enumerate}
+
+\section{Lean theorem index}
+
+Each entry will contain:
+\begin{itemize}[leftmargin=*]
+\item mathematical statement;
+\item Lean name and file;
+\item status: \texttt{Math: proven}, \texttt{Lean: compiled}, or
+  \texttt{Lean: pending};
+\item list of dependencies.
+\end{itemize}
+
+\section{Status ledger}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Statement & Status \\
+\midrule
+\texttt{FinitePrefix} base & Lean: compiled \\
+\texttt{UnifiedCoreBridge} segment exclusions & Lean: compiled \\
+\texttt{UnifiedCoreAudit.unified\_core\_final\_no\_hge} & Lean: pending \\
+\texttt{FinalStatement.five\_\allowbreak x\_\allowbreak plus\_\allowbreak
+one\_\allowbreak diverges\_\allowbreak at\_\allowbreak 7} &
+Lean: assembly target, pending \\
+\texttt{CycleBridge} corrected window assembly &
+Lean: compiled (conditional) \\
+\texttt{DwdbDiv} final assembly & Lean: compiled (conditional) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Cross-reference policy}
+
+The manual cross-references the main paper by section and theorem
+number.  It does not paste Lean files line by line; it lists definitions
+and theorems, with file and line regions.
+
+\end{document}

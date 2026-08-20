@@ -1,0 +1,93 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{cleveref}
+
+\emergencystretch=3em
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\vtwo}[1]{v_2\!\left(#1\right)}
+\newcommand{\oddpart}{\mathrm{oddpart}}
+\newcommand{\Tstep}{T}
+\newcommand{\Orbit}{\mathrm{Orbit}}
+\newcommand{\OrbitCycle}{\mathrm{OrbitCycle}}
+\newcommand{\wordOrbit}{\mathrm{wordOrbit}}
+\newcommand{\wordA}{A}
+\newcommand{\wordWeight}{W}
+\newcommand{\Pmi}{\mathrm{PMI}}
+\newcommand{\FullOrbit}{\mathrm{FullOrbitFrom7}}
+\newcommand{\GeneralOrbit}{\mathrm{GeneralOrbitFrom7}}
+\newcommand{\ResetWindow}{\mathrm{ResetWindowReachability}}
+
+\newcommand{\statusmath}{\textbf{Math: proven}}
+\newcommand{\statuslean}{\textbf{Lean: compiled}}
+\newcommand{\statuspending}{\textbf{Lean: pending}}
+
+\title{The $5x+1$ orbit of $7$ is unbounded:\\ a string-flow proof with Lean verification}
+\author{StringFlow}
+\date{\today}
+
+\begin{document}
+
+\sloppy
+
+\maketitle
+
+\begin{abstract}
+We study the accelerated $5x+1$ map
+$T(x)=(5x+1)/2^{\vtwo{5x+1}}$ and prove that the orbit of $7$ is
+unbounded.  The proof is organised around an exact string-flow
+accounting of the orbit: every step is represented by a word of
+2-adic weights, every block satisfies an exact prefix identity, and the
+remaining obstruction is reduced to a corrected decisive window bound
+that carries genuine orbit reachability.  The mathematical layer of the
+unified core is closed; the corresponding Lean statement
+\texttt{unified\_core\_final\_no\_hge} is the single remaining formalisation
+gap and is explicitly marked as pending in this paper.
+\end{abstract}
+
+\tableofcontents
+
+\input{sections/intro}
+\input{sections/framework}
+\input{sections/core}
+\input{sections/bridge}
+\input{sections/lean}
+\input{sections/discussion}
+\input{sections/appendix}
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}

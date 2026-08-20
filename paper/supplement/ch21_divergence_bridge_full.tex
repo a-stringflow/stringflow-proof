@@ -1,0 +1,190 @@
+\section{The divergence bridge in full}
+
+This chapter gives the complete divergence bridge as one continuous
+derivation: from a positive cycle to a contradiction, and then from
+the absence of cycles to unboundedness.
+
+\subsection{Assumption}
+
+Assume
+\begin{equation*}
+  \OrbitCycle(7).
+\end{equation*}
+The goal of the bridge is a contradiction.  Once the contradiction is
+established, the general fact
+\begin{equation*}
+  \neg\,\OrbitCycle(7)\ \Longrightarrow\ \mathrm{IsUnboundedOrbit}(7)
+\end{equation*}
+finishes the proof.
+
+\subsection{Extraction of the cycle word}
+
+There are indices $m<n$ with
+\begin{equation*}
+  \Orbit_7(m)=\Orbit_7(n).
+\end{equation*}
+Put $c=m$, $p=n-m$, and
+\begin{equation*}
+  w=\mathrm{cycleWord}(c,p).
+\end{equation*}
+The cycle word has length $p$ and is valid from $m_0=\Orbit_7(c)$,
+and every entry is the exact step weight at the corresponding depth.
+The extraction is compiled in
+\texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+cycle\_\allowbreak qb8\_\allowbreak input}.
+
+\subsection{The closedness equation}
+
+Closedness gives
+\begin{equation*}
+  \wordOrbit(w,m_0)=m_0.
+\end{equation*}
+The word-orbit identity gives the cycle equation
+\begin{equation*}
+  2^T\,m_0=5^p\,m_0+\wordA(w),
+  \qquad T=\wordWeight(w).
+\end{equation*}
+In particular $T>p\log_2 5$.
+
+\subsection{The QB-8 split}
+
+Filter the word into rise entries and C3 entries:
+\begin{equation*}
+  \mathrm{rise}=\{t\in w:t<3\},
+  \qquad
+  \mathrm{c3}=\{t\in w:t\ge3\}.
+\end{equation*}
+Both filters are nonempty:
+\begin{itemize}[leftmargin=*]
+\item if $\mathrm{c3}$ were empty, then $T\le2p$, contradicting
+  $T>p\log_2 5>\allowbreak2p$;
+\item if $\mathrm{rise}$ were empty, then every step would satisfy
+  $(5x+1)/2^t<x$, so the states could not close.
+\end{itemize}
+The split is compiled in \texttt{CycleQb8Input}.
+
+\subsection{The reset block}
+
+Choose a rise start.  The compiled extraction produces parameters
+$j,k_0,t,\delta,s$ and states $r,r_j$ such that
+\begin{itemize}[leftmargin=*]
+\item $t\in\{1,2\}$, $\delta=1$ for $t=1$,
+  $\delta\in\{1,3\}$ for $t=2$;
+\item $s5^{k_0}=r+1$;
+\item $\GeneralOrbit(r)$ and $\FullOrbit(r_j)$;
+\item $\mathrm{ResetHeadEq}(s,j,k_0,t,\delta,r_j)$;
+\item $s<5^{j-1-k_0}$, $s$ odd, $5\nmid s$.
+\end{itemize}
+This is the corrected reachability predicate
+$\ResetWindow(j,k_0,t,\delta,s)$.
+
+\subsection{The block tail and the unified core}
+
+The block head $r_j$ is followed by a tail of length $L$ ending at
+$r_s$.  With $n=s-j$ and $\Delta=W_s-W_j$,
+\begin{equation*}
+  2^{\Delta}\,r_s=5^n\,r_{j,0}+B.
+\end{equation*}
+The unified core applies to this tail.  When its final inequality is
+closed, the projection interface
+\begin{verbatim}
+decisiveWindowValuationBoundCorrected_of_unified_core
+\end{verbatim}
+produces the corrected window bound.  That interface is compiled but
+consumes \texttt{unifiedCoreClosed}, whose Lean representative
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge} is pending.
+
+\subsection{The valuation bounds}
+
+For $t=2$, the block-layer balance gives
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+\delta5^j}\ge2j+11,
+\end{equation*}
+and the corrected window bound gives
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+\delta5^j}\le2j+10.
+\end{equation*}
+For $t=1$,
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+5^j-2}\ge2j+12,
+\end{equation*}
+and
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+5^j-2}\le2j+11.
+\end{equation*}
+Both cases are contradictions.
+
+\subsection{The failure window}
+
+The construction assembles
+\begin{equation*}
+  \mathrm{FailureWindow}(m_0,S,p,w,\mathrm{rise},\mathrm{c3},
+  j,k_0,t,\delta,s),
+\end{equation*}
+whose fields are:
+\begin{itemize}[leftmargin=*]
+\item \texttt{hj\_lt}: $j<p$;
+\item \texttt{ht}, \texttt{hdelta}: the reset weight and parameter;
+\item \texttt{hreset}: the exact reset equation;
+\item \texttt{hreach}: the corrected reachability predicate;
+\item \texttt{hs\_odd}, \texttt{hs\_not\_five}, \texttt{hk},
+  \texttt{hs\_lt}: parity, coprimality, and size;
+\item \texttt{hfail\_t1}, \texttt{hfail\_t2}: the lower bounds.
+\end{itemize}
+The existence statement
+\texttt{failureWindowExistence} is pending.
+
+\subsection{The contradiction}
+
+Given a failure window and the corrected bound, the packaged lemma
+\texttt{failure\_\allowbreak window\_\allowbreak contradicts\_\allowbreak
+window\_\allowbreak corrected} derives \texttt{False}.  This is
+compiled.
+
+\subsection{No cycle implies unbounded}
+
+The general lemma
+\begin{verbatim}
+unbounded_of_no_cycle (x : Nat) (h : not OrbitCycle x) :
+  IsUnboundedOrbit x
+\end{verbatim}
+is compiled.  Its proof uses the pigeonhole principle on the finite
+set of bounded values.
+
+\subsection{The full chain}
+
+\begin{verbatim}
+OrbitCycle 7
+  -> cycleWord extraction (compiled)
+  -> QB-8 split (compiled)
+  -> reset block and reachability (compiled)
+  -> unified core (unified_core_final_no_hge pending)
+  -> corrected window bound (compiled conditional)
+  -> lower bound from rise_block_balance (compiled)
+  -> FailureWindow existence (pending)
+  -> failure_window_contradicts_window_corrected (compiled)
+  -> not OrbitCycle 7
+  -> IsUnboundedOrbit 7 (assembly target)
+\end{verbatim}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.62\textwidth}p{0.32\textwidth}@{}}
+\toprule
+Step & Status \\
+\midrule
+cycle-word extraction & compiled \\
+QB-8 split & compiled \\
+reset block and reachability & compiled \\
+block-layer lower bounds & compiled \\
+corrected window projection & compiled (conditional) \\
+failure-window existence & pending \\
+failure-window contradiction & compiled \\
+no-cycle-to-unbounded lemma & compiled \\
+final theorem assembly & pending \\
+\bottomrule
+\end{tabular}
+\end{center}

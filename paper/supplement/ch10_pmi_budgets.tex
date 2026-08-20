@@ -1,0 +1,250 @@
+\section{PMI and PMI-B budgets}
+
+This chapter develops the PMI identity and the PMI-B budget layer in
+full.  The layer converts the exact word-orbit identity into counting
+inequalities that constrain the step weights of a closed cycle word.
+
+\subsection{The margin}
+
+For a word $w=(t_0,\dots,t_{L-1})$ with prefix weights
+$\wordWeight_j$, define the margin after $j$ steps by
+\begin{equation*}
+  m_j=j\log_2 5-\wordWeight_j.
+\end{equation*}
+The margin measures how much 2-adic budget remains after $j$ exact
+steps.  A prefix with $m_j\ge0$ is called a \emph{nonnegative-margin
+prefix}; a proper prefix with $m_j<0$ is called a \emph{bad prefix}.
+
+\subsection{The PMI identity}
+
+\begin{theorem}[PMI identity]
+For every valid word $w$ of length $L$,
+\begin{equation*}
+  \sum_{j=0}^{L-1}2^{-m_j}
+    =\frac{5\,\wordA(w)}{5^L}.
+\end{equation*}
+\end{theorem}
+
+\begin{proof}
+Write the word molecule as
+\begin{equation*}
+  \wordA(w)=\sum_{j=0}^{L-1}
+    2^{\wordWeight_j}\,5^{L-1-j}.
+\end{equation*}
+Then
+\begin{equation*}
+  \frac{5\,\wordA(w)}{5^L}
+    =\sum_{j=0}^{L-1}2^{\wordWeight_j}\,5^{-j}.
+\end{equation*}
+Since
+\begin{equation*}
+  2^{-m_j}=2^{\wordWeight_j-j\log_2 5}
+    =2^{\wordWeight_j}\,5^{-j},
+\end{equation*}
+the identity follows.  The cleared-denominator form is
+\begin{equation*}
+  \sum_{j=0}^{L-1}2^{\wordWeight_j}\,5^{L-j}
+    =5\,\wordA(w).
+\end{equation*}
+\end{proof}
+
+\subsection{The cycle form}
+
+Let $w$ be a closed cycle word of period $P$ with cycle state $m$,
+total weight $T=\wordWeight(w)$, and prefix weights
+$\wordWeight_j$.  Define
+\begin{equation*}
+  \mathrm{aTotal5}(P,t)
+    =\sum_{j=0}^{P-1}2^{\wordWeight_j}\,5^{P-j}.
+\end{equation*}
+The closedness
+\begin{equation*}
+  \wordOrbit(w,m)=m
+\end{equation*}
+gives the cycle equation
+\begin{equation*}
+  2^T\,m=5^P\,m+\wordA(w).
+\end{equation*}
+Substituting into the cleared form yields
+\begin{equation*}
+  \mathrm{aTotal5}(P,t)
+    =5m\left(2^T-5^P\right).
+\end{equation*}
+This is the algebraic form
+\texttt{StringFlow.PMI.pmi\_\allowbreak algebraic} in Lean.
+
+\subsection{The counting bound}
+
+Write $B$ for the number of bad proper prefixes of a closed cycle
+word of period $P$.  The $j=0$ term of $\mathrm{aTotal5}$ contributes
+\begin{equation*}
+  2^{\wordWeight_0}\,5^{P}=5^P.
+\end{equation*}
+Every bad prefix $j$ satisfies
+\begin{equation*}
+  \wordWeight_j>j\log_2 5,
+\end{equation*}
+equivalently
+\begin{equation*}
+  2^{\wordWeight_j}>5^j,
+\end{equation*}
+so its contribution satisfies
+\begin{equation*}
+  2^{\wordWeight_j}\,5^{P-j}>5^P.
+\end{equation*}
+Combining the $j=0$ term with the bad-prefix contributions gives
+\begin{equation*}
+  5^P+B\cdot5^P<\mathrm{aTotal5}(P,t).
+\end{equation*}
+The paper writes this with $\le$; the strict form follows because
+bad prefixes are defined by strict margin violation.  Using the cycle
+form,
+\begin{equation*}
+  5^P+B\cdot5^P<5m\left(2^T-5^P\right).
+\end{equation*}
+
+\subsection{Small budget and no bad prefix}
+
+\begin{corollary}
+If
+\begin{equation*}
+  5m\left(2^T-5^P\right)<2\cdot5^P,
+\end{equation*}
+then $B=0$: every proper prefix satisfies
+\begin{equation*}
+  2^{\wordWeight_j}<5^j.
+\end{equation*}
+\end{corollary}
+
+\begin{proof}
+The counting bound gives
+\begin{equation*}
+  B\cdot5^P<5m\left(2^T-5^P\right)-5^P<5^P,
+\end{equation*}
+so $B<1$, hence $B=0$.
+\end{proof}
+
+\subsection{Margin balance}
+
+Let $C_1,C_2,C_3$ be the numbers of steps of weight $1$, weight $2$,
+and weight at least $3$ in a word, and put $\alpha=\log_2 5$.  The
+nonnegative-margin prefix condition implies
+\begin{equation*}
+  (3-\alpha)C_3\le(\alpha-1)C_1+(\alpha-2)C_2.
+\end{equation*}
+The strict version, used for closed cycle words, replaces $\le$ by
+$<$.
+
+The balance records that a C3 step spends at least $3-\alpha$ units of
+margin, while a weight-$1$ step earns $\alpha-1$ and a weight-$2$
+step earns $\alpha-2$.  The proof telescopes the margin differences
+along the word and compares the final margin with the total weight.
+The Lean statements are
+\texttt{cycleWord\_\allowbreak margin\_\allowbreak balance} and
+\texttt{cycleWord\_\allowbreak margin\_\allowbreak balance\_\allowbreak
+strict}.
+
+\subsection{Worked example: the exact prefix word}
+
+For the exact prefix word
+\begin{equation*}
+  w=[2,1,2]
+\end{equation*}
+from $7$, we have $L=3$, total weight $T=5$, and
+$\wordA(w)=53$, with
+\begin{equation*}
+  2^5\cdot29=928=5^3\cdot7+53.
+\end{equation*}
+The prefix weights are
+\begin{equation*}
+  \wordWeight_0=0,\quad \wordWeight_1=2,\quad \wordWeight_2=3,
+\end{equation*}
+so the margins are
+\begin{equation*}
+  m_0=0,\qquad
+  m_1=\log_2 5-2\approx0.3219,\qquad
+  m_2=2\log_2 5-3\approx1.6439.
+\end{equation*}
+All proper prefixes are nonnegative, and the PMI sum is
+\begin{equation*}
+  \sum_{j=0}^{2}2^{-m_j}
+    =1+\frac45+\frac8{25}
+    =\frac{53}{25}
+    =\frac{5\wordA(w)}{5^3}.
+\end{equation*}
+
+\subsection{Worked example: a bad prefix}
+
+The word $[3,1]$ has prefix weights
+\begin{equation*}
+  \wordWeight_0=0,\quad \wordWeight_1=3,\quad \wordWeight_2=4,
+\end{equation*}
+and molecule
+\begin{equation*}
+  \wordA([3,1])=2^0\cdot5^1+2^3\cdot5^0=13.
+\end{equation*}
+The margins are
+\begin{equation*}
+  m_0=0,\qquad
+  m_1=\log_2 5-3\approx-0.6781,\qquad
+  m_2=2\log_2 5-4\approx0.6439.
+\end{equation*}
+The proper prefix of length $1$ is bad, so $B=1$.  The cleared sum is
+\begin{equation*}
+  \mathrm{aTotal5}(2,t)
+    =2^0\cdot5^2+2^3\cdot5^1
+    =25+40=65=5\wordA([3,1]).
+\end{equation*}
+The counting bound
+\begin{equation*}
+  5^2+B\cdot5^2=25+25=50<65
+\end{equation*}
+holds strictly.  This example is the sharpest elementary illustration
+of the PMI-B counting mechanism: one bad prefix consumes one extra
+unit of $5^P$, and the algebra keeps the exact count.
+
+\subsection{Why the budget is exact}
+
+No probabilistic replacement is involved.  The margin is defined by
+the exact prefix weights of the word, and every inequality in this
+chapter is derived from the identity
+\begin{equation*}
+  2^{\wordWeight_j}\,5^{L-j}=5^{L-m_j}.
+\end{equation*}
+The constants $\alpha$, $3-\alpha$, and the threshold $2\cdot5^P$
+appear because the word algebra is exact, not because of a statistical
+model.
+
+\subsection{Lean statements}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{StringFlow.PMI.aTotal5}: the cleared sum.
+\item the identity $\mathrm{aTotal5}=5\,\mathrm{aTotal}$ in
+  \texttt{Pmi.lean}: the algebraic clearing.
+\item \texttt{StringFlow.PMI.pmi\_\allowbreak algebraic}: the cycle form
+  $\mathrm{aTotal5}(P,t)=5m(2^T-5^P)$.
+\item \texttt{pmi\_\allowbreak b\_\allowbreak count}: the counting
+  bound.
+\item \texttt{pmi\_\allowbreak b\_\allowbreak no\_\allowbreak
+  bad\_\allowbreak prefix}: the small-budget corollary.
+\item \texttt{cycleWord\_\allowbreak margin\_\allowbreak balance} and
+  \texttt{cycleWord\_\allowbreak margin\_\allowbreak balance\_\allowbreak
+  strict}: the margin balance.
+\end{itemize}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Statement & Status \\
+\midrule
+PMI identity & Lean: compiled \\
+cycle form & Lean: compiled \\
+PMI-B counting bound & Lean: compiled \\
+small-budget corollary & Lean: compiled \\
+margin balance & Lean: compiled \\
+\bottomrule
+\end{tabular}
+\end{center}

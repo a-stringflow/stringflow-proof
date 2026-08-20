@@ -1,0 +1,212 @@
+\section{Full derivation of the $d=2$ exclusion}
+
+This chapter gives the complete derivation of the $d=2$ exclusion,
+including the size analysis, the modular arithmetic, and the final
+contradiction.
+
+\subsection{The segment equation}
+
+For $d=2$, the word molecule is
+\begin{equation*}
+  \wordA(w)=5+2^{u_1},
+  \qquad
+  W=u_1+u_2,
+\end{equation*}
+and the segment equation is
+\begin{equation*}
+  \left(2^{u_1+e}-25\right)g
+    +2^{u_1+1}\delta5^{j-1}=5+2^{u_1}.
+\end{equation*}
+
+\subsection{The size restriction}
+
+For a rise segment, $u_1\in\{1,2\}$, so the right-hand side is at
+most
+\begin{equation*}
+  5+2^2=9.
+\end{equation*}
+The left-hand side contains the positive term
+\begin{equation*}
+  2^{u_1+1}\delta5^{j-1}\ge2\cdot5^{j-1},
+\end{equation*}
+so the coefficient $2^{u_1+e}-25$ must be negative and small enough
+to cancel it.  In particular
+\begin{equation*}
+  2^{u_1+e}<25.
+\end{equation*}
+With $e\ge2$ and $u_1\in\{1,2\}$, the only possibilities are
+\begin{equation*}
+  (u_1,e)\in\{(1,2),(1,3),(2,2)\}.
+\end{equation*}
+
+\subsection{Case $u_1=1$, $e=2$}
+
+The equation becomes
+\begin{equation*}
+  17g=4\delta5^{j-1}-7.
+\end{equation*}
+The size bound is
+\begin{equation*}
+  g<\frac{5^{j-1}}{2}.
+\end{equation*}
+For $\delta=3$,
+\begin{equation*}
+  g=\frac{12\cdot5^{j-1}-7}{17}.
+\end{equation*}
+This exceeds $5^{j-1}/2$ because
+\begin{equation*}
+  24\cdot5^{j-1}-14>17\cdot5^{j-1}
+\end{equation*}
+is equivalent to $7\cdot5^{j-1}>14$, which holds for $j\ge3$.  Hence
+only $\delta=1$ survives:
+\begin{equation*}
+  17g=4\cdot5^{j-1}-7.
+\end{equation*}
+
+\subsection{Case $u_1=1$, $e=3$}
+
+The equation becomes
+\begin{equation*}
+  9g=8\delta5^{j-1}-7.
+\end{equation*}
+The size bound is the stronger
+\begin{equation*}
+  g<\frac{5^{j-1}}{4}.
+\end{equation*}
+Even for $\delta=1$,
+\begin{equation*}
+  g=\frac{8\cdot5^{j-1}-7}{9}
+  >\frac{5^{j-1}}{4},
+\end{equation*}
+because $32\cdot5^{j-1}-28>9\cdot5^{j-1}$.  This case is excluded.
+
+\subsection{Case $u_1=2$, $e=2$}
+
+The equation becomes
+\begin{equation*}
+  9g=8\delta5^{j-1}-9.
+\end{equation*}
+The size bound is
+\begin{equation*}
+  g<\frac{5^{j-1}}{2}.
+\end{equation*}
+Even for $\delta=1$,
+\begin{equation*}
+  g=\frac{8\cdot5^{j-1}-9}{9}
+  >\frac{5^{j-1}}{2},
+\end{equation*}
+because $16\cdot5^{j-1}-18>9\cdot5^{j-1}$.  This case is excluded.
+
+\subsection{The survivor}
+
+The only surviving branch is
+\begin{equation*}
+  \delta=1,\qquad e=2,\qquad u_1=1,
+\end{equation*}
+with equation
+\begin{equation*}
+  17g=4\cdot5^{j-1}-7.
+\end{equation*}
+
+\subsection{Congruence modulo 17}
+
+Modulo $17$,
+\begin{equation*}
+  4\cdot5^{j-1}\equiv7.
+\end{equation*}
+Since $4^{-1}\equiv13\pmod{17}$,
+\begin{equation*}
+  5^{j-1}\equiv7\cdot13=91\equiv6\pmod{17}.
+\end{equation*}
+The powers of $5$ modulo $17$ have order $16$, and
+\begin{equation*}
+  5^3=125\equiv6\pmod{17},
+\end{equation*}
+so
+\begin{equation*}
+  j-1\equiv3\pmod{16}.
+\end{equation*}
+
+\subsection{The candidate congruence}
+
+The candidate is
+\begin{equation*}
+  x=2g+5^{j-1}.
+\end{equation*}
+Eliminating $g$ from $17g=4\cdot5^{j-1}-7$ gives
+\begin{equation*}
+  17x=25\cdot5^{j-1}-14.
+\end{equation*}
+The orbit-level candidate satisfies
+\begin{equation*}
+  x\equiv743\pmod{1280}.
+\end{equation*}
+Multiplying by $17$,
+\begin{equation*}
+  17\cdot743=12631\equiv1111\pmod{1280},
+\end{equation*}
+so
+\begin{equation*}
+  25\cdot5^{j-1}-14\equiv1111\pmod{1280},
+\end{equation*}
+hence
+\begin{equation*}
+  25\cdot5^{j-1}\equiv1125\pmod{1280}.
+\end{equation*}
+Dividing by $5$ and then by $5$ modulo $256$,
+\begin{equation*}
+  5^{j-1}\equiv45\pmod{256}.
+\end{equation*}
+
+\subsection{Congruence modulo 256}
+
+Since
+\begin{equation*}
+  5^7=78125\equiv45\pmod{256}
+\end{equation*}
+and the order of $5$ modulo $256$ is $64$,
+\begin{equation*}
+  j-1\equiv7\pmod{64}.
+\end{equation*}
+
+\subsection{The contradiction}
+
+The congruence $j-1\equiv3\pmod{16}$ and the congruence
+$j-1\equiv7\pmod{64}$ contradict each other modulo $16$:
+\begin{equation*}
+  3\not\equiv7\pmod{16}.
+\end{equation*}
+Therefore $d=2$ is impossible.
+
+\subsection{Lean statement}
+
+The exclusion is
+\begin{verbatim}
+theorem d2_exclusion
+    (j e g delta u1 : Nat)
+    (hj : 3 <= j)
+    (hg : g < 5 ^ (j - 1) / 2 ^ (e - 1))
+    (hdelta : delta = 1 or delta = 3)
+    (he : 2 <= e)
+    (hu1 : u1 = 1 or u1 = 2)
+    (hseg : 2 ^ (u1 + e) * g + 2 ^ (u1 + 1) * delta * 5 ^ (j - 1)
+      = 5 + 2 ^ u1 + 25 * g) :
+    False
+\end{verbatim}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Item & Status \\
+\midrule
+size analysis & math proven \\
+modular contradiction & math proven \\
+\texttt{d2\_\allowbreak exclusion} & Lean compiled \\
+\texttt{d2\_\allowbreak exclusion\_\allowbreak of\_\allowbreak orbit} &
+  Lean compiled \\
+\bottomrule
+\end{tabular}
+\end{center}

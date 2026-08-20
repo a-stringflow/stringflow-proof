@@ -1,0 +1,120 @@
+\section{Finite-prefix proof script outline}
+
+This chapter outlines how the finite-prefix base is organised as a
+proof script in Lean.  The outline describes the structure of the
+proof; the repository file is the authoritative source.
+
+\subsection{The goal}
+
+The script proves the conjunction
+\begin{equation*}
+  \Orbit_7(0)=7\land\Orbit_7(1)=9\land\cdots\land\Orbit_7(16)=34177.
+\end{equation*}
+In Lean this is
+\begin{verbatim}
+fullOrbitIter_prefix_expand :
+  fullOrbitIter 0 = 7 /\ fullOrbitIter 1 = 9 /\
+  ... /\ fullOrbitIter 16 = 34177
+\end{verbatim}
+
+\subsection{The unfolding}
+
+The orbit definition unfolds each value:
+\begin{equation*}
+  \Orbit_7(n+1)=\frac{5\,\Orbit_7(n)+1}{2^{t_n}}.
+\end{equation*}
+The script rewrites each quotient using the exact division
+\begin{equation*}
+  5\,\Orbit_7(n)+1=2^{t_n}\,\Orbit_7(n+1).
+\end{equation*}
+
+\subsection{Exact division table}
+
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$n$ & $\Orbit_7(n)$ & $5\Orbit_7(n)+1$ & $t_n$ & quotient \\
+\midrule
+0 & 7 & 36 & 2 & 9 \\
+1 & 9 & 46 & 1 & 23 \\
+2 & 23 & 116 & 2 & 29 \\
+3 & 29 & 146 & 1 & 73 \\
+4 & 73 & 366 & 1 & 183 \\
+5 & 183 & 916 & 2 & 229 \\
+6 & 229 & 1146 & 1 & 573 \\
+7 & 573 & 2866 & 1 & 1433 \\
+8 & 1433 & 7166 & 1 & 3583 \\
+9 & 3583 & 17916 & 2 & 4479 \\
+10 & 4479 & 22396 & 2 & 5599 \\
+11 & 5599 & 27996 & 2 & 6999 \\
+12 & 6999 & 34996 & 2 & 8749 \\
+13 & 8749 & 43746 & 1 & 21873 \\
+14 & 21873 & 109366 & 1 & 54683 \\
+15 & 54683 & 273416 & 3 & 34177 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Weight facts}
+
+The script derives the weight word
+\begin{equation*}
+  2,1,2,1,1,2,1,1,1,2,2,2,2,1,1,3
+\end{equation*}
+and then proves the first-big-step conjunction:
+\begin{verbatim}
+theorem fullOrbit_first_t_ge3_is_exactly_3 :
+    (forall n : Nat, n < 15 ->
+      twoValuation (5 * fullOrbitIter n + 1) <= 2) /\
+    twoValuation (5 * fullOrbitIter 15 + 1) = 3
+\end{verbatim}
+
+\subsection{Uniqueness}
+
+The uniqueness lemma is proved by case analysis on $n$:
+\begin{itemize}[leftmargin=*]
+\item for $n<15$, the small-weight facts contradict the big-weight
+  hypothesis;
+\item for $n=15$, the table gives weight $3$;
+\item for $n>15$, the depth-$15$ step would already be first.
+\end{itemize}
+
+\subsection{No \texttt{native\_decide}}
+
+The finite base deliberately avoids \texttt{native\_decide}.  Every
+quotient is rewritten from an explicit equality, so the proof stays
+inside the kernel's reduction and rewriting machinery.  The audit
+searches the main-chain files for \texttt{native\_decide}; the count
+is zero.
+
+\subsection{Verification checklist}
+
+\begin{enumerate}[leftmargin=*]
+\item \texttt{fullOrbitIter\_\allowbreak prefix\_\allowbreak expand}
+  compiles;
+\item \texttt{fullOrbit\_\allowbreak prefix\_\allowbreak step\_\allowbreak
+  weights} compiles;
+\item \texttt{fullOrbit\_\allowbreak first\_\allowbreak t\_\allowbreak
+  ge3\_\allowbreak is\_\allowbreak exactly\_\allowbreak 3} compiles;
+\item \texttt{first\_\allowbreak big\_\allowbreak step\_\allowbreak
+  unique} compiles;
+\item no \texttt{native\_decide} appears in the file.
+\end{enumerate}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Item & Status \\
+\midrule
+explicit expansion & compiled \\
+step weights & compiled \\
+first-big-step facts & compiled \\
+uniqueness & compiled \\
+no \texttt{native\_decide} & verified by inspection \\
+\bottomrule
+\end{tabular}
+\end{center}

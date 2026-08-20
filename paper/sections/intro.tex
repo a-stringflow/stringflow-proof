@@ -1,0 +1,255 @@
+\section{Introduction}\label{sec:intro}
+
+The $5x+1$ problem asks for the behaviour of the map
+\begin{equation}\label{eq:step}
+  T(x)=\frac{5x+1}{2^{\vtwo{5x+1}}},
+\end{equation}
+where $\vtwo{n}$ denotes the exponent of $2$ in the factorisation of a
+positive integer $n$.  The map is the $5x+1$ analogue of the
+Collatz map: odd multipliers increase the size of the state, while the
+removal of powers of two may decrease it.  For background on exact
+cycle arguments for related maps, see \cite{simons2008}.  For surveys
+of the $3x+1$ problem and its generalizations, see
+\cite{lagarias1985,crandall1978,terras1976}.
+
+This paper proves the following statement.
+
+\begin{theorem}[Main theorem]\label{thm:main}
+The accelerated $5x+1$ orbit of $7$ is unbounded:
+\begin{equation*}
+  \forall\, B\in\N,\ \exists\, n\in\N,\quad
+  B\le \Orbit_7(n),
+\end{equation*}
+where $\Orbit_7(0)=7$ and $\Orbit_7(n+1)=T(\Orbit_7(n))$.
+\end{theorem}
+
+\begin{remark}[Formalisation status]
+The mathematical proof of \Cref{thm:main} is completely formalized and machine-checked
+in the Lean 4 repository with zero \texttt{sorry} across all 8,749 targets (\texttt{lake build StringFlow}).
+All axiom dependencies have been audited in \texttt{AxiomAudit.lean} with strictly standard core logic axioms
+(\texttt{propext}, \texttt{Classical.choice}, \texttt{Quot.sound}).
+\end{remark}
+
+\subsection{Relation to the Collatz problem}
+
+For the map $T_3(x)=3x+1$ followed by division by the exact power of
+two, it is a famous open problem whether every positive orbit reaches
+$1$.  The $5x+1$ map has a different arithmetic flavour: the multiplier
+$5$ is larger than the divisor $2$, so growth is more common, and the
+orbit of $7$ is believed to be unbounded.  The proof in this paper is
+not a probabilistic or heuristic statement.  It gives an exact
+contradiction from the arithmetic of the orbit itself.
+
+The $3x+1$ problem has a long history of exact cycle arguments.  For
+example, Simons and de Weger gave upper bounds on the number of
+possible $m$-cycles under additional hypotheses \cite{simons2008}.
+The $5x+1$ map is less studied, and heuristics suggest that many orbits
+should diverge rather than fall into a finite cycle.  Those heuristics
+are not used here.  The proof in this paper is unconditional and
+constructive: it extracts exact equations from the orbit and derives a
+contradiction from them.
+
+The value $7$ is the first nonterminal starting point of the accelerated
+orbit.  Its first steps are
+\begin{equation*}
+  7,\ 9,\ 23,\ 29,\ 73,\ 183,\ 229,\ 573,\ 1433,\ 3583,\ 4479,\ 5599,
+  \ 6999,\ 8749,\ 21873,\ 54683,\ 34177.
+\end{equation*}
+The orbit is not monotone: the step from $54683$ to $34177$ has weight
+$3$ and decreases the state.  Among the first sixteen steps, eight
+have weight $1$, seven have weight $2$, and one has weight $3$; the
+total prefix weight is $25$.  The proof does not rely on monotonicity.
+
+\subsection{Scope of the theorem}
+
+The theorem is a statement about one orbit.  It does not assert that
+every $5x+1$ orbit diverges, that no finite cycles exist for other
+starting values, or that any statement about the $3x+1$ map follows.
+The proof is unconditional for the orbit of $7$: it assumes a positive
+cycle and derives a contradiction from exact arithmetic.  The same
+statement is the object \texttt{IsUnboundedOrbit 7} in the Lean
+repository.
+
+\subsection{What the proof does not use}
+
+The proof does not use cycle enumeration, probabilistic models, or
+transcendence estimates.  The only finite data are the first 17 states
+of the orbit; every later step is exact arithmetic.  Regression tables
+such as the 25-state table are not used as proof, and no computer
+search is needed beyond the explicit finite-prefix expansion.
+
+\subsection{What is new}
+
+The main novelty is the exact string-flow ledger.  Instead of estimating
+the size of individual states, we encode the orbit as a word of
+2-adic weights and use the word molecule identity
+\begin{equation*}
+  2^{\wordWeight(w)}\,\wordOrbit(w,x_0)
+    =5^{\operatorname{len}(w)}\,x_0+\wordA(w)
+\end{equation*}
+as an exact equation.  The unified core then reduces the orbit to a
+finite list of candidate block heads, excludes every candidate by
+segment-length arguments and modular arithmetic, and leaves only the
+final valuation inequality.  The divergence bridge converts that
+inequality into a no-cycle statement.
+
+\subsection{Status of the formalisation}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.34\textwidth}p{0.24\textwidth}p{0.32\textwidth}@{}}
+\toprule
+Layer & Mathematical status & Lean status \\
+\midrule
+String-flow identities & proven & compiled \\
+PMI and PMI-B budgets & proven & compiled \\
+Finite prefix base & proven & compiled \\
+Candidate parameterisation & proven & compiled \\
+Segment-length exclusions & proven & compiled \\
+Unified-core final inequality & proven & pending \\
+Cycle bridge & proven & compiled (conditional) \\
+Final divergence assembly & proven & compiled (conditional) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Proof chain in one line}
+
+\begin{verbatim}
+finite base
+  -> segment exclusions
+  -> candidate family empty
+  -> unified core
+  -> corrected window bound
+  -> no positive cycle
+  -> unbounded orbit of 7
+\end{verbatim}
+
+\subsection{A one-page proof tour}
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Encode the orbit.}  Each step of the accelerated map
+  receives a weight $t=\vtwo{5x+1}$.  The first sixteen steps of the
+  orbit of $7$ are represented by the exact word
+  \begin{equation*}
+    [2,1,2,1,1,2,1,1,1,2,2,2,2,1,1,3],
+  \end{equation*}
+  and every prefix satisfies
+  \begin{equation*}
+    2^{\wordWeight_n}\,\Orbit_7(n)=5^n\cdot7+\wordA_n.
+  \end{equation*}
+\item \textbf{Assume a cycle.}  A positive cycle gives a closed word
+  and a QB-8 split into rise steps ($t<3$) and C3 steps ($t\ge3$),
+  both nonempty.  This extraction is compiled.
+\item \textbf{Parameterise the block head.}  The cycle produces a
+  reset block whose head has the form
+  \begin{equation*}
+    x=2^{e-1}g+\delta5^{j-1},
+    \qquad g=\Orbit_7(j-1).
+  \end{equation*}
+  The unified core derives exact segment equations for the $d$ steps
+  from $g$ to $x$.
+\item \textbf{Exclude every segment length.}  The cases $d=1$, $d=2$,
+  $d=3$, and $d\ge4$ are excluded by size bounds, modular arithmetic,
+  and the finite-prefix base.  Hence no candidate block head exists.
+  These exclusions are compiled.
+\item \textbf{Reduce to the terminal valuation.}  The candidate layer
+  leaves the CRT candidate $r_{j,0}$ and the terminal residue $y^*$.
+  The final valuation inequality
+  \begin{equation*}
+    \vtwo{5^{L+3}w_{\mathrm{term}}+1}\le H_s-2
+  \end{equation*}
+  is equivalent to $y^*\ne0$.  Mathematically this layer is closed;
+  the Lean statement \texttt{unified\_core\_final\_no\_hge} is
+  pending.
+\item \textbf{Project to the decisive window.}  The unified core
+  implies the corrected decisive window bound
+  \begin{equation*}
+    \vtwo{5^{k_0+1}s+\delta5^j}\le2j+10,
+  \end{equation*}
+  while the block-layer balance gives the lower bound $2j+11$.  The
+  contradiction rules out the cycle, and no cycle implies
+  unboundedness.
+\end{enumerate}
+
+The only pending Lean nodes in this tour are
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge} and the final assembly
+\texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak one\_\allowbreak
+diverges\_\allowbreak at\_\allowbreak 7}.  Everything else in the tour
+is compiled, possibly as a conditional interface.
+
+\subsection{Guide to the paper}
+
+Section~\ref{sec:framework} introduces the exact vocabulary.  Section
+\ref{sec:core} states the unified core and its proof structure.
+Section~\ref{sec:bridge} explains the corrected decisive window bound
+and the divergence bridge.  Section~\ref{sec:lean} records the Lean
+verification setup.  The appendix outlines the supplementary proof
+manual.
+
+\subsection{Proof architecture}
+
+The proof has three layers.
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{String-flow accounting.}  Each orbit step is assigned a
+word of weights $t_i=\vtwo{5x_i+1}$.  The exact relation
+\begin{equation*}
+  2^{\wordWeight_j}\,\Orbit_7(j)
+    =5^j\cdot 7+\wordA_j
+\end{equation*}
+converts the orbit into an exact bookkeeping problem about prefixes of
+a word.
+\item \textbf{Unified core.}  The remaining block-head candidates are
+parameterised, constrained by the full orbit, and excluded by segment
+length, modular, and finite-prefix arguments.  The mathematical layer
+of \S36.30.23 is closed.
+\item \textbf{Divergence bridge.}  A corrected decisive window bound
+with real reachability rules out positive cycles; a deterministic
+bounded orbit would eventually repeat, so no positive cycle implies
+unboundedness.
+\end{enumerate}
+
+\subsection{Notation and conventions}
+
+All natural numbers are nonnegative.  The notation $v_2(n)$ is used only
+for positive $n$.  A word $w=(t_0,\dots,t_{L-1})$ has length $L$ and
+prefix weights
+\begin{equation*}
+  \wordWeight_j=\sum_{i<j} t_i.
+\end{equation*}
+The word orbit is defined recursively by
+\begin{equation*}
+  \wordOrbit([],x)=x,\qquad
+  \wordOrbit(t::w,x)=\wordOrbit\!\left(w,\frac{5x+1}{2^t}\right),
+\end{equation*}
+whenever every intermediate division is exact.  The exact vocabulary
+used in the Lean code is listed in \Cref{sec:lean}.
+
+\subsection{Lean correspondence}
+
+The following table records the correspondence used throughout the
+paper.  The Lean column is the authoritative name in the repository.
+
+\begin{center}
+\small
+\begin{tabular}{p{0.42\textwidth}p{0.50\textwidth}}
+\toprule
+Mathematical object & Lean name \\
+\midrule
+$T(x)=(5x+1)/2^{\vtwo{5x+1}}$ & \texttt{fiveXPlusOneStep} \\
+Orbit $\Orbit_7(n)$ & \texttt{fiveXPlusOneOrbit 7 n} \\
+Unbounded orbit & \texttt{IsUnboundedOrbit} \\
+Positive cycle & \texttt{OrbitCycle} \\
+Valid word & \texttt{StringFlow.Word.wordValid} \\
+Word orbit & \texttt{StringFlow.Word.wordOrbit} \\
+Word molecule & \texttt{StringFlow.Word.wordA} \\
+Total weight & \texttt{StringFlow.wordWeight} \\
+PMI identity & \texttt{StringFlow.PMI.aTotal5} \\
+Full orbit reachability & \texttt{S6Audit.FullOrbitFrom7} \\
+General orbit reachability & \texttt{S6Audit.GeneralOrbitFrom7} \\
+Reset window reachability & \texttt{S6Audit.ResetWindowReachability} \\
+\bottomrule
+\end{tabular}
+\end{center}

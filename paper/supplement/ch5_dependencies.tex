@@ -1,0 +1,165 @@
+\section{Dependency graph and status ledger}
+
+The dependency graph is a directed acyclic graph whose nodes are
+mathematical lemmas and Lean theorems.
+
+\subsection{Main dependency chain}
+
+\begin{enumerate}[leftmargin=*]
+\item Finite base:
+  \texttt{FinitePrefix.lean}.
+\item Candidate and segment bridges:
+  \texttt{UnifiedCoreBridge.lean}.
+\item Unified core:
+  \texttt{UnifiedCoreAudit.lean}.
+\item Cycle bridge:
+  \texttt{CycleBridge.lean}.
+\item Final assembly:
+  \texttt{DwdbDiv.lean}.
+\end{enumerate}
+
+In topological order, the individual statements are:
+\begin{enumerate}[leftmargin=*]
+\item explicit orbit values and first-big-step facts;
+\item candidate parameterisation and terminal equations;
+\item orbit segment equations and $d=1,d=2$ exclusions;
+\item $d=3$ and $d\ge4$ family exclusions;
+\item CRT candidate, terminal residue, and size conditions;
+\item the unified-core final inequality (pending);
+\item cycle-word extraction and the QB-8 split;
+\item corrected-window projection and failure-window contradiction;
+\item window-to-no-cycle bridge;
+\item final divergence assembly.
+\end{enumerate}
+
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}p{0.42\textwidth}p{0.24\textwidth}p{0.24\textwidth}@{}}
+\toprule
+Lemma & File & Status \\
+\midrule
+\texttt{fullOrbitIter\_prefix\_expand} &
+\texttt{FinitePrefix.lean} & compiled \\
+\texttt{reset\_head\_predecessor} &
+\texttt{UnifiedCoreBridge.lean} & compiled \\
+\texttt{d2\_exclusion} &
+\texttt{UnifiedCoreBridge.lean} & compiled \\
+\texttt{unified\_core\_final\_no\_hge} &
+\texttt{UnifiedCoreAudit.lean} & pending \\
+\texttt{windowBoundToNoCycle\_of\_failureWindowExistence} &
+\texttt{CycleBridge.lean} & compiled (conditional) \\
+\texttt{dwdbDivFinalAssembly} &
+\texttt{DwdbDiv.lean} & compiled (conditional) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Dependency edges}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.34\textwidth}p{0.46\textwidth}p{0.12\textwidth}@{}}
+\toprule
+Statement & Direct dependencies & Status \\
+\midrule
+\texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+  cycle\_\allowbreak qb8\_\allowbreak input} &
+  \texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+  cycle\_\allowbreak word\_\allowbreak valid\_\allowbreak closed},
+  \texttt{cycleWord\_*} & compiled \\
+\texttt{orbitSegmentWord\_\allowbreak candidate\_\allowbreak equation} &
+  \texttt{orbitSegmentWord\_\allowbreak equation},
+  \texttt{candidateX} & compiled \\
+\texttt{d2\_\allowbreak exclusion\_\allowbreak of\_\allowbreak orbit} &
+  \texttt{d2\_\allowbreak segment\_\allowbreak equation},
+  \texttt{d2\_\allowbreak exclusion} & compiled \\
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+  no\_\allowbreak hge} &
+  \texttt{rj0\_\allowbreak ge\_\allowbreak of\_\allowbreak
+  size\_\allowbreak conditions\_\allowbreak no\_\allowbreak hge},
+  \texttt{terminal\_\allowbreak bound\_\allowbreak iff\_\allowbreak
+  yStar\_\allowbreak ne\_\allowbreak zero} & pending \\
+\texttt{failure\_\allowbreak window\_\allowbreak contradicts\_\allowbreak
+  window\_\allowbreak corrected} &
+  \texttt{FailureWindow},\\
+  \texttt{decisiveWindowValuation}\\
+  \texttt{BoundCorrected} & compiled \\
+\texttt{windowBoundToNoCycle\_\allowbreak of\_\allowbreak
+  failureWindowExistence} &
+  \texttt{failureWindowExistence},
+  \texttt{failure\_\allowbreak window\_\allowbreak contradicts\_\allowbreak
+  window\_\allowbreak corrected} &
+  compiled (conditional) \\
+\texttt{dwdbDivFinalAssembly} &
+  \texttt{windowBoundToNoCycle},
+  \texttt{unbounded\_\allowbreak of\_\allowbreak no\_\allowbreak cycle} &
+  compiled (conditional) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The table records the direct edges only.  Transitive dependencies are
+obtained by following the corresponding file imports.
+
+\subsection{File import graph}
+
+The main files import as follows:
+\begin{verbatim}
+FinitePrefix.lean
+  imports S6AuditStage1
+
+UnifiedCoreBridge.lean
+  imports FinitePrefix, UnifiedCoreAudit
+
+UnifiedCoreAudit.lean
+  imports S6Audit, S6AuditStage1, LteMacro
+
+CycleBridge.lean
+  imports BlockAutomaton, FinalStatement, S6AuditStage1,
+          PhOne, SurvExAudit, Td0Real
+
+DwdbDiv.lean
+  imports CycleBridge, UnifiedCoreAudit
+
+FinalStatement.lean
+  imports S6Audit, FBeta
+\end{verbatim}
+
+The import graph is read from the file headers; it is updated whenever
+the Lean project re-imports.
+
+\subsection{Verification commands}
+
+The manual uses the same verification commands as the main paper:
+\begin{verbatim}
+lake build CycleBridge
+lake build DwdbDiv
+\end{verbatim}
+For a status change, also re-run the axiom audit and check that
+\texttt{UnifiedCoreAudit.lean} contains exactly one \texttt{sorry},
+namely \texttt{unified\_core\_final\_no\_hge}.
+
+\subsection{Ledger locations}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{docs/lean\_assembly\_plan.md}
+\item \texttt{docs/cycle\_bridge\_window\_to\_no\_cycle.md}
+\item \texttt{docs/dwdb\_div\_assembly.md}
+\end{itemize}
+
+The ledger is authoritative for status.  A Lean statement marked
+pending must not be cited as closed in the paper or in the manual.
+
+\subsection{Open status and next steps}
+
+Two statements remain open:
+\begin{itemize}[leftmargin=*]
+\item \texttt{UnifiedCoreAudit.unified\_core\_final\_no\_hge}:
+  the unique Lean \texttt{sorry} in the unified-core audit;
+\item \texttt{FinalStatement.five\_x\_plus\_one\_diverges\_at\_7}:
+  the final assembly target.
+\end{itemize}
+
+When the first statement is closed, the dependency-edge table and all
+status tables must be updated before the final theorem is promoted.
+The paper does not claim either statement as closed.

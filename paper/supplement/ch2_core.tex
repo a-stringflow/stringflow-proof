@@ -1,0 +1,528 @@
+\section{Unified core proof chain}
+
+This chapter expands the unified core proof of documents 36.30.22 and
+36.30.23.
+
+\subsection{Candidate parameterisation}
+
+The block-head state is
+\begin{equation*}
+  r=\frac{A_j+5^jq}{2^{\wordWeight_j}}.
+\end{equation*}
+The predecessor candidate is
+\begin{equation*}
+  x=2^{e-1}g+\delta5^{j-1},
+\qquad g=\Orbit_7(j-1).
+\end{equation*}
+
+Status:
+\begin{itemize}[leftmargin=*]
+\item Math: proven.
+\item Lean: \texttt{reset\_head\_predecessor},
+  \texttt{candidateX\_of\_reset\_and\_terminal},
+  \texttt{first\_block\_terminal\_eq} compiled.
+\end{itemize}
+
+\subsection{Reset-head predecessor}
+
+\begin{lemma}
+If $1\le j$, the reset equation
+$\mathrm{ResetHeadEq}(s,j,k,t,\delta,r_j)$ holds, and
+\begin{equation*}
+  r_j=\frac{5x+1}{2^t},
+\end{equation*}
+then
+\begin{equation*}
+  x=5^k\,s+\delta\,5^{j-1}-1.
+\end{equation*}
+This is \texttt{reset\_head\_predecessor}.
+\end{lemma}
+
+\subsection{First-block terminal equation}
+
+\begin{lemma}
+If $5g_{\mathrm{prev}}+1=2^eg$ and
+\begin{equation*}
+  r=\frac{5g_{\mathrm{prev}}+1}{2},
+\end{equation*}
+then
+\begin{equation*}
+  r=2^{e-1}g.
+\end{equation*}
+With $k=0$ and $s=2^{e-1}g+1$, the reset predecessor becomes
+\begin{equation*}
+  x=\texttt{candidateX}\ j\ e\ g\ \delta.
+\end{equation*}
+The Lean names are \texttt{first\_block\_terminal\_eq} and
+\texttt{candidateX\_of\_reset\_and\_terminal}.
+\end{lemma}
+
+\subsection{Reset q0 form}
+
+\begin{lemma}
+From the exact identity
+\begin{equation*}
+  A_j+5^jq=2^L(B+\delta5^j),
+\end{equation*}
+with $0<B<5^j$ and $A_j<5^j$, there exists $m<2^L$ with
+\begin{equation*}
+  q=m+\delta\,2^L.
+\end{equation*}
+This is \texttt{reset\_q0\_form}.
+\end{lemma}
+
+\subsection{Block-head identity}
+
+\begin{lemma}
+Under the block-head representation and the reset equation,
+\begin{equation*}
+  A_j+5^jq
+    =2^{W_p}\left(5^{k+1}s-4+\delta5^j\right).
+\end{equation*}
+This is \texttt{block\_head\_identity\_of\_reset}.
+\end{lemma}
+
+\subsection{Orbit segment word}
+
+For $d$ steps starting at depth $j-1$, the segment word satisfies
+\begin{equation*}
+  2^{W}x=5^d\,g+\wordA(w),
+\end{equation*}
+where $W$ is the total segment weight.  This is
+\texttt{orbitSegmentWord\_equation}.  The orbit-level exclusions
+\texttt{d1\_exclusion\_of\_orbit} and
+\texttt{d2\_exclusion\_of\_orbit} are compiled.
+
+\subsection{Derivation of the segment equation}
+
+Let the segment word $w$ have length $d$, total weight $W=W_d$, and
+prefix weights $W_0,\dots,W_d$.  The exact word-orbit identity applied
+to the segment from $g$ to $x$ gives
+\begin{equation*}
+  2^W x=5^d\,g+\wordA(w),
+\end{equation*}
+with
+\begin{equation*}
+  \wordA(w)=\sum_{i=0}^{d-1}2^{W_i}\,5^{d-1-i}.
+\end{equation*}
+Substituting the candidate
+\begin{equation*}
+  x=2^{e-1}g+\delta5^{j-1}
+\end{equation*}
+and expanding gives the exact segment equation
+\begin{equation*}
+  2^{W+e-1}g+2^W\delta5^{j-1}
+    =5^d\,g+\sum_{i=0}^{d-1}2^{W_i}5^{d-1-i}.
+\end{equation*}
+This is the candidate form
+\texttt{orbitSegmentWord\_\allowbreak candidate\_\allowbreak equation}.
+No approximation enters: the equation is the word-orbit identity with
+the parameterisation substituted.
+
+\subsection{Size bounds used in the exclusions}
+
+The exclusion arguments use two size bounds on $g=\Orbit_7(j-1)$:
+\begin{equation*}
+  g<\frac{5^{j-1}}{4},
+  \qquad
+  g<\frac{5^{j-1}}{2^{e-1}}.
+\end{equation*}
+The first is used by the $d=1$ exclusion and by the $e\ge3$ cases;
+the second, with $e\ge2$, is used by the $d=2$ size analysis.  Both
+are consequences of the no-$H_{\ge}$ premises together with the exact
+orbit bound; in the Lean statements they are carried as hypotheses.
+The paper records them as premises rather than re-deriving them at
+each exclusion.
+
+\subsection{Segment exclusions}
+
+The exact segment equation is
+\begin{equation*}
+  2^{W+e-1}g+2^W\delta5^{j-1}
+    =5^d\,g+\sum_{i=0}^{d-1}2^{W_i}5^{d-1-i}.
+\end{equation*}
+
+For small $d$, the segment word molecule and total weight have the
+explicit forms:
+\begin{center}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+$d$ & $\wordA(w)$ & $W$ \\
+\midrule
+1 & $1$ & $u_1$ (in the $d=1$ branch, $u_1=1+4a$) \\
+2 & $5+2^{u_1}$ & $u_1+u_2$ \\
+3 & $25+5\cdot2^{u_1}+2^{u_1+u_2}$ & $u_1+u_2+u_3$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For the surviving branches the equations reduce as follows.  With
+$\delta=1$, $e=2$, $u_1=1$ the $d=2$ equation becomes
+\begin{equation*}
+  17g=4\cdot5^{j-1}-7.
+\end{equation*}
+With $u_1=u_2=1$, $a=0$ (so $u_3=1$) the $d=3$ equation becomes
+\begin{equation*}
+  16g+8\cdot5^{j-1}=125g+39,
+\end{equation*}
+hence
+\begin{equation*}
+  g=\frac{8\cdot5^{j-1}-39}{109}.
+\end{equation*}
+
+The exclusions are:
+\begin{enumerate}[leftmargin=*]
+\item $d=1$: impossible by the size bound $g<5^{j-1}/4$.
+\item $d=2$: modular contradiction modulo $16$.
+\item $d=3$: first big step at depth $j+4$ with weight $6$.
+\item $d\ge4$: first big step weight at least $5$, or the
+  $e=3,j=17$ modular exclusion.
+\end{enumerate}
+
+Status: all four exclusions are math-proven and Lean-compiled.
+
+\subsection{Worked $d=1$ exclusion}
+
+The $d=1$ segment equation is
+\begin{equation*}
+  5g+1=2^{1+4a}\left(2^{e-1}g+\delta5^{j-1}\right),
+\end{equation*}
+i.e.
+\begin{equation*}
+  5g+1=2^{e+4a}g+\delta2^{1+4a}5^{j-1}.
+\end{equation*}
+If $e\ge3$ or $a\ge1$, then $2^{e+4a}\ge8$, and the second term is
+positive, so the right-hand side exceeds $5g+1$, contradicting the
+equality.
+
+If $e=2$ and $a=0$, the equation reduces to
+\begin{equation*}
+  5g+1=2\left(2g+\delta5^{j-1}\right),
+\end{equation*}
+so
+\begin{equation*}
+  g+1=2\delta5^{j-1}.
+\end{equation*}
+Since $\delta\ge1$, this gives $g\ge2\cdot5^{j-1}-1$, contradicting
+the size bound $g<5^{j-1}/4$.
+
+\subsection{Full $d=2$ size analysis}
+
+The $d=2$ segment equation is
+\begin{equation*}
+  \left(2^{u_1+e}-25\right)g
+    +2^{u_1+1}\delta5^{j-1}=5+2^{u_1}.
+\end{equation*}
+The right-hand side is at most $9$ for $u_1\in\{1,2\}$, so the left-hand
+side must be small.  In particular
+\begin{equation*}
+  2^{u_1+e}<25,
+\end{equation*}
+which leaves only
+\begin{equation*}
+  (u_1,e)\in\{(1,2),(1,3),(2,2)\}.
+\end{equation*}
+
+For $u_1=1,e=2$, the equation becomes
+\begin{equation*}
+  17g=4\delta5^{j-1}-7.
+\end{equation*}
+The size bound is $g<5^{j-1}/2$.  For $\delta=3$ the right-hand side
+is about $12\cdot5^{j-1}/17$, which exceeds the bound; only
+$\delta=1$ survives.
+
+For $u_1=1,e=3$, the equation becomes
+\begin{equation*}
+  9g=8\delta5^{j-1}-7,
+\end{equation*}
+with the stronger size bound $g<5^{j-1}/4$.  Even $\delta=1$ gives
+$g\approx8\cdot5^{j-1}/9$, contradicting the bound.
+
+For $u_1=2,e=2$, the equation becomes
+\begin{equation*}
+  9g=8\delta5^{j-1}-9,
+\end{equation*}
+with the size bound $g<5^{j-1}/2$; again $\delta=1$ already exceeds it.
+
+Hence the only surviving branch is $\delta=1$, $e=2$, $u_1=1$.  The
+subsequent modular contradiction is given in the next subsection.
+
+\subsection{Worked modular computation for $d=2$}
+
+For $d=2$ the surviving branch is $\delta=1$, $e=2$, $u_1=1$, which
+reduces the segment equation to
+\begin{equation*}
+  17g=4\cdot5^{j-1}-7.
+\end{equation*}
+Modulo $17$ this gives
+\begin{equation*}
+  4\cdot5^{j-1}\equiv7,
+\end{equation*}
+and since $4^{-1}\equiv13\pmod{17}$,
+\begin{equation*}
+  5^{j-1}\equiv7\cdot13\equiv6\pmod{17}.
+\end{equation*}
+The powers of $5$ modulo $17$ have order $16$, and
+\begin{equation*}
+  5^3=125\equiv6\pmod{17},
+\end{equation*}
+so $j-1\equiv3\pmod{16}$.
+
+The candidate congruence $x\equiv743\pmod{1280}$ with
+$x=2g+5^{j-1}$ then forces
+\begin{equation*}
+  5^{j-1}\equiv45\pmod{256}.
+\end{equation*}
+Since $5^7=78125\equiv45\pmod{256}$ and the order of $5$ modulo $256$
+is $64$, this gives $j-1\equiv7\pmod{64}$.  The two congruences
+contradict each other modulo $16$.
+
+\subsection{Residue ledger}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.10\textwidth}p{0.56\textwidth}p{0.28\textwidth}@{}}
+\toprule
+Case & Congruence and role & Lean \\
+\midrule
+$d=1$ & no congruence; the size bound $g<5^{j-1}/4$ suffices &
+  \texttt{d1\_\allowbreak exclusion} \\
+$d=2$ & $5^{j-1}\equiv6\pmod{17}$ and $x\equiv743\pmod{1280}$ force
+  $j-1\equiv3\pmod{16}$ and $5^{j-1}\equiv45\pmod{256}$ &
+  \texttt{d2\_\allowbreak exclusion} \\
+$d=3$ & $j-1\equiv923\pmod{1728}$ fixes the unique surviving family &
+  \texttt{d3\_\allowbreak family\_\allowbreak big\_\allowbreak
+  weight\_\allowbreak excluded} \\
+$d\ge4$ & the $e=3$, $j=17$ branch is excluded by residues modulo
+  $640$ or $1280$ &
+  \texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak t1\_\allowbreak
+  excluded}, \texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak
+  t2\_\allowbreak delta3\_\allowbreak excluded} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Full $d=3$ survivor derivation}
+
+The surviving $d=3$ parameters are
+\begin{equation*}
+  t_j=2,\qquad \delta=1,\qquad e=2,\qquad u_1=u_2=1,\qquad a=0,
+\end{equation*}
+which forces $u_3=1$.  The segment word molecule is
+\begin{equation*}
+  \wordA(w)=25+5\cdot2^{u_1}+2^{u_1+u_2}
+    =25+10+4=39,
+\end{equation*}
+and the total segment weight is
+\begin{equation*}
+  W=u_1+u_2+u_3=3.
+\end{equation*}
+The segment equation
+\begin{equation*}
+  2^{W+e-1}g+2^W\delta5^{j-1}
+    =5^d\,g+\wordA(w)
+\end{equation*}
+therefore reads
+\begin{equation*}
+  2^{3+1}g+2^3\cdot5^{j-1}
+    =5^3g+39,
+\end{equation*}
+i.e.
+\begin{equation*}
+  16g+8\cdot5^{j-1}=125g+39,
+\end{equation*}
+so
+\begin{equation*}
+  109g=8\cdot5^{j-1}-39.
+\end{equation*}
+
+The integrality of $g$ requires
+\begin{equation*}
+  8\cdot5^{j-1}\equiv39\pmod{109}.
+\end{equation*}
+The inverse of $8$ modulo $109$ is $41$, and
+\begin{equation*}
+  39\cdot41=1599\equiv73\pmod{109},
+\end{equation*}
+so
+\begin{equation*}
+  5^{j-1}\equiv73\pmod{109}.
+\end{equation*}
+The full family calculation combines this with the remaining branch
+congruences and produces the residue class
+\begin{equation*}
+  j-1\equiv923\pmod{1728}.
+\end{equation*}
+The consistency of the representative $923$ is checked by
+\begin{equation*}
+  5^{923}\equiv73\pmod{109},
+  \qquad
+  8\cdot73=584\equiv39\pmod{109}.
+\end{equation*}
+For this family the first step of weight at least $3$ occurs at depth
+$j+4$ and has weight $6$.  The finite base says that the first big
+step of the orbit of $7$ is at depth $15$ with weight exactly $3$, so
+the family is excluded.
+
+\subsection{$d=3$ family record}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.42\textwidth}p{0.52\textwidth}@{}}
+\toprule
+Item & Value \\
+\midrule
+surviving parameters &
+  $t_j=2$, $\delta=1$, $e=2$, $u_1=u_2=1$, $a=0$ \\
+state formula & $g=(8\cdot5^{j-1}-39)/109$ \\
+residue & $j-1\equiv923\pmod{1728}$ \\
+first big step & depth $j+4$, weight $6$ \\
+contradiction & finite base: first big step at depth $15$ has weight $3$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Full $d\ge4$ branch analysis}
+
+For $d\ge4$, the first big step of the candidate block is one of three
+types.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.22\textwidth}p{0.40\textwidth}p{0.32\textwidth}@{}}
+\toprule
+Branch & First big step & Contradiction \\
+\midrule
+$e\ge3$ & $g_{\mathrm{prev}}\to g$, the incoming step &
+  finite base forces $e=3$, $j=17$; residue modulo $640$ or $1280$
+  fails \\
+$e=2$, $a\ge1$ & $y\to x$, weight $1+4a\ge5$ &
+  the first big step of the prefix has weight exactly $3$ \\
+$e=2$, $a=0$ & $z\to w$, weight $5$ or $6$ &
+  the first big step of the prefix has weight exactly $3$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+In the $e\ge3$ branch, the incoming step is already big.  The finite
+base allows only $e=3$ and $j=17$, and in that case the candidate
+residue is excluded modulo $640$ or $1280$.  The two compiled
+statements are
+\texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak t1\_\allowbreak
+excluded} and
+\texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak
+t2\_\allowbreak delta3\_\allowbreak excluded}.
+
+In the $e=2$ branches, the first big step occurs inside the segment
+with weight at least $5$.  The finite base says the first big step of
+the orbit of $7$ is unique, occurs at depth $15$, and has weight
+exactly $3$.  A candidate first big step of weight $5$ or $6$ cannot
+occur at depth $15$ and cannot occur before it; if it occurred later,
+the true depth-$15$ step would already be first.  This is recorded by
+\texttt{candidate\_\allowbreak first\_\allowbreak big\_\allowbreak
+step\_\allowbreak weight\_\allowbreak ge\_\allowbreak five}.
+
+\subsection{$d\ge4$ branch table}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.24\textwidth}p{0.36\textwidth}p{0.34\textwidth}@{}}
+\toprule
+Branch & First big step & Contradiction \\
+\midrule
+$e\ge3$ & $g_{\mathrm{prev}}\to g$ &
+  finite base forces $e=3$, $j=17$; residue modulo $640$ or $1280$
+  fails \\
+$e=2$, $a\ge1$ & $y\to x$, weight $1+4a\ge5$ &
+  the first big step of the prefix has weight exactly $3$ \\
+$e=2$, $a=0$ & $z\to w$, weight $5$ or $6$ &
+  the first big step of the prefix has weight exactly $3$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For the $e=2$ branches, the contradiction is the same finite fact:
+the first big step of the full orbit is unique, occurs at depth $15$,
+and has weight exactly $3$.  A candidate first big step of weight $5$
+or $6$ therefore cannot occur at depth $15$ and cannot occur before
+it; if it occurred later, the depth-$15$ step would already be the
+first big step.  The $e\ge3$ branch is instead reduced by the finite
+base to $e=3$, $j=17$ and excluded by the stated residues.
+
+The $d=3$ residue class is consistent with the denominator in
+$g=(8\cdot5^{j-1}-39)/109$: since
+\begin{equation*}
+  5^{923}\equiv73\pmod{109},
+\qquad
+  8\cdot73\equiv39\pmod{109},
+\end{equation*}
+the integer $8\cdot5^{923}-39$ is divisible by $109$.  The derivation
+of the full modulus $1728$ is part of the $d=3$ family calculation.
+
+\subsection{CRT and terminal residue}
+
+Let $n=s-j$ and $\Delta=W_s-W_j$.  The CRT candidate $r_{j,0}$ is the
+least nonnegative solution of
+\begin{equation*}
+  3\cdot5^n\,r_{j,0}+3B+2^\Delta
+    =2^{\Delta+L+4}\left(u+m'\,2^{H_s-1}\right),
+\end{equation*}
+with $u$ the least nonnegative residue of
+$-5^{-(L+3)}$ modulo $2^{H_s-1}$.  The terminal residue is
+\begin{equation*}
+  y^*=-\left(w_{\mathrm{term}}+5^{-(L+3)}\right)
+  \left(3\cdot5^s\right)^{-1}\pmod{2^{H_s-1}},
+\end{equation*}
+and the final inequality is equivalent to $y^*\ne0$.
+
+The Lean names are \texttt{rj0\_spec\_eq},
+\texttt{terminal\_bound\_iff\_yStar\_ne\_zero}, and
+\texttt{rj0\_ge\_of\_size\_conditions\_no\_hge}.
+
+\subsection{Finite base}
+
+The first 17 states are explicitly expanded:
+\begin{equation*}
+  7,9,23,29,73,183,229,573,1433,3583,4479,5599,6999,8749,21873,54683,34177.
+\end{equation*}
+The first big step is at depth $15$ with weight $3$.
+
+Status: math-proven and Lean-compiled in
+\texttt{FinitePrefix.lean}, with no \texttt{native\_decide}.
+
+\subsection{Finite-prefix facts used by the exclusions}
+
+The exclusions use the following finite facts:
+\begin{itemize}[leftmargin=*]
+\item the first 17 states are expanded exactly;
+\item the step weights for $n<16$ are expanded exactly;
+\item the first step of weight at least $3$ is at depth $15$ and has
+  weight exactly $3$;
+\item the first big step is unique inside this prefix;
+\item a candidate first big step of weight $6$ contradicts the exact
+  weight $3$ at depth $15$;
+\item a candidate first big step of weight at least $5$ cannot be the
+  first big step of the prefix.
+\end{itemize}
+
+The corresponding Lean names are listed in the Lean theorem index:
+\texttt{fullOrbitIter\_\allowbreak prefix\_expand},
+\texttt{fullOrbit\_\allowbreak prefix\_step\_weights},
+\texttt{fullOrbit\_\allowbreak first\_t\_ge3\_is\_exactly\_3},
+\texttt{first\_\allowbreak big\_step\_unique},
+\texttt{candidate\_\allowbreak first\_big\_step\_weight\_ne\_three}, and
+\texttt{candidate\_\allowbreak first\_big\_step\_weight\_ge\_five}.
+
+\subsection{Final valuation inequality}
+
+\begin{theorem}
+Under the no-$H_{\ge}$ premises, $\FullOrbit(r)$, and $2\le H_s$,
+\begin{equation*}
+  \vtwo{5^{L+3}w_{\mathrm{term}}+1}\le H_s-2,
+\end{equation*}
+where $w_{\mathrm{term}}=(3r_s+1)/2^{L+4}$.
+\end{theorem}
+
+Status: math-proven; Lean pending in
+\texttt{UnifiedCoreAudit.unified\_core\_final\_no\_hge}.

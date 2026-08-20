@@ -1,0 +1,166 @@
+\section{Lean bridge interfaces}
+
+This chapter records the interface graph of the Lean bridge.  The
+graph is the formal skeleton of the paper: it shows exactly which
+statements are compiled, which are conditional, and which remain
+open.
+
+\subsection{Conventions}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{compiled}: the theorem compiles in the pinned Lean
+  environment without \texttt{sorry}.
+\item \textbf{compiled (conditional)}: the theorem compiles, but one
+  of its inputs is an open proposition such as
+  \texttt{unifiedCoreClosed} or \texttt{failureWindowExistence}.
+\item \textbf{pending}: the theorem contains \texttt{sorry} or has not
+  yet been assembled.
+\end{itemize}
+
+\subsection{Interface map}
+
+\begin{verbatim}
+FinitePrefix.lean (compiled)
+  -> UnifiedCoreBridge.lean (compiled)
+  -> UnifiedCoreAudit.lean (one pending: unified_core_final_no_hge)
+  -> unifiedCoreClosed (open input)
+  -> decisiveWindowValuationBoundCorrected_of_unified_core (compiled*)
+  -> failureWindowExistenceOfUnifiedCore (compiled*)
+  -> CycleBridge.windowBoundToNoCycle_of_failureWindowExistence
+       (compiled*, conditional)
+  -> DwdbDiv.dwdbDivFinalAssembly (compiled*, conditional)
+  -> FinalStatement.five_x_plus_one_diverges_at_7 (pending)
+\end{verbatim}
+
+The arrows are implications in the theorem statements, not simulation
+steps.  Each conditional node compiles because it is written as a
+function of its open input.
+
+\subsection{Conditional interfaces}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.44\textwidth}p{0.30\textwidth}p{0.20\textwidth}@{}}
+\toprule
+Interface & Consumes & Status \\
+\midrule
+\texttt{decisiveWindowValuation\allowbreak
+BoundCorrected\_\allowbreak of\_\allowbreak unified\_\allowbreak core}
+& \texttt{unifiedCoreClosed} & compiled* \\
+\texttt{failureWindowExistenceOfUnifiedCore} &
+  \texttt{unifiedCoreClosed} & compiled* \\
+\texttt{windowBoundToNoCycle\_\allowbreak of\_\allowbreak
+failureWindowExistence} &
+  \texttt{failureWindowExistence} & compiled* \\
+\texttt{dwdbDivFinalAssembly} &
+  \texttt{windowBoundToNoCycle} & compiled* \\
+\texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak one\_\allowbreak
+diverges\_\allowbreak at\_\allowbreak 7} &
+  \texttt{dwdbDivFinalAssembly} & pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{What is already closed}
+
+The compiled layer includes:
+\begin{itemize}[leftmargin=*]
+\item the finite-prefix expansion and first-big-step facts;
+\item the candidate parameterisation and reset-head predecessor;
+\item the segment equations and the $d=1,d=2,d=3,d\ge4$ exclusions;
+\item the CRT equation, the terminal residue equivalence, and the
+  size-condition lower bound;
+\item the cycle-word extraction and QB-8 split;
+\item the failure-window contradiction lemma;
+\item the window-to-no-cycle bridge, conditional on the open inputs.
+\end{itemize}
+
+\subsection{What remains open}
+
+Exactly two statements are open:
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Statement & Status \\
+\midrule
+\texttt{UnifiedCoreAudit.unified\_\allowbreak core\_\allowbreak
+final\_\allowbreak no\_\allowbreak hge} & pending \\
+\texttt{FinalStatement.five\_\allowbreak x\_\allowbreak plus\_\allowbreak
+one\_\allowbreak diverges\_\allowbreak at\_\allowbreak 7} & pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The second statement is an assembly target: once the first statement
+is closed, the compiled conditional interfaces produce the final
+theorem.
+
+\subsection{Axiom audit}
+
+The audit of the bridge theorems returns only
+\begin{verbatim}
+[propext, Classical.choice, Quot.sound]
+\end{verbatim}
+for theorems that use choice, and
+\begin{verbatim}
+[propext, Quot.sound]
+\end{verbatim}
+for theorems that do not.  The audit runs \texttt{\#print axioms} on
+the actual theorems and compares the result with the allowlist.  No
+custom axiom is used.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.62\textwidth}p{0.32\textwidth}@{}}
+\toprule
+Theorem & Axioms \\
+\midrule
+\texttt{no\_\allowbreak cycle\_\allowbreak of\_\allowbreak
+  window\_\allowbreak bound} &
+  \texttt{[propext, Quot.sound]} \\
+\texttt{failure\_\allowbreak window\_\allowbreak contradicts\_\allowbreak
+  window\_\allowbreak corrected} &
+  \texttt{[propext, Quot.sound]} \\
+\texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak one\_\allowbreak
+  diverges\_\allowbreak at\_\allowbreak 7\_\allowbreak of\_\allowbreak
+  window\_\allowbreak bound} &
+  \texttt{[propext, Classical.choice, Quot.sound]} \\
+\texttt{DwdbDiv.dwdbDivFinalAssembly} &
+  \texttt{[propext, Classical.choice, Quot.sound]} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Acceptance criteria}
+
+\begin{enumerate}[leftmargin=*]
+\item No \texttt{sorry} in any theorem consumed by the main chain.
+\item No custom \texttt{axiom}; only \texttt{propext},
+  \texttt{Classical.choice}, and \texttt{Quot.sound} are allowed.
+\item No \texttt{native\_decide} in the main chain; the finite base is
+  expanded explicitly.
+\item \texttt{lake build CycleBridge} and
+  \texttt{lake build DwdbDiv} pass.
+\item \texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+  no\_\allowbreak hge} is promoted only after its \texttt{sorry} is
+  replaced by a proof.
+\item The final theorem name and statement are exactly
+  \begin{verbatim}
+FinalStatement.five_x_plus_one_diverges_at_7 :
+  IsUnboundedOrbit 7
+  \end{verbatim}
+\end{enumerate}
+
+\subsection{Update workflow}
+
+Whenever the Lean repository changes, the following steps are run:
+\begin{enumerate}[leftmargin=*]
+\item rebuild the affected targets;
+\item re-run the axiom audit;
+\item update the dependency tables in this chapter and in the main
+  paper;
+\item update the status ledger in \texttt{STATUS.md};
+\item recompile the paper and the manual;
+\item do not promote any pending statement before its ledger entry is
+  changed.
+\end{enumerate}

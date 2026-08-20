@@ -1,0 +1,393 @@
+\section{Lean theorem index}
+
+This chapter gives a theorem-by-theorem index of the main files.
+
+\subsection{FinitePrefix.lean}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{fullOrbitIter\_prefix\_expand}
+\item \texttt{fullOrbit\_prefix\_step\_weights}
+\item \texttt{fullOrbit\_first\_t\_ge3\_is\_exactly\_3}
+\item \texttt{first\_big\_step\_unique}
+\item \texttt{candidate\_first\_big\_step\_weight\_ne\_three}
+\item \texttt{candidate\_first\_big\_step\_weight\_ge\_five}
+\end{itemize}
+
+\subsection{UnifiedCoreBridge.lean}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{candidateX}, \texttt{candidateRj}, \texttt{orbitState}
+\item \texttt{reset\_head\_predecessor}
+\item \texttt{candidateX\_of\_reset\_and\_terminal}
+\item \texttt{first\_block\_terminal\_eq}
+\item \texttt{d1\_exclusion}, \texttt{d2\_exclusion}
+\item \texttt{d3\_family\_big\_weight\_excluded}
+\item \texttt{dge4\_e2\_a\_ge1\_excluded}
+\item \texttt{dge4\_e3\_j17\_t1\_excluded}
+\item \texttt{dge4\_e3\_j17\_t2\_delta3\_excluded}
+\item \texttt{orbitSegmentWord}, \texttt{orbitSegmentWord\_equation}
+\item \texttt{fullOrbitStep\_mul\_eq}
+\item \texttt{fullOrbitIter\_not\_dvd\_five}
+\item \texttt{candidateRj\_mod\_five}
+\end{itemize}
+
+\subsection{UnifiedCoreAudit.lean}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{All36\_20PremisesNoHge}
+\item \texttt{blockB\_bound\_of\_no\_hge}
+\item \texttt{rj0\_ge\_of\_size\_conditions\_no\_hge}
+\item \texttt{terminal\_bound\_iff\_yStar\_ne\_zero}
+\item \texttt{unified\_core\_final\_no\_hge} --- pending
+\end{itemize}
+
+\subsection{CycleBridge.lean and DwdbDiv.lean}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{cycleWord}, \texttt{cycleWord\_step\_exact}
+\item \texttt{cycleWord\_take\_eq}, \texttt{cycleWord\_getI\_eq}
+\item \texttt{cycleWord\_prefix\_orbit\_eq}
+\item \texttt{CycleQb8Input}
+\item \texttt{cycleQb8Input\_P\_ge\_two}
+\item \texttt{cycleQb8Input\_exists\_rise\_index}
+\item \texttt{cycleQb8Input\_exists\_c3\_index}
+\item \texttt{cycleQb8Input\_exists\_block\_head\_mod\_five}
+\item \texttt{wordOrbit\_take\_succ}
+\item \texttt{rise\_step\_next\_mod\_five}
+\item \texttt{rise\_block\_balance}
+\item \texttt{failure\_window\_contradicts\_window\_corrected}
+\item \texttt{windowBoundToNoCycle\_of\_failureWindowExistence}
+\item \texttt{DwdbDiv.dwdbDivFinalAssembly}
+\end{itemize}
+
+\subsection{WordWindow.lean}
+
+\texttt{WordWindow.lean} defines the string-flow vocabulary:
+\begin{itemize}[leftmargin=*]
+\item \texttt{StringFlow.Word.wordA}: the word molecule;
+\item \texttt{StringFlow.Word.wordOrbit}: the word orbit;
+\item \texttt{StringFlow.Word.wordValid}: word validity;
+\item \texttt{StringFlow.wordWeight}: the prefix-weight function;
+\item the exact word-orbit identity
+  \begin{equation*}
+    2^{\wordWeight(w)}\,\wordOrbit(w,x_0)
+      =5^{\operatorname{len}(w)}\,x_0+\wordA(w),
+  \end{equation*}
+  recorded in the file's identity lemmas.
+\end{itemize}
+The file also hosts the elementary valuation facts
+\texttt{n\_\allowbreak eq\_\allowbreak two\_\allowbreak pow\_\allowbreak
+mul\_\allowbreak oddPart},
+\texttt{oddPart\_\allowbreak odd\_\allowbreak of\_\allowbreak pos},
+\texttt{twoValuation\_\allowbreak mul\_\allowbreak two\_\allowbreak
+pow\_\allowbreak eq},
+\texttt{fiveXPlusOneStep\_\allowbreak le\_\allowbreak div\_\allowbreak
+two}, and
+\texttt{c3Step\_\allowbreak lt\_\allowbreak of\_\allowbreak pos}.
+
+\subsection{Pmi.lean}
+
+\texttt{Pmi.lean} hosts the PMI and PMI-B algebra:
+\begin{itemize}[leftmargin=*]
+\item \texttt{Pmi.aTotal5}: the cleared PMI sum;
+\item \texttt{Pmi.aTotal}: the algebraic prefix sum;
+\item \texttt{Pmi.pmi\_\allowbreak algebraic}: the cycle form
+  $\mathrm{aTotal5}(P,t)=5m(2^T-5^P)$;
+\item \texttt{pmi\_\allowbreak b\_\allowbreak count}: the PMI-B
+  counting bound;
+\item \texttt{pmi\_\allowbreak b\_\allowbreak no\_\allowbreak
+  bad\_\allowbreak prefix}: the small-budget corollary;
+\item \texttt{cycleWord\_\allowbreak margin\_\allowbreak balance} and
+  \texttt{cycleWord\_\allowbreak margin\_\allowbreak balance\_\allowbreak
+  strict}: the margin balance.
+\end{itemize}
+
+\subsection{BlockAutomaton.lean}
+
+\texttt{BlockAutomaton.lean} hosts the corrected window definitions:
+\begin{itemize}[leftmargin=*]
+\item \texttt{t1WindowBoundCorrected};
+\item \texttt{t2WindowBoundCorrected};
+\item \texttt{decisiveWindowValuationBoundCorrected};
+\item the conditional interfaces
+  \texttt{decisiveWindowValuationBoundCorrected\_\allowbreak
+  of\_\allowbreak unified\_\allowbreak core} and
+  \texttt{failureWindowExistenceOfUnifiedCore}.
+\end{itemize}
+
+\subsection{FinalStatement.lean}
+
+\texttt{FinalStatement.lean} hosts the top-level theorem objects:
+\begin{itemize}[leftmargin=*]
+\item \texttt{fiveXPlusOneStep};
+\item \texttt{fiveXPlusOneOrbit};
+\item \texttt{IsUnboundedOrbit};
+\item \texttt{OrbitCycle};
+\item \texttt{unbounded\_\allowbreak of\_\allowbreak no\_\allowbreak
+  cycle};
+\item \texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak
+  one\_\allowbreak diverges\_\allowbreak at\_\allowbreak 7}, pending.
+\end{itemize}
+
+\subsection{Main-chain status summary}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.66\textwidth}p{0.28\textwidth}@{}}
+\toprule
+Statement & Status \\
+\midrule
+Finite-prefix expansion and first-big-step facts & compiled \\
+ \texttt{candidate\_\allowbreak first\_\allowbreak big\_\allowbreak
+ step\_\allowbreak weight\_\allowbreak ne\_three} and
+ \texttt{candidate\_\allowbreak first\_\allowbreak big\_\allowbreak
+ step\_\allowbreak weight\_\allowbreak ge\_five} & compiled \\
+\texttt{reset\_\allowbreak head\_\allowbreak predecessor} & compiled \\
+\texttt{candidateX\_\allowbreak of\_\allowbreak reset\_\allowbreak
+ and\_\allowbreak terminal} & compiled \\
+\texttt{first\_\allowbreak block\_\allowbreak terminal\_\allowbreak eq}
+ & compiled \\
+\texttt{d1\_\allowbreak exclusion}, \texttt{d2\_\allowbreak exclusion}
+ & compiled \\
+\texttt{d3\_\allowbreak family\_\allowbreak big\_\allowbreak
+ weight\_\allowbreak excluded} & compiled \\
+\texttt{dge4\_\allowbreak e2\_\allowbreak a\_\allowbreak ge1\_\allowbreak
+ excluded} & compiled \\
+\texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak t1\_\allowbreak
+ excluded},
+\texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak t2\_\allowbreak
+ delta3\_\allowbreak excluded} & compiled \\
+\texttt{orbitSegmentWord\_\allowbreak equation} & compiled \\
+\texttt{All36\_\allowbreak 20PremisesNoHge} (definition) & compiled \\
+\texttt{blockB\_\allowbreak bound\_\allowbreak of\_\allowbreak
+ no\_\allowbreak hge} & compiled \\
+\texttt{rj0\_\allowbreak ge\_\allowbreak of\_\allowbreak
+ size\_\allowbreak conditions\_\allowbreak no\_\allowbreak hge} & compiled \\
+\texttt{terminal\_\allowbreak bound\_\allowbreak iff\_\allowbreak
+ yStar\_\allowbreak ne\_\allowbreak zero} & compiled \\
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+ no\_\allowbreak hge} & pending \\
+\texttt{CycleQb8Input} and extraction lemmas & compiled \\
+\texttt{failure\_\allowbreak window\_\allowbreak contradicts\_\allowbreak
+ window\_\allowbreak corrected} & compiled \\
+\texttt{windowBoundToNoCycle\_\allowbreak of\_\allowbreak
+ failureWindowExistence} &
+compiled (conditional) \\
+\texttt{dwdbDivFinalAssembly} & compiled (conditional) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The statuses are the current audit state; they are rechecked whenever
+the repository changes.
+
+\subsection{AxiomAudit}
+
+The audit of the bridge theorems currently returns only
+\begin{verbatim}
+[propext, Classical.choice, Quot.sound]
+\end{verbatim}
+for the theorems that use choice, and
+\begin{verbatim}
+[propext, Quot.sound]
+\end{verbatim}
+for the theorems that do not.  No custom axiom is used.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.60\textwidth}p{0.34\textwidth}@{}}
+\toprule
+Theorem & Axioms \\
+\midrule
+\texttt{no\_\allowbreak cycle\_\allowbreak of\_\allowbreak
+  window\_\allowbreak bound} &
+  \texttt{[propext, Quot.sound]} \\
+\texttt{failure\_\allowbreak window\_\allowbreak contradicts\_\allowbreak
+  window\_\allowbreak corrected} &
+  \texttt{[propext, Quot.sound]} \\
+\texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak one\_\allowbreak
+  diverges\_\allowbreak at\_\allowbreak 7\_\allowbreak of\_\allowbreak
+  window\_\allowbreak bound} &
+  \texttt{[propext, Classical.choice, Quot.sound]} \\
+\texttt{DwdbDiv.dwdbDivFinalAssembly} &
+  \texttt{[propext, Classical.choice, Quot.sound]} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Status convention}
+
+\begin{itemize}[leftmargin=*]
+\item Math: proven.
+\item Lean: compiled without \texttt{sorry}.
+\item Lean: pending means the Lean statement still contains
+  \texttt{sorry} or is not yet assembled.
+\end{itemize}
+
+\subsection{Per-file status ledger}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.42\textwidth}p{0.52\textwidth}@{}}
+\toprule
+File & Status \\
+\midrule
+\texttt{WordWindow.lean} & definitions compiled \\
+\texttt{Pmi.lean} & PMI and PMI-B compiled \\
+\texttt{FinitePrefix.lean} & finite base compiled \\
+\texttt{UnifiedCoreBridge.lean} & bridges compiled \\
+\texttt{UnifiedCoreAudit.lean} & one pending \texttt{sorry} \\
+\texttt{CycleBridge.lean} & compiled (conditional) \\
+\texttt{DwdbDiv.lean} & compiled (conditional) \\
+\texttt{FinalStatement.lean} & assembly target pending \\
+\texttt{AxiomAudit.lean} & audit output recorded \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Key statement shapes}
+
+The bridge lemmas have the following ASCII statement shapes.
+\begin{verbatim}
+theorem reset_head_predecessor
+    (s0 j k t delta rj x : Nat)
+    (hj : 1 <= j)
+    (hres : ResetHeadEq s0 j k t delta rj)
+    (hrj : rj = (5 * x + 1) / 2 ^ t)
+    (hdiv : (5 * x + 1) % 2 ^ t = 0) :
+    x = 5 ^ k * s0 + delta * 5 ^ (j - 1) - 1
+
+theorem first_block_terminal_eq
+    (e g_prev g r : Nat)
+    (hg : 5 * g_prev + 1 = 2 ^ e * g)
+    (hr : r = (5 * g_prev + 1) / 2)
+    (he : 1 <= e) :
+    r = 2 ^ (e - 1) * g
+
+theorem d1_exclusion
+    (j e g delta a : Nat)
+    (hj : 3 <= j) (hgpos : 0 < g)
+    (hg : g < 5 ^ (j - 1) / 4)
+    (hdelta : delta = 1 or delta = 3)
+    (he : 2 <= e)
+    (hy : 5 * g + 1 = 2 ^ (1 + 4 * a) * candidateX j e g delta) :
+    False
+
+theorem d2_exclusion
+    (j e g delta u1 : Nat)
+    (hj : 3 <= j)
+    (hg : g < 5 ^ (j - 1) / 2 ^ (e - 1))
+    (hdelta : delta = 1 or delta = 3)
+    (he : 2 <= e)
+    (hu1 : u1 = 1 or u1 = 2)
+    (hseg : 2 ^ (u1 + e) * g + 2 ^ (u1 + 1) * delta * 5 ^ (j - 1)
+      = 5 + 2 ^ u1 + 25 * g) :
+    False
+\end{verbatim}
+
+\subsection{Additional statement shapes}
+
+The cycle bridge adds:
+\begin{verbatim}
+theorem cycleWord_cycle_equation (c p : Nat)
+    (hclosed : wordOrbit (cycleWord c p) (Orbit 7 c) = Orbit 7 c) :
+    2 ^ wordWeight (cycleWord c p) * Orbit 7 c
+      = 5 ^ p * Orbit 7 c + wordA (cycleWord c p)
+
+theorem cycleWord_step_exact (c p k : Nat) (hk : k < p) :
+    twoValuation
+      (5 * wordOrbit ((cycleWord c p).take k) (Orbit 7 c) + 1)
+      = (cycleWord c p).getI k
+
+theorem failure_window_contradicts_window_corrected
+    (hwin : decisiveWindowValuationBoundCorrected)
+    {m S P : Nat} {w rise c3 : List Nat}
+    {j k0 t delta s : Nat}
+    (fw : FailureWindow m S P w rise c3 j k0 t delta s) :
+    False
+\end{verbatim}
+
+\subsection{FinitePrefix statement shapes}
+
+The finite base is recorded by:
+\begin{verbatim}
+theorem fullOrbitIter_prefix_expand :
+    fullOrbitIter 0 = 7 /\
+    fullOrbitIter 1 = 9 /\
+    fullOrbitIter 2 = 23 /\
+    fullOrbitIter 3 = 29 /\
+    fullOrbitIter 4 = 73 /\
+    fullOrbitIter 5 = 183 /\
+    fullOrbitIter 6 = 229 /\
+    fullOrbitIter 7 = 573 /\
+    fullOrbitIter 8 = 1433 /\
+    fullOrbitIter 9 = 3583 /\
+    fullOrbitIter 10 = 4479 /\
+    fullOrbitIter 11 = 5599 /\
+    fullOrbitIter 12 = 6999 /\
+    fullOrbitIter 13 = 8749 /\
+    fullOrbitIter 14 = 21873 /\
+    fullOrbitIter 15 = 54683 /\
+    fullOrbitIter 16 = 34177
+
+theorem fullOrbit_first_t_ge3_is_exactly_3 :
+    (forall n : Nat, n < 15 ->
+      twoValuation (5 * fullOrbitIter n + 1) <= 2) /\
+    twoValuation (5 * fullOrbitIter 15 + 1) = 3
+
+theorem first_big_step_unique (n : Nat)
+    (hsmall : forall m : Nat, m < n ->
+      twoValuation (5 * fullOrbitIter m + 1) <= 2)
+    (hbig : 3 <= twoValuation (5 * fullOrbitIter n + 1)) :
+    n = 15 /\ twoValuation (5 * fullOrbitIter n + 1) = 3
+\end{verbatim}
+
+\subsection{UnifiedCoreAudit statement shapes}
+
+\begin{verbatim}
+theorem terminal_bound_iff_yStar_ne_zero
+    (L H_s s r_s : Nat) (hH : 2 <= H_s) :
+    twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) <= H_s - 2 <->
+      yStar L H_s s r_s != 0
+
+theorem rj0_ge_of_size_conditions_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat)
+    (weight : Nat -> Nat)
+    (hPrem : All36_20PremisesNoHge
+       j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hH : 1 <= H_s)
+    (hBase2 : 3 * 5 ^ s
+      + (3 * 5 ^ (s - j) - 2 * 4 ^ (s - j))
+      <= 2 ^ (W_s - Wj + L + 4) * uResidue L (H_s - 1))
+    (hPow3 : 3 * 5 ^ s
+      + (3 * 5 ^ (s - j) - 2 * 4 ^ (s - j))
+      <= 2 ^ (W_s - Wj + L + H_s + 3)) :
+    5 ^ j <= rj0 j Wp Wj q Aj A_s s W_s r_s L H_s weight
+\end{verbatim}
+
+\subsection{Reading order}
+
+\begin{enumerate}[leftmargin=*]
+\item \texttt{WordWindow.lean}: \texttt{wordA}, \texttt{wordOrbit},
+  \texttt{wordValid};
+\item \texttt{Pmi.lean}: PMI and PMI-B algebra;
+\item \texttt{FinitePrefix.lean}: the explicit finite base;
+\item \texttt{UnifiedCoreBridge.lean}: candidate parameterisation and
+  segment exclusions;
+\item \texttt{UnifiedCoreAudit.lean}: CRT, terminal residue, and the
+  final pending statement;
+\item \texttt{CycleBridge.lean}: corrected window and no-cycle bridge;
+\item \texttt{DwdbDiv.lean}: final divergence assembly.
+\end{enumerate}
+
+\subsection{Acceptance criteria}
+
+\begin{itemize}[leftmargin=*]
+\item no \texttt{sorry} in any theorem consumed by the main chain;
+\item no custom axiom; only \texttt{propext},
+  \texttt{Classical.choice}, and \texttt{Quot.sound} appear;
+\item no \texttt{native\_decide} in the main chain; the finite base is
+  expanded by rewriting;
+\item \texttt{unified\_core\_final\_no\_hge} is recorded as pending and
+  is not cited as closed.
+\end{itemize}

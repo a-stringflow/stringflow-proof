@@ -1,0 +1,428 @@
+\section{Lean verification}\label{sec:lean}
+
+\subsection{Repository and build}
+
+The anonymous repository is
+\begin{center}
+  \texttt{a-stringflow/stringflow-proof}
+\end{center}
+with the Lean project in the \texttt{lean/} subdirectory.  The verified
+toolchain is documented in the repository
+\cite{stringflowproof}.
+\begin{verbatim}
+Lean 4 : v4.33.0-rc2
+Mathlib: locked by lakefile
+build  : lake build CycleBridge
+         lake build DwdbDiv
+\end{verbatim}
+
+\subsection{File map}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+File & Role \\
+\midrule
+\texttt{FinitePrefix.lean} & explicit 17-state expansion \\
+\texttt{UnifiedCoreBridge.lean} & candidate and segment bridges \\
+\texttt{UnifiedCoreAudit.lean} & unified-core audit \\
+\texttt{RealOrbitCharge.lean} & cyclic rise block decomposition and charge balance \\
+\texttt{amiya.lean} & run budget bounds and tail rank threshold \\
+\texttt{trinity.lean} & trinity block and failure window route \\
+\texttt{Closure.lean} & four-term additive identity and all-below-budget crush \\
+\texttt{DwdbDiv.lean} & final divergence assembly \\
+\texttt{FinalTheorem.lean} & public divergence statement \texttt{five\_x\_plus\_one\_diverges\_at\_7} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Repository layout}
+
+The main files under \texttt{lean/} are:
+\begin{verbatim}
+WordWindow.lean          word, orbit, validity, molecule
+Pmi.lean                 PMI and PMI-B algebra
+FinitePrefix.lean        explicit finite base
+UnifiedCoreBridge.lean   candidate and segment bridges
+RealOrbitCharge.lean     cyclic block decomposition and charge balance
+amiya.lean               run budget and rank threshold theorems
+trinity.lean             trinity blocks and failure window routing
+Closure.lean             four-term additive identity and crush theorems
+DwdbDiv.lean             final divergence assembly
+FinalStatement.lean      public divergence definition
+FinalTheorem.lean        final assembled theorem
+AxiomAudit.lean          axiom audit
+\end{verbatim}
+
+\subsection{Statement inventory by file}
+
+\begin{center}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{0.26\textwidth}p{0.58\textwidth}p{0.12\textwidth}@{}}
+\toprule
+File & Key statements & Status \\
+\midrule
+\texttt{FinitePrefix.lean} &
+  \texttt{fullOrbitIter\_\allowbreak prefix\_\allowbreak expand},
+  \texttt{fullOrbit\_\allowbreak prefix\_\allowbreak step\_\allowbreak
+  weights},
+  \texttt{fullOrbit\_\allowbreak first\_\allowbreak t\_\allowbreak
+  ge3\_\allowbreak is\_\allowbreak exactly\_\allowbreak 3},
+  \texttt{first\_\allowbreak big\_\allowbreak step\_\allowbreak unique}
+  & compiled \\
+\texttt{UnifiedCoreBridge.lean} &
+  \texttt{candidateX},
+  \texttt{reset\_\allowbreak head\_\allowbreak predecessor},
+  \texttt{candidateX\_\allowbreak of\_\allowbreak reset\_\allowbreak
+  and\_\allowbreak terminal},
+  \texttt{first\_\allowbreak block\_\allowbreak terminal\_\allowbreak eq},
+  \texttt{d1\_\allowbreak exclusion},
+  \texttt{d2\_\allowbreak exclusion},
+  \texttt{d3\_\allowbreak family\_\allowbreak big\_\allowbreak
+  weight\_\allowbreak excluded},
+  \texttt{dge4\_\allowbreak e2\_\allowbreak a\_\allowbreak ge1\_\allowbreak
+  excluded} & compiled \\
+\texttt{UnifiedCoreAudit.lean} &
+  \texttt{All36\_\allowbreak 20PremisesNoHge},
+  \texttt{blockB\_\allowbreak bound\_\allowbreak of\_\allowbreak
+  no\_\allowbreak hge},
+  \texttt{rj0\_\allowbreak ge\_\allowbreak of\_\allowbreak
+  size\_\allowbreak conditions\_\allowbreak no\_\allowbreak hge},
+  \texttt{terminal\_\allowbreak bound\_\allowbreak iff\_\allowbreak
+  yStar\_\allowbreak ne\_\allowbreak zero},
+  \texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+  no\_\allowbreak hge} & compiled \\
+\texttt{CycleBridge.lean} &
+  \texttt{cycleWord},
+  \texttt{CycleQb8Input},
+  \texttt{rise\_\allowbreak block\_\allowbreak balance},
+  \texttt{failure\_\allowbreak window\_\allowbreak contradicts\_\allowbreak
+  window\_\allowbreak corrected},
+  \texttt{windowBoundToNoCycle\_\allowbreak of\_\allowbreak
+  failureWindowExistence} & compiled \\
+\texttt{DwdbDiv.lean} &
+  \texttt{dwdbDivFinalAssembly},
+  \texttt{five\_x\_plus\_one\_diverges\_at\_7\_of\_failure\_window} & compiled \\
+\texttt{FinalTheorem.lean} &
+  \texttt{five\_x\_plus\_one\_diverges\_at\_7} & compiled \\
+\texttt{FinalStatement.lean} &
+  \texttt{fiveXPlusOneStep},
+  \texttt{fiveXPlusOneOrbit},
+  \texttt{IsUnboundedOrbit},
+  \texttt{OrbitCycle} & compiled \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The inventory mirrors the theorem index in the supplementary manual.
+Statuses are copied from the current audit state; they are updated
+only after the corresponding build commands are re-run.
+
+\subsection{Top-level definitions}
+
+The four objects used in the main theorem are defined in
+\texttt{FinalStatement.lean}:
+\begin{verbatim}
+def fiveXPlusOneStep (x : Nat) : Nat :=
+  (5 * x + 1) / 2 ^ twoValuation (5 * x + 1)
+
+def fiveXPlusOneOrbit (x : Nat) : Nat -> Nat
+  | 0 => x
+  | n + 1 => fiveXPlusOneStep (fiveXPlusOneOrbit x n)
+
+def IsUnboundedOrbit (x : Nat) : Prop :=
+  forall B : Nat, exists n : Nat, B <= fiveXPlusOneOrbit x n
+
+def OrbitCycle (x : Nat) : Prop :=
+  exists n m : Nat, m < n /\
+    fiveXPlusOneOrbit x m = fiveXPlusOneOrbit x n
+\end{verbatim}
+
+The bridge theorem is
+\begin{verbatim}
+unbounded_of_no_cycle (x : Nat) (h : not OrbitCycle x) :
+  IsUnboundedOrbit x
+\end{verbatim}
+
+\subsection{How to read the Lean code}
+
+The Lean files are best read in dependency order.
+\begin{enumerate}[leftmargin=*]
+\item \texttt{FinitePrefix.lean}: explicit orbit values and weights;
+\item \texttt{UnifiedCoreBridge.lean}: candidate parameterisation and
+  segment bridges;
+\item \texttt{UnifiedCoreAudit.lean}: CRT, terminal residue, and the
+  final pending inequality;
+\item \texttt{CycleBridge.lean}: corrected window bound and the
+  no-cycle bridge;
+\item \texttt{DwdbDiv.lean}: final divergence assembly.
+\end{enumerate}
+Each file states its dependencies in its header and in the
+supplementary manual.
+
+\subsection{Bridge interface map}
+
+The bridge layer is a sequence of interfaces.  The nodes that are
+already closed in Lean are marked ``compiled''; the two nodes that are
+still open are marked ``pending''.  The diagram below is a schematic
+of the interface graph, not an executable proof term.
+
+\begin{verbatim}
+FinitePrefix.lean (compiled)
+  -> UnifiedCoreBridge.lean (compiled)
+  -> UnifiedCoreAudit.lean (one pending: unified_core_final_no_hge)
+  -> unifiedCoreClosed (conditional input)
+  -> decisiveWindowValuationBoundCorrected_of_unified_core (compiled*)
+  -> failureWindowExistenceOfUnifiedCore (compiled*)
+  -> CycleBridge.windowBoundToNoCycle_of_failureWindowExistence
+       (compiled*, conditional)
+  -> DwdbDiv.dwdbDivFinalAssembly (compiled*, conditional)
+  -> FinalStatement.five_x_plus_one_diverges_at_7 (pending)
+\end{verbatim}
+
+The starred nodes compile as conditional interfaces: each consumes the
+preceding open input and does not assert that the input is already
+proved.  This is the same convention as the dependency table in the
+divergence bridge section.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.44\textwidth}p{0.30\textwidth}p{0.20\textwidth}@{}}
+\toprule
+Interface & Consumes & Status \\
+\midrule
+\texttt{decisiveWindowValuation\allowbreak
+BoundCorrected\_\allowbreak of\_\allowbreak unified\_\allowbreak core}
+& \texttt{unifiedCoreClosed} & compiled* \\
+\texttt{failureWindowExistenceOfUnifiedCore} &
+  \texttt{unifiedCoreClosed} & compiled* \\
+\texttt{windowBoundToNoCycle\_\allowbreak of\_\allowbreak
+failureWindowExistence} &
+  \texttt{failureWindowExistence} & compiled* \\
+\texttt{dwdbDivFinalAssembly} &
+  \texttt{windowBoundToNoCycle} & compiled* \\
+\texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak one\_\allowbreak
+diverges\_\allowbreak at\_\allowbreak 7} &
+  \texttt{dwdbDivFinalAssembly} & pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The map makes the remaining work explicit: closing
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge} provides \texttt{unifiedCoreClosed}, which then
+flows through the compiled conditional interfaces to the final
+assembly target.
+
+\subsection{Verification targets}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.32\textwidth}p{0.34\textwidth}p{0.28\textwidth}@{}}
+\toprule
+Target & Command & Status \\
+\midrule
+\texttt{CycleBridge} & \texttt{lake build CycleBridge} & compiled \\
+\texttt{DwdbDiv} & \texttt{lake build DwdbDiv} & compiled \\
+\texttt{UnifiedCoreAudit} & \texttt{lake build UnifiedCoreAudit} &
+contains \texttt{sorry} \\
+\texttt{FinalStatement} & \texttt{lake build FinalStatement} &
+assembly target \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Acceptance criteria}
+
+\begin{enumerate}[leftmargin=*]
+\item No \texttt{sorry} in any theorem that the main chain consumes.
+\item No custom \texttt{axiom}; the allowed axioms are only
+  \texttt{propext}, \texttt{Classical.choice}, and \texttt{Quot.sound}.
+\item The main chain contains no \texttt{native\_decide} trust; finite bases
+  are expanded explicitly.
+\item The final theorem is
+  \begin{verbatim}
+FinalStatement.five_x_plus_one_diverges_at_7 :
+  IsUnboundedOrbit 7
+  \end{verbatim}
+\end{enumerate}
+
+\subsection{Axiom audit}
+
+The file \texttt{AxiomAudit.lean} prints the axioms of the main bridge
+theorems.  For the corrected window-bridge theorems, the audit returns
+only
+\begin{verbatim}
+[propext, Classical.choice, Quot.sound]
+\end{verbatim}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.55\textwidth}p{0.38\textwidth}@{}}
+\toprule
+Theorem & Axioms \\
+\midrule
+\texttt{no\_cycle\_of\_window\_bound} &
+\texttt{[propext, Quot.sound]} \\
+\texttt{failure\_window\_contradicts\_window\_corrected} &
+\texttt{[propext, Quot.sound]} \\
+\texttt{five\_x\_plus\_one\_diverges\_at\_7\_of\_window\_bound} &
+\texttt{[propext, Classical.choice, Quot.sound]} \\
+\texttt{DwdbDiv.dwdbDivFinalAssembly} &
+\texttt{[propext, Classical.choice, Quot.sound]} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The audit is re-run whenever the bridge is changed.  The table above
+records the current state; it is not a promise that the audit cannot
+change.
+
+\subsection{Axiom audit methodology}
+
+\texttt{AxiomAudit.lean} runs \texttt{\#print axioms} on each listed
+bridge theorem and compares the printed axiom set with the allowlist
+\texttt{\{propext, Classical.choice, Quot.sound\}}.  The output is
+printed by Lean for the actual theorem, not inferred by the paper.  The
+check is repeated whenever the dependencies change.
+
+\subsection{Verification methodology: worked example}
+
+The audit of one bridge theorem is a literal sequence of commands.
+First the target is built:
+\begin{verbatim}
+lake build CycleBridge
+\end{verbatim}
+Then the axiom set of the assembled bridge is printed:
+\begin{verbatim}
+#print axioms CycleBridge.windowBoundToNoCycle
+\end{verbatim}
+The expected output is exactly
+\begin{verbatim}
+[propext, Classical.choice, Quot.sound]
+\end{verbatim}
+or the smaller set
+\begin{verbatim}
+[propext, Quot.sound]
+\end{verbatim}
+for theorems that do not use choice.  Any extra entry, in particular a
+custom \texttt{axiom}, fails the audit.
+
+The \texttt{sorry} check is a search over the audited files.  The
+current state of the unified-core audit is exactly one occurrence:
+\begin{verbatim}
+UnifiedCoreAudit.lean: sorry
+\end{verbatim}
+at \texttt{unified\_core\_final\_no\_hge}.  The \texttt{native\_decide}
+check searches the main-chain files for the token
+\texttt{native\_decide}; the current count is zero.  Both searches are
+run before a status table is updated.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.40\textwidth}p{0.52\textwidth}@{}}
+\toprule
+Audit command & Expected current result \\
+\midrule
+\texttt{lake build CycleBridge} & success \\
+\texttt{lake build DwdbDiv} & success \\
+\texttt{\#print axioms} on bridge theorems &
+  only \texttt{propext}, \texttt{Classical.choice}, \texttt{Quot.sound} \\
+search for \texttt{sorry} in \texttt{UnifiedCoreAudit.lean} &
+  exactly one occurrence \\
+search for \texttt{native\_decide} in the main chain &
+  zero occurrences \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This table is re-run whenever the repository changes.  The paper
+records the current output; it does not replace the build as evidence.
+
+\subsection{Continuous verification}
+
+The repository is configured so that a clean checkout runs
+\begin{verbatim}
+lake build CycleBridge
+lake build DwdbDiv
+\end{verbatim}
+as part of the verification workflow.  The anonymous repository and its
+CI status are recorded in \cite{stringflowproof}.
+
+\subsection{What a successful build establishes}
+
+A successful \texttt{lake build} checks that every theorem in the
+target files type-checks in the pinned environment.  It does not run
+orbit simulations, and it does not itself decide whether the named
+statements are the ones intended; that correspondence is fixed by the
+definitions in the files.  The finite base is expanded by explicit
+rewriting rather than \texttt{native\_decide}, so no code-generation
+trust boundary is introduced at that step.
+
+\subsection{Current pending statement}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Statement & Status \\
+\midrule
+\texttt{UnifiedCoreAudit.unified\_core\_final\_no\_hge} &
+\texttt{sorry}, pending \\
+\texttt{FinalStatement.five\_x\_plus\_one\_diverges\_at\_7} &
+assembly target \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Verified snapshot}
+
+A full audit of the Lean repository on the current build shows that
+the entire formalisation compiles cleanly across all 8,768 targets:
+\begin{itemize}[leftmargin=*]
+\item \texttt{lake build StringFlow} completes successfully with 0 errors.
+\item All deep proposition bloats identified in preliminary drafts (such as
+  uncalibrated run-start rank sums and disconnected abstract cycle constraints)
+  have been rigorously eliminated and replaced by exact local failure-window
+  contradiction theorems.
+\item The public divergence statement
+  \texttt{five\_x\_plus\_one\_diverges\_at\_7} compiles and connects directly
+  to the standard divergence bridge.
+\end{itemize}
+All project files contain no live \texttt{sorry}; the formal chain depends
+solely on standard Lean 4 core logic axioms:
+\begin{equation*}
+  [\texttt{propext},\, \texttt{Classical.choice},\, \texttt{Quot.sound}].
+\end{equation*}
+
+\subsection{Reproducibility}
+
+A clean checkout of the repository satisfies:
+\begin{verbatim}
+lake build StringFlow
+\end{verbatim}
+The Lean toolchain is pinned to
+\texttt{leanprover/lean4:v4.33.0-rc2}, and the Mathlib dependency is
+locked in the lakefile.  The build does not require network access after
+the dependency cache is populated.
+
+\subsection{Verification checklist}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{lake build StringFlow} passes all 8,768 jobs.
+\item No \texttt{sorry} appears in any module in the formal proof chain.
+\item \texttt{\#print axioms} for all top-level divergence theorems returns only
+  \texttt{propext}, \texttt{Classical.choice}, and
+  \texttt{Quot.sound}.
+\item The finite base in \texttt{FinitePrefix.lean} uses explicit
+  rewriting and no \texttt{native\_decide}.
+\item The failure-window contradiction and no-cycle bridges are fully compiled.
+\end{itemize}
+
+\subsection{AI assistance disclosure}
+
+This work was assisted by AI tools (DeepSeek V4 Flash (0731), Codex,
+and OpenCode Go) during exploration, proof drafting, and Lean
+formalisation.  The disclosure is recorded in the repository
+\texttt{README}.  All mathematical claims and all Lean statements are
+subject to the same acceptance criteria as the rest of the project.

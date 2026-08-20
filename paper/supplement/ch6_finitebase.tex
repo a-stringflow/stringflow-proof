@@ -1,0 +1,211 @@
+\section{Finite-prefix base and explicit orbit expansion}
+
+This chapter records the finite-prefix base in full.  The base is the
+only finite data used by the proof.  Every entry is an exact
+arithmetic identity, expanded by rewriting in Lean rather than by
+\texttt{native\_decide}.
+
+\subsection{The 17 states}
+
+The accelerated $5x+1$ orbit of $7$ begins with
+\begin{equation*}
+  7,9,23,29,73,183,229,573,1433,3583,4479,5599,6999,8749,
+  21873,54683,34177.
+\end{equation*}
+There are seventeen entries, indexed by $n=0,\dots,16$.  The proof
+never needs a later state.
+
+\subsection{Exact step table}
+
+Each row below records the exact equation
+\begin{equation*}
+  5\,\Orbit_7(n)+1=2^{t_n}\,\Orbit_7(n+1),
+\end{equation*}
+with $t_n=\vtwo{5\,\Orbit_7(n)+1}$.
+
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$n$ & $\Orbit_7(n)$ & $5\Orbit_7(n)+1$ & $t_n$ & $\Orbit_7(n+1)$ \\
+\midrule
+0 & 7 & 36 & 2 & 9 \\
+1 & 9 & 46 & 1 & 23 \\
+2 & 23 & 116 & 2 & 29 \\
+3 & 29 & 146 & 1 & 73 \\
+4 & 73 & 366 & 1 & 183 \\
+5 & 183 & 916 & 2 & 229 \\
+6 & 229 & 1146 & 1 & 573 \\
+7 & 573 & 2866 & 1 & 1433 \\
+8 & 1433 & 7166 & 1 & 3583 \\
+9 & 3583 & 17916 & 2 & 4479 \\
+10 & 4479 & 22396 & 2 & 5599 \\
+11 & 5599 & 27996 & 2 & 6999 \\
+12 & 6999 & 34996 & 2 & 8749 \\
+13 & 8749 & 43746 & 1 & 21873 \\
+14 & 21873 & 109366 & 1 & 54683 \\
+15 & 54683 & 273416 & 3 & 34177 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The divisibility checks are literal:
+\begin{align*}
+  36&=4\cdot9, & 46&=2\cdot23, & 116&=4\cdot29, \\
+  146&=2\cdot73, & 366&=2\cdot183, & 916&=4\cdot229, \\
+  1146&=2\cdot573, & 2866&=2\cdot1433, & 7166&=2\cdot3583, \\
+  17916&=4\cdot4479, & 22396&=4\cdot5599, & 27996&=4\cdot6999, \\
+  34996&=4\cdot8749, & 43746&=2\cdot21873, & 109366&=2\cdot54683, \\
+  273416&=8\cdot34177.
+\end{align*}
+
+\subsection{Step weights}
+
+Reading the third column from the table gives the exact weight word
+\begin{equation*}
+  t_0,\dots,t_{15}
+  =2,1,2,1,1,2,1,1,1,2,2,2,2,1,1,3.
+\end{equation*}
+The first fifteen weights, for $n<15$, are all at most $2$.  The first
+weight of size at least $3$ occurs at $n=15$ and equals $3$ exactly.
+
+\begin{lemma}[First big step]\label{sup-lem:first-big}
+For every $n<15$, $t_n\le2$, and
+\begin{equation*}
+  t_{15}=3.
+\end{equation*}
+Consequently the first step of weight at least $3$ is unique and is
+the step from depth $15$ to depth $16$.
+\end{lemma}
+
+\begin{proof}
+The first statement is the inspection of the table above.  The
+uniqueness follows because all earlier weights are at most $2$ and the
+weight at depth $15$ is $3$.
+\end{proof}
+
+\subsection{Prefix ledger}
+
+Let $\wordWeight_n$ be the prefix weight after $n$ steps and let
+$\wordA_n$ be the word molecule of the exact prefix.  The table below
+repeats the main-paper ledger with the exact prefix word displayed.
+
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}rlrrr@{}}
+\toprule
+$n$ & prefix word & $t_n$ & $\wordWeight_n$ & $\wordA_n$ \\
+\midrule
+0 & $[]$ & -- & 0 & 0 \\
+1 & $[2]$ & 2 & 2 & 1 \\
+2 & $[2,1]$ & 1 & 3 & 9 \\
+3 & $[2,1,2]$ & 2 & 5 & 53 \\
+4 & $[2,1,2,1]$ & 1 & 6 & 297 \\
+5 & $[2,1,2,1,1]$ & 1 & 7 & 1549 \\
+6 & $[2,1,2,1,1,2]$ & 2 & 9 & 7873 \\
+7 & $[2,1,2,1,1,2,1]$ & 1 & 10 & 39877 \\
+8 & $[2,1,2,1,1,2,1,1]$ & 1 & 11 & 200409 \\
+9 & $[2,1,2,1,1,2,1,1,1]$ & 1 & 12 & 1004093 \\
+10 & $[2,1,2,1,1,2,1,1,1,2]$ & 2 & 14 & 5024561 \\
+11 & $[2,1,2,1,1,2,1,1,1,2,2]$ & 2 & 16 & 25139189 \\
+12 & $[2,1,2,1,1,2,1,1,1,2,2,2]$ & 2 & 18 & 125761481 \\
+13 & $[2,1,2,1,1,2,1,1,1,2,2,2,2]$ & 2 & 20 & 629069549 \\
+14 & $[2,1,2,1,1,2,1,1,1,2,2,2,2,1]$ & 1 & 21 & 3146396321 \\
+15 & $[2,1,2,1,1,2,1,1,1,2,2,2,2,1,1]$ & 1 & 22 & 15734078757 \\
+16 & $[2,1,2,1,1,2,1,1,1,2,2,2,2,1,1,3]$ & 3 & 25 & 78674588089 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Every row is an instance of the exact word-orbit identity
+\begin{equation*}
+  2^{\wordWeight_n}\,\Orbit_7(n)=5^n\cdot7+\wordA_n.
+\end{equation*}
+For example, the $n=16$ row reads
+\begin{equation*}
+  2^{25}\cdot34177=5^{16}\cdot7+78674588089.
+\end{equation*}
+This identity is a theorem in the string-flow layer; it is not a
+finite regression fact and does not use \texttt{native\_decide}.
+
+\subsection{Why explicit rewriting}
+
+The finite base is deliberately expanded by explicit rewriting instead
+of decision procedures.  A \texttt{native\_decide} certificate would
+move the arithmetic into the code-generation trust boundary.  The
+explicit form keeps every multiplication and division visible and lets
+\texttt{lake build} check the chain without any hidden computation.
+The Lean statement
+\texttt{fullOrbitIter\_\allowbreak prefix\_\allowbreak expand}
+is a conjunction of equalities of the form
+\begin{verbatim}
+fullOrbitIter 0 = 7 /\ fullOrbitIter 1 = 9 /\
+fullOrbitIter 2 = 23 /\ ... /\ fullOrbitIter 16 = 34177
+\end{verbatim}
+
+\subsection{Use in the segment exclusions}
+
+The finite base is used in exactly two ways.
+
+First, the $d=3$ survivor produces a candidate first big step of
+weight $6$ at depth $j+4$.  By the finite base, the first big step of
+the orbit of $7$ occurs at depth $15$ and has weight $3$, not $6$.
+The Lean statement
+\texttt{candidate\_\allowbreak first\_\allowbreak big\_\allowbreak
+step\_\allowbreak weight\_\allowbreak ne\_\allowbreak three} turns this
+into a contradiction.
+
+Second, the $d\ge4$ branches produce a candidate first big step of
+weight at least $5$, or reduce to the $e=3$, $j=17$ residue
+exclusions.  A first big step of weight at least $5$ cannot occur at
+depth $15$, where the true weight is $3$, and cannot occur before it,
+where all weights are at most $2$; if it occurred later, the true
+depth-$15$ step would already be first.  The Lean statement
+\texttt{candidate\_\allowbreak first\_\allowbreak big\_\allowbreak
+step\_\allowbreak weight\_\allowbreak ge\_\allowbreak five} records this
+case.
+
+\subsection{First big step uniqueness}
+
+The uniqueness lemma has the following Lean shape.
+\begin{verbatim}
+theorem first_big_step_unique (n : Nat)
+    (hsmall : forall m : Nat, m < n ->
+      twoValuation (5 * fullOrbitIter m + 1) <= 2)
+    (hbig : 3 <= twoValuation (5 * fullOrbitIter n + 1)) :
+    n = 15 /\ twoValuation (5 * fullOrbitIter n + 1) = 3
+\end{verbatim}
+
+\subsection{Related finite facts}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{fullOrbitIter\_\allowbreak prefix\_\allowbreak expand}:
+  the seventeen exact values.
+\item \texttt{fullOrbit\_\allowbreak prefix\_\allowbreak step\_\allowbreak
+  weights}: the exact weights for $n<16$.
+\item \texttt{fullOrbit\_\allowbreak first\_\allowbreak t\_\allowbreak
+  ge3\_\allowbreak is\_\allowbreak exactly\_\allowbreak 3}: the first
+  big step is at depth $15$ with weight $3$.
+\item \texttt{first\_\allowbreak big\_\allowbreak step\_\allowbreak
+  unique}: uniqueness of the first big step.
+\end{itemize}
+
+These four facts are the only output of the finite-prefix chapter that
+the unified core consumes.
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Statement & Status \\
+\midrule
+exact 17-state expansion & Lean: compiled \\
+exact step weights & Lean: compiled \\
+first big step at depth 15 with weight 3 & Lean: compiled \\
+first big step unique & Lean: compiled \\
+no \texttt{native\_decide} in the chain & verified by inspection \\
+\bottomrule
+\end{tabular}
+\end{center}

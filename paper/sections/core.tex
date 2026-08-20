@@ -1,0 +1,723 @@
+\section{The unified core}\label{sec:core}
+
+\subsection{Block-head candidate parameterisation}
+
+Let
+\begin{equation*}
+  r=\frac{A_j+5^j q}{2^{\wordWeight_j}}
+\end{equation*}
+be a block-head state.  The unified core writes the predecessor
+candidate in the form
+\begin{equation*}
+  x=2^{e-1}g+\delta\,5^{j-1},
+\qquad g=\Orbit_7(j-1),
+\end{equation*}
+where $e\ge2$ is the incoming step weight, $\delta\in\{1,3\}$ is the
+reset parameter, and the reset step has weight $t\in\{1,2\}$.  The exact
+relations are:
+\begin{enumerate}[leftmargin=*]
+\item the reset equation
+  $\ResetWindow(j,k_0,t,\delta,s)$ fixes $s,j,k_0,t,\delta$;
+\item the first-block terminal equation gives
+  $s-1=2^{e-1}g$;
+\item the candidate satisfies
+  $x=2^{e-1}g+\delta 5^{j-1}$.
+\end{enumerate}
+
+These statements are formalised in the Lean bridge module
+\texttt{UnifiedCoreBridge.lean}: the reset-predecessor lemma, the
+candidate parameterisation, and the first-block terminal identity.
+
+\subsection{Segment-length exclusions}
+
+\begin{lemma}[Segment-length exclusions]\label{lem:segments}
+Let $d$ be the length of the full-orbit segment from $g$ to the
+candidate $x$.  Then $d\ne1$, $d\ne2$, $d\ne3$, and $d\ge4$ is
+impossible.  Hence the candidate family is empty.
+\end{lemma}
+
+\begin{remark}[Status of \Cref{lem:segments}]
+The mathematical proof is closed.  The Lean side has compiled the
+$d=1$, $d=2$, $d=3$, and $d\ge4$ exclusions, together with the
+$e=3$, $j=17$ modular exclusions.
+\end{remark}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Statement & Math & Lean \\
+\midrule
+Candidate parameterisation & proven & compiled \\
+Full-orbit to candidate derivation & proven & pending \\
+Reset-head predecessor & proven & compiled \\
+First-block terminal equation & proven & compiled \\
+$d=1$ exclusion & proven & compiled \\
+$d=2$ exclusion & proven & compiled \\
+$d=3$ family exclusion & proven & compiled \\
+$d\ge4$ exclusion & proven & compiled \\
+Unified-core final inequality & proven & pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Word rigidity and the first block}
+
+The full-orbit reachability of the block head forces the first block to
+have the rigid shape
+\begin{equation*}
+  y\longrightarrow x\longrightarrow r_j\longrightarrow z
+  \longrightarrow w,
+\end{equation*}
+with $k_0=0$ and the first-block terminal equation
+\begin{equation*}
+  s-1=2^{e-1}g.
+\end{equation*}
+The Lean side has compiled the first-block terminal identity and the
+candidate parameterisation.  The complete derivation from the
+block-head premises and $\FullOrbit(r)$ to this candidate
+parameterisation is mathematically closed but is still marked as Lean
+pending.
+
+\subsection{The q0 interval and block-head identity}
+
+The block-head numerator satisfies the exact identity
+\begin{equation*}
+  A_j+5^jq=2^L\left(B+\delta5^j\right),
+\qquad 0<B<5^j,\quad A_j<5^j,
+\end{equation*}
+which forces
+\begin{equation*}
+  q=m+\delta\,2^L,\qquad m<2^L.
+\end{equation*}
+This is the explicit $q_0$ form.  Under the reset equation, the same
+numerator has the block-head form
+\begin{equation*}
+  A_j+5^jq
+    =2^{W_p}\left(5^{k+1}s-4+\delta5^j\right),
+\end{equation*}
+which is the block-head identity of a reset.  The interval
+condition
+\begin{equation*}
+  2^{W_p}\le q<2^{W_j}
+\end{equation*}
+is equivalent to the block-head bounds
+\begin{equation*}
+  5^j\le2^t r_j,\qquad r_j<5^j,
+\end{equation*}
+by the $q_0$-interval criterion.  These three statements are
+compiled.
+
+\subsection{Segment equations}
+
+Let $u_1,\dots,u_d$ be the step weights of the full-orbit segment from
+$g=\Orbit_7(j-1)$ to $x=\Orbit_7(j-1+d)$, and let
+$W=u_1+\cdots+u_d$.  The exact segment equation is
+\begin{equation*}
+  2^{W+e-1}g+2^W\delta5^{j-1}
+    =5^d\,g+\sum_{i=0}^{d-1}2^{W_i}5^{d-1-i},
+\end{equation*}
+where $W_i$ is the prefix weight inside the segment, $W=W_d$, and $e$
+is the incoming step weight.  This is the candidate form of the Lean
+equation
+\begin{equation*}
+  2^W\,x=5^d\,g+\wordA(w)
+\end{equation*}
+obtained by substituting $x=2^{e-1}g+\delta5^{j-1}$.
+
+The derivation is direct: the segment word $w$ has length $d$ and maps
+$g$ to $x$, so the exact word-orbit identity gives
+$2^Wx=5^dg+\wordA(w)$.  Substitution of the candidate parameterisation
+is exactly the segment-candidate equation formalised in Lean.  In the
+special cases
+$d=1$ and $d=2$, the word molecules are $\wordA=1$ and
+$\wordA=5+2^{u_1}$.
+
+For $d=1$ the equation reduces to
+\begin{equation*}
+  5g+1=2^{1+4a}x,
+\end{equation*}
+which is impossible by the size bound $g<5^{j-1}/4$.  For $d=2$ the
+surviving branch forces the two modular equations
+\begin{equation*}
+  5^{j-1}\equiv6\pmod{17},\qquad
+  5^{j-1}\equiv45\pmod{256},
+\end{equation*}
+which contradict each other modulo $16$.  For $d=3$ the only surviving
+family has first big step at depth $j+4$ with weight $6$, contradicting
+the finite base.  For $d\ge4$, the first big step is either at depth
+$j-2$ with weight $3$, or later with weight at least $5$, again
+contradicting the finite base.
+
+The orbit-level $d=1$ and $d=2$ exclusions are compiled in
+\texttt{UnifiedCoreBridge.lean}.
+
+\subsection{Detailed exclusion arguments}
+
+\paragraph{$d=1$.}
+The segment equation is
+\begin{equation*}
+  5g+1=2^{1+4a}\,(2^{e-1}g+\delta5^{j-1}).
+\end{equation*}
+For $e\ge3$ or $a\ge1$, the coefficient $2^{e+4a}$ is at least $8$,
+while the right-hand side contains a positive multiple of
+$2^{1+4a}\delta5^{j-1}$, forcing a contradiction with the size bound
+$g<5^{j-1}/4$.  The only remaining case is $e=2,a=0$, which gives
+\begin{equation*}
+  g+1=2\delta\,5^{j-1},
+\end{equation*}
+so $g\ge2\cdot5^{j-1}-1$ for $\delta\ge1$, again contradicting
+$g<5^{j-1}/4$.
+
+\paragraph{$d=2$.}
+The size constraint $2^{1+4a}\delta\le24$ forces $a=0$.  The segment
+equation is
+\begin{equation*}
+  (2^{u_1+e}-25)g+2^{u_1+1}\delta5^{j-1}=5+2^{u_1}.
+\end{equation*}
+The only surviving branch is $\delta=1$, $e=2$, $u_1=1$; substituting
+into the segment equation gives
+\begin{equation*}
+  (8-25)g+4\cdot5^{j-1}=7,
+\end{equation*}
+hence
+\begin{equation*}
+  17g=4\cdot5^{j-1}-7,
+\end{equation*}
+hence $j-1\equiv3\pmod{16}$.  The candidate congruence
+$x\equiv743\pmod{1280}$ then forces
+\begin{equation*}
+  5^{j-1}\equiv45\pmod{256},
+\end{equation*}
+so $j-1\equiv7\pmod{64}$, contradicting $j-1\equiv3\pmod{16}$.
+
+\subsection{The $d=2$ survivor in detail}
+
+The survivor equations are
+\begin{equation*}
+  17g=4\cdot5^{j-1}-7,\qquad
+  x\equiv743\pmod{1280},\qquad x=2g+5^{j-1}.
+\end{equation*}
+Modulo $17$, the first equation gives $4\cdot5^{j-1}\equiv7$, so
+\begin{equation*}
+  5^{j-1}\equiv6\pmod{17}.
+\end{equation*}
+Since $5^3\equiv6\pmod{17}$ and the order of $5$ modulo $17$ is $16$,
+we get $j-1\equiv3\pmod{16}$.
+
+Eliminating $g$ gives
+\begin{equation*}
+  17x=25\cdot5^{j-1}-14,
+\end{equation*}
+so $x\equiv743\pmod{1280}$ forces
+\begin{equation*}
+  25\cdot5^{j-1}\equiv1125\pmod{1280}.
+\end{equation*}
+Dividing by $5$ and multiplying by the inverse of $5$ modulo $256$
+reduces this to
+\begin{equation*}
+  5^{j-1}\equiv45\pmod{256}.
+\end{equation*}
+Since $5^7\equiv45\pmod{256}$ and the order of $5$ modulo $256$ is
+$64$, we get $j-1\equiv7\pmod{64}$.  The two congruences contradict
+each other modulo $16$.
+
+\paragraph{$d=3$.}
+The remaining family is
+\begin{equation*}
+  t_j=2,\quad \delta=1,\quad e=2,\quad u_1=u_2=1,\quad a=0,
+\end{equation*}
+so $u_3=1$; the segment equation becomes
+\begin{equation*}
+  16g+8\cdot5^{j-1}=125g+39,
+\end{equation*}
+which gives
+\begin{equation*}
+  g=\frac{8\cdot5^{j-1}-39}{109},\qquad
+  j-1\equiv923\pmod{1728}.
+\end{equation*}
+The word shape is
+\begin{equation*}
+  g\to x\to r_j\to z\to w,
+\end{equation*}
+and the first step of weight at least $3$ is the final step at depth
+$j+4$ with weight $6$.  The finite base gives first big weight $3$ at
+depth $15$, a contradiction.
+
+\paragraph{$d\ge4$.}
+The first big step is one of three types.  If $e\ge3$, the first big
+step is $g_{\mathrm{prev}}\to g$; the finite base forces $e=3$ and
+$j=17$, and the candidate residue modulo $640$ or $1280$ is
+excluded.  If $e=2$ and $a\ge1$, the first big step is $y\to x$ with
+weight $1+4a\ge5$.  If $e=2$ and $a=0$, the first big step is
+$z\to w$ with weight $5$ or $6$.  All three contradict the finite base.
+
+\subsection{Branch ledger}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.11\textwidth}p{0.42\textwidth}p{0.38\textwidth}@{}}
+\toprule
+Case & Surviving branch & Contradiction \\
+\midrule
+$d=1$ & $e=2$, $a=0$ &
+  $g=2\cdot5^{j-1}-1$ vs.\ $g<5^{j-1}/4$ \\
+$d=2$ & $\delta=1$, $e=2$, $u_1=1$ &
+  $j-1\equiv3\pmod{16}$ and $j-1\equiv7\pmod{64}$ \\
+$d=3$ & $t_j=2$, $\delta=1$, $e=2$, $u_1=u_2=1$, $a=0$ &
+  first big step at depth $j+4$ has weight $6$, not $3$ \\[2pt]
+$d\ge4$ & three big-step types &
+  weight $\ge5$, or residue exclusion for $e=3$, $j=17$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Each row records the exact contradiction used in the mathematical
+proof.  The Lean names for the individual exclusions are listed in
+the status tables above.
+
+\subsection{Modular arithmetic ledger}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.10\textwidth}p{0.56\textwidth}p{0.28\textwidth}@{}}
+\toprule
+Case & Congruence and role & Lean \\
+\midrule
+$d=1$ & no congruence; the size bound $g<5^{j-1}/4$ suffices &
+  \texttt{d1\_\allowbreak exclusion} \\
+$d=2$ & $5^{j-1}\equiv6\pmod{17}$ and $x\equiv743\pmod{1280}$ force
+  $j-1\equiv3\pmod{16}$ and $5^{j-1}\equiv45\pmod{256}$ &
+  \texttt{d2\_\allowbreak exclusion} \\
+$d=3$ & $j-1\equiv923\pmod{1728}$ fixes the unique surviving family &
+  \texttt{d3\_\allowbreak family\_\allowbreak big\_\allowbreak
+  weight\_\allowbreak excluded} \\
+$d\ge4$ & the $e=3$, $j=17$ branch is excluded by residues modulo
+  $640$ or $1280$ &
+  \texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak t1\_\allowbreak
+  excluded}, \texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak
+  t2\_\allowbreak delta3\_\allowbreak excluded} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These congruences are exact and are the only modular inputs needed
+after the size estimates; they are proved inside the corresponding
+segment exclusions.
+
+\subsection{Worked modular ledger}
+
+The three congruence families used by the exclusions are:
+\begin{align*}
+  5^{j-1}&\equiv6\pmod{17}
+  &&\Longrightarrow j-1\equiv3\pmod{16},\\
+  5^{j-1}&\equiv45\pmod{256}
+  &&\Longrightarrow j-1\equiv7\pmod{64},\\
+  5^{j-1}&\equiv73\pmod{109}
+  &&\text{for the }d=3\text{ family}.
+\end{align*}
+The first two follow from $5^3\equiv6\pmod{17}$ and
+$5^7\equiv45\pmod{256}$ with the respective orders $16$ and $64$.
+The third is the integrality condition for
+\begin{equation*}
+  g=\frac{8\cdot5^{j-1}-39}{109}.
+\end{equation*}
+Its consistency is checked by repeated squaring modulo $109$:
+\begin{center}
+\small
+\begin{tabular}{@{}rrrr@{}}
+\toprule
+$k$ & $5^k\bmod 109$ & $k$ & $5^k\bmod 109$ \\
+\midrule
+1 & 5 & 64 & 97 \\
+2 & 25 & 128 & 35 \\
+4 & 80 & 256 & 26 \\
+8 & 78 & 512 & 22 \\
+16 & 89 & 923 & 73 \\
+32 & 73 & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+The last entry uses
+\begin{equation*}
+  923=512+256+128+16+8+2+1
+\end{equation*}
+and the corresponding product of residues, giving
+\begin{equation*}
+  5^{923}\equiv73\pmod{109},
+\qquad
+  8\cdot73=584\equiv39\pmod{109}.
+\end{equation*}
+These checks are part of the compiled exclusions; the paper records
+them here so that the modular layer can be read without a calculator.
+
+\subsection{Block-head candidate exclusion}
+
+The segment-length exclusions show that no candidate
+\begin{equation*}
+  x=2^{e-1}g+\delta5^{j-1}
+\end{equation*}
+can satisfy the full set of constraints coming from
+\texttt{All36\_20PremisesNoHge} and $\FullOrbit(r)$.  Hence no block
+head satisfies the candidate family of document 36.30.7.  This is the
+mathematical closure of the unified core's candidate layer.  The Lean
+side has compiled the generic exclusion theorems, while the complete
+derivation from the no-$H_{\ge}$ premises to those exclusions remains
+pending.
+
+\subsection{Proof outline}
+
+\begin{enumerate}[leftmargin=*]
+\item Extract the block head
+  $r=(A_j+5^jq)/2^{\wordWeight_j}$ from the no-$H_{\ge}$ premises.
+\item Use $\FullOrbit(r)$ to place the block head on the exact orbit of
+  $7$ and obtain the incoming weight $e$ and the state
+  $g=\Orbit_7(j-1)$.
+\item Parameterise the predecessor by
+  $x=2^{e-1}g+\delta5^{j-1}$.
+\item Write the exact segment equation for $d$ steps from $g$ to $x$.
+\item Exclude $d=1$, $d=2$, $d=3$, and $d\ge4$; hence the candidate
+  family is empty.
+\item Pass through the CRT candidate $r_{j,0}$ and the residue $y^*$ to
+  obtain the final valuation inequality.
+\end{enumerate}
+
+\subsection{From candidate emptiness to the final inequality}
+
+The exclusion of every candidate block head leaves the CRT candidate
+$r_{j,0}$ and the terminal residue $y^*$.  The terminal inequality
+\begin{equation*}
+  \vtwo{5^{L+3}w_{\mathrm{term}}+1}\le H_s-2
+\end{equation*}
+is equivalent to $y^*\ne0$, and the remaining Lean statement
+\texttt{unified\_core\_final\_no\_hge} is exactly this valuation inequality
+under the no-$H_{\ge}$ premises and the full-orbit reachability of the
+block head.  The mathematical layer is closed; the Lean statement is
+pending.
+
+\subsection{The remaining Lean statement}
+
+The exact statement of the pending theorem is:
+\begin{verbatim}
+theorem unified_core_final_no_hge
+    (j Wp Wj q Aj A_s s W_s r_s L H_s : Nat)
+    (weight : Nat -> Nat) (r : Nat)
+    (hPrem : All36_20PremisesNoHge
+       j Wp Wj q Aj A_s s W_s r_s L H_s weight)
+    (hrj : r = (Aj + 5 ^ j * q) / 2 ^ Wj)
+    (hReach : S6Audit.FullOrbitFrom7 r)
+    (hReset : exists s0 k t delta r_prev : Nat,
+      S6Audit.ResetHeadEq s0 j k t delta r /\
+        s0 * 5 ^ k = r_prev + 1)
+    (hH : 2 <= H_s) :
+    twoValuation (5 ^ (L + 3) * wTerminal L r_s + 1) <= H_s - 2 := by
+  sorry
+\end{verbatim}
+
+The reset premise is arithmetic, not a general-orbit premise: it
+records the exact reset equation and the previous-terminal equation
+$s_0\cdot5^k=r_{\mathrm{prev}}+1$.  The block head is required to lie
+on the real accelerated orbit by $\FullOrbit(r)$.
+
+The premises are: the no-$H_{\ge}$ record, the block-head equality
+$r=(A_j+5^jq)/2^{W_j}$, the full-orbit reachability of $r$, and the
+domain condition $2\le H_s$.  The conclusion is the terminal valuation
+inequality of \Cref{thm:core}.  This is the single \texttt{sorry}
+remaining in the unified-core audit file.
+
+\subsection{The CRT candidate and the terminal residue}
+
+Let $n=s-j$ and $\Delta=W_s-W_j$.  The block molecule $B$ of the suffix
+satisfies
+\begin{equation*}
+  3B+2^\Delta\le 3\cdot5^n-2\cdot4^n,
+\end{equation*}
+and the CRT candidate $r_{j,0}$ is the least nonnegative solution of
+the exact integer equation
+\begin{equation*}
+  3\cdot5^n\,r_{j,0}+3B+2^\Delta
+    =2^{\Delta+L+4}\left(u+m'\,2^{H_s-1}\right),
+\end{equation*}
+where $u$ is the least nonnegative residue of
+$-5^{-(L+3)}$ modulo $2^{H_s-1}$ and $m'\ge0$.
+
+The terminal odd part is
+\begin{equation*}
+  w_{\mathrm{term}}=\frac{3r_s+1}{2^{L+4}},
+\end{equation*}
+and the residue
+\begin{equation*}
+  y^*=
+  -\left(w_{\mathrm{term}}+5^{-(L+3)}\right)
+  \left(3\cdot5^s\right)^{-1}
+  \pmod{2^{H_s-1}}
+\end{equation*}
+is the obstruction to the final valuation inequality.  The Lean
+equivalences
+\begin{equation*}
+  \vtwo{5^{L+3}w_{\mathrm{term}}+1}\le H_s-2
+  \iff y^*\ne0
+\end{equation*}
+are proved in
+\texttt{terminal\_bound\_iff\_yStar\_ne\_zero}.  The remaining Lean
+statement \texttt{unified\_core\_final\_no\_hge} is the passage from
+the no-$H_{\ge}$ premises and $\FullOrbit(r)$ to this inequality.
+
+\subsection{Derivation of the CRT equation}
+
+The CRT equation is not introduced as an independent congruence; it is
+the failure equation of the terminal valuation written in block
+coordinates.  Let $n=s-j$ and $\Delta=W_s-W_j$, and let $B$ be the
+block molecule of the suffix of length $L$.  The suffix is a valid
+word from $r_{j,0}$ to $r_s$, so the exact word-orbit identity gives
+\begin{equation*}
+  2^{\Delta}\,r_s=5^n\,r_{j,0}+B.
+\end{equation*}
+The terminal odd part is defined by
+\begin{equation*}
+  w_{\mathrm{term}}=\frac{3r_s+1}{2^{L+4}},
+\end{equation*}
+so, multiplying the tail equation by $3\cdot2^{\Delta}$ and adding
+$2^{\Delta}$,
+\begin{equation*}
+  2^{\Delta+L+4}\,w_{\mathrm{term}}
+    =2^{\Delta}(3r_s+1)
+    =3\cdot5^n\,r_{j,0}+3B+2^{\Delta}.
+\end{equation*}
+This single identity is the bridge between the orbit equation and the
+valuation inequality.
+
+The valuation inequality
+\begin{equation*}
+  \vtwo{5^{L+3}w_{\mathrm{term}}+1}\le H_s-2
+\end{equation*}
+fails exactly when
+\begin{equation*}
+  5^{L+3}w_{\mathrm{term}}+1\equiv0\pmod{2^{H_s-1}},
+\end{equation*}
+i.e.\ exactly when
+\begin{equation*}
+  w_{\mathrm{term}}\equiv-5^{-(L+3)}
+  \pmod{2^{H_s-1}}.
+\end{equation*}
+The inverse exists because $5$ is odd.  Let $u$ be the least
+nonnegative residue of $-5^{-(L+3)}$ modulo $2^{H_s-1}$.  Substituting
+the failure congruence into the identity above gives the CRT equation
+\begin{equation*}
+  3\cdot5^n\,r_{j,0}+3B+2^{\Delta}
+    =2^{\Delta+L+4}\left(u+m'\,2^{H_s-1}\right)
+\end{equation*}
+for some integer $m'\ge0$.  This is the exact form used in
+\texttt{rj0\_\allowbreak spec\_\allowbreak eq}.
+
+The terminal residue $y^*$ is the normalised failure residue
+\begin{equation*}
+  y^*=
+  -\left(w_{\mathrm{term}}+5^{-(L+3)}\right)
+  \left(3\cdot5^s\right)^{-1}
+  \pmod{2^{H_s-1}}.
+\end{equation*}
+By construction $y^*=0$ if and only if the failure congruence holds,
+so the valuation inequality is equivalent to $y^*\ne0$.  The factor
+$\left(3\cdot5^s\right)^{-1}$ is the normalisation inherited from the
+orbit equation for the terminal state; it is invertible modulo
+$2^{H_s-1}$ because both $3$ and $5^s$ are odd.  The equivalence is
+\texttt{terminal\_\allowbreak bound\_\allowbreak iff\_\allowbreak
+yStar\_\allowbreak ne\_\allowbreak zero}.
+
+\subsection{Size conditions}
+
+The sufficient direction uses two inverse-size conditions.  The first
+is the block-tail bound
+\begin{equation*}
+  3B+2^\Delta\le 3\cdot5^n-2\cdot4^n,
+\end{equation*}
+and the second is the base-size condition
+\begin{equation*}
+  3\cdot5^s+\left(3\cdot5^n-2\cdot4^n\right)
+    \le 2^{\Delta+L+4}\,u,
+\end{equation*}
+which together imply $r_{j,0}\ge5^j$.  This is proved in Lean by
+\texttt{rj0\_ge\_of\_size\_conditions\_no\_hge}.  The full equivalence
+through the CRT lift remains part of the unified core; it is not
+claimed as an independent step.
+
+\subsection{Why the size conditions imply $r_{j,0}\ge5^j$}
+
+The two size conditions are exactly what the CRT equation needs in
+order to lift the candidate above $5^j$.  The first condition
+\begin{equation*}
+  3B+2^{\Delta}\le3\cdot5^n-2\cdot4^n
+\end{equation*}
+controls the correction term, and the second condition
+\begin{equation*}
+  3\cdot5^s+\left(3\cdot5^n-2\cdot4^n\right)
+    \le2^{\Delta+L+4}\,u
+\end{equation*}
+controls the leading term.  From the CRT equation,
+\begin{equation*}
+  3\cdot5^n\,r_{j,0}
+    =2^{\Delta+L+4}\left(u+m'2^{H_s-1}\right)-3B-2^{\Delta}.
+\end{equation*}
+The right-hand side is at least
+\begin{equation*}
+  2^{\Delta+L+4}\,u-\left(3\cdot5^n-2\cdot4^n\right),
+\end{equation*}
+and the second condition bounds this below by $3\cdot5^s$.  Therefore
+\begin{equation*}
+  r_{j,0}\ge\frac{3\cdot5^s}{3\cdot5^n}=5^{s-n}=5^j,
+\end{equation*}
+because $n=s-j$.  This is the arithmetic content of
+\texttt{rj0\_\allowbreak ge\_\allowbreak of\_\allowbreak
+size\_\allowbreak conditions\_\allowbreak no\_\allowbreak hge}; the Lean
+statement packages the divisibility and nonnegativity facts that the
+paper suppresses.
+
+The lower bound $r_{j,0}\ge5^j$ is then compared with the interval
+constraints carried by the no-$H_{\ge}$ premises.  The passage from
+the block-head interval to the valuation inequality is exactly the
+remaining Lean bridge \texttt{unified\_\allowbreak core\_\allowbreak
+final\_\allowbreak no\_\allowbreak hge}; the paper does not claim it as
+closed.
+
+\subsection{Relation to source documents}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.20\textwidth}p{0.36\textwidth}p{0.38\textwidth}@{}}
+\toprule
+Document & Paper & Lean \\
+\midrule
+36.30.22 & candidate parameterisation & \texttt{UnifiedCoreBridge} compiled \\
+36.30.23 & segment exclusions & \texttt{FinitePrefix} and \\
+         &                      & \texttt{UnifiedCoreBridge}; compiled \\
+36.30.7 & block-head candidate exclusion & pending full derivation \\
+36.20 & final valuation inequality & \texttt{UnifiedCoreAudit} pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{The finite base}
+
+The full orbit is explicitly expanded for the first $17$ states:
+\begin{equation*}
+  7,9,23,29,73,183,229,573,1433,3583,4479,5599,6999,8749,21873,54683,34177.
+\end{equation*}
+The first step of weight $\ge3$ is the step from depth $15$ to depth
+$16$, and its weight is exactly $3$.  This is proved in
+\texttt{FinitePrefix.lean} by explicit rewriting, with no
+\texttt{native\_decide}.
+
+The expansion stops at 17 states because every exclusion either uses
+the first big step (depth $15$, weight $3$) or reduces the branch to
+$j=17$.  No later full-orbit data is needed.
+
+\subsection{How the finite base is used}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.42\textwidth}p{0.32\textwidth}p{0.20\textwidth}@{}}
+\toprule
+Finite fact & Lean name & Used in \\
+\midrule
+first 17 states expanded &
+  \texttt{fullOrbitIter\_\allowbreak prefix\_expand} & all exclusions \\
+step weights for $n<16$ &
+  \texttt{fullOrbit\_\allowbreak prefix\_step\_weights} & all exclusions \\
+first $t\ge3$ is at $n=15$ and equals $3$ &
+  \texttt{fullOrbit\_\allowbreak first\_t\_ge3\_is\_exactly\_3} & $d=3$, $d\ge4$ \\
+first big step is unique in the prefix &
+  \texttt{first\_\allowbreak big\_step\_unique} & $d=3$, $d\ge4$ \\
+candidate first big weight $\ne3$ &
+  \texttt{candidate\_\allowbreak first\_\allowbreak big\_\allowbreak
+  step\_\allowbreak weight\_\allowbreak ne\_three} & $d=3$ \\
+candidate first big weight $\ge5$ &
+  \texttt{candidate\_\allowbreak first\_\allowbreak big\_\allowbreak
+  step\_\allowbreak weight\_\allowbreak ge\_five} & $d\ge4$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The finite base is used only to identify the first big step and its
+weight.  Every later step is exact arithmetic.  No probabilistic data
+or \texttt{native\_decide} enters the chain.
+
+\subsection{Final valuation inequality}
+
+\begin{theorem}[Unified core, mathematical form]\label{thm:core}
+Under the no-$H_{\ge}$ premises of document 36.20, the block-head
+reachability $\FullOrbit(r)$, and the domain condition $2\le H_s$, we
+have
+\begin{equation*}
+  \vtwo{5^{L+3}\,w_{\mathrm{term}}+1}\le H_s-2,
+\end{equation*}
+where $w_{\mathrm{term}}=(3r_s+1)/2^{L+4}$.
+\end{theorem}
+
+\begin{remark}[Formalisation status]
+\statusmath{}
+\statuspending{} for
+\texttt{UnifiedCoreAudit.unified\_core\_final\_no\_hge}.
+The Lean statement is the unique \texttt{sorry} in the unified-core
+audit file.
+The paper does not claim Lean closure of \Cref{thm:core}.
+\end{remark}
+
+\subsection{Corrected decisive window bound}
+
+The old arithmetic window bound
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+\delta 5^j}\le 2j+10
+\end{equation*}
+is false without reachability constraints: there is an arithmetic
+counterexample
+\begin{equation*}
+  (j,k_0,t,\delta,s)=(36,0,2,3,\,2^{83}-3\cdot5^{35})
+\end{equation*}
+with valuation $83>82$.  The corrected bound therefore carries the
+predicate $\ResetWindow(j,k_0,t,\delta,s)$, which fixes the same
+$j,k_0,t$ in the reset equation, the size bound, the previous-terminal
+reachability, and the full-orbit reachability of the reset head.
+
+\subsection{Proof-state ledger}
+
+The following matrix records the status of every layer of the main
+chain.  The columns are the mathematical status and the Lean status;
+the rows follow the dependency order of the proof.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.38\textwidth}p{0.18\textwidth}p{0.34\textwidth}@{}}
+\toprule
+Layer & Math & Lean \\
+\midrule
+word orbit identity & proven & compiled \\
+PMI identity and PMI-B budgets & proven & compiled \\
+finite-prefix base & proven & compiled \\
+candidate parameterisation & proven & compiled \\
+reset-head predecessor & proven & compiled \\
+first-block terminal equation & proven & compiled \\
+$d=1$ exclusion & proven & compiled \\
+$d=2$ exclusion & proven & compiled \\
+$d=3$ family exclusion & proven & compiled \\
+$d\ge4$ exclusion & proven & compiled \\
+CRT equation and candidate & proven & compiled \\
+terminal residue equivalence & proven & compiled \\
+size-condition lower bound & proven & compiled \\
+final valuation inequality & proven & pending \\
+cycle-word extraction and QB-8 split & proven & compiled \\
+corrected window bound & proven & compiled (conditional) \\
+failure-window contradiction & proven & compiled \\
+no-cycle bridge & proven & compiled (conditional) \\
+final assembly & proven & pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Two entries are pending: the final valuation inequality
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge} and the final assembly
+\texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak one\_\allowbreak
+diverges\_\allowbreak at\_\allowbreak 7}.  Every other row has a
+compiled Lean representative, with the conditional rows explicitly
+consuming the open inputs.  The matrix is kept in sync with the
+repository audit; it is not a substitute for the build.

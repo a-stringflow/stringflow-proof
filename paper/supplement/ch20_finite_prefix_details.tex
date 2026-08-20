@@ -1,0 +1,144 @@
+\section{Finite-prefix verification details}
+
+This chapter describes how the finite-prefix base is verified in
+Lean.  The emphasis is on the structure of the verification, not on a
+transcription of the file.
+
+\subsection{The exact expansion}
+
+The finite base is the conjunction
+\begin{equation*}
+  \Orbit_7(0)=7,\ \Orbit_7(1)=9,\ \dots,\ \Orbit_7(16)=34177.
+\end{equation*}
+In Lean this is the statement
+\texttt{fullOrbitIter\_\allowbreak prefix\_\allowbreak expand}.  The
+proof proceeds by unfolding the orbit definition and rewriting each
+step with the exact division
+\begin{equation*}
+  5\,\Orbit_7(n)+1=2^{t_n}\,\Orbit_7(n+1).
+\end{equation*}
+
+\subsection{Per-step table}
+
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$n$ & $\Orbit_7(n)$ & $5\Orbit_7(n)+1$ & $t_n$ & $\Orbit_7(n+1)$ \\
+\midrule
+0 & 7 & 36 & 2 & 9 \\
+1 & 9 & 46 & 1 & 23 \\
+2 & 23 & 116 & 2 & 29 \\
+3 & 29 & 146 & 1 & 73 \\
+4 & 73 & 366 & 1 & 183 \\
+5 & 183 & 916 & 2 & 229 \\
+6 & 229 & 1146 & 1 & 573 \\
+7 & 573 & 2866 & 1 & 1433 \\
+8 & 1433 & 7166 & 1 & 3583 \\
+9 & 3583 & 17916 & 2 & 4479 \\
+10 & 4479 & 22396 & 2 & 5599 \\
+11 & 5599 & 27996 & 2 & 6999 \\
+12 & 6999 & 34996 & 2 & 8749 \\
+13 & 8749 & 43746 & 1 & 21873 \\
+14 & 21873 & 109366 & 1 & 54683 \\
+15 & 54683 & 273416 & 3 & 34177 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Each row is an exact identity of the form
+\begin{equation*}
+  5x+1=2^t y.
+\end{equation*}
+The verification expands the left-hand side, evaluates the power of
+two, and checks the quotient; no numerical search is involved.
+
+\subsection{Prefix weights}
+
+The exact prefix weights are
+\begin{equation*}
+  0,2,3,5,6,7,9,10,11,12,14,16,18,20,21,22,25.
+\end{equation*}
+They are the partial sums of the exact step weights
+\begin{equation*}
+  2,1,2,1,1,2,1,1,1,2,2,2,2,1,1,3.
+\end{equation*}
+The Lean statement
+\texttt{fullOrbit\_\allowbreak prefix\_\allowbreak step\_\allowbreak
+weights} records the weight word.
+
+\subsection{First big step}
+
+\begin{lemma}
+For every $n<15$, $t_n\le2$, and $t_{15}=3$.
+\end{lemma}
+
+\begin{proof}
+The table gives $t_n\le2$ for $n<15$ and $t_{15}=3$ directly.
+\end{proof}
+
+The Lean statement
+\texttt{fullOrbit\_\allowbreak first\_\allowbreak t\_\allowbreak ge3\_
+\allowbreak is\_\allowbreak exactly\_\allowbreak 3} packages both
+claims:
+\begin{verbatim}
+theorem fullOrbit_first_t_ge3_is_exactly_3 :
+    (forall n : Nat, n < 15 ->
+      twoValuation (5 * fullOrbitIter n + 1) <= 2) /\
+    twoValuation (5 * fullOrbitIter 15 + 1) = 3
+\end{verbatim}
+
+\subsection{Uniqueness}
+
+The uniqueness statement is
+\begin{verbatim}
+theorem first_big_step_unique (n : Nat)
+    (hsmall : forall m : Nat, m < n ->
+      twoValuation (5 * fullOrbitIter m + 1) <= 2)
+    (hbig : 3 <= twoValuation (5 * fullOrbitIter n + 1)) :
+    n = 15 /\ twoValuation (5 * fullOrbitIter n + 1) = 3
+\end{verbatim}
+The proof is a case split on $n$: for $n<15$ the hypothesis
+\texttt{hbig} contradicts the table, for $n=15$ the table gives the
+weight, and for $n>15$ the depth-$15$ step would already be first.
+
+\subsection{Why explicit rewriting}
+
+The repository records the finite base with explicit rewriting rather
+than \texttt{native\_decide}.  The purpose is to keep the verification
+inside the kernel's reduction and rewrite machinery, so no
+code-generation step is trusted.  The paper's audit searches the
+main-chain files for \texttt{native\_decide}; the current count is
+zero.
+
+\subsection{Use in the exclusions}
+
+The finite base is used in exactly two ways:
+\begin{itemize}[leftmargin=*]
+\item the $d=3$ family needs a first big step of weight $6$, which is
+  excluded because the true first big step has weight $3$;
+\item the $d\ge4$ branches need a first big step of weight at least
+  $5$, also excluded by the same fact.
+\end{itemize}
+No later orbit value is used.
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Statement & Status \\
+\midrule
+\texttt{fullOrbitIter\_\allowbreak prefix\_\allowbreak expand} &
+  compiled \\
+\texttt{fullOrbit\_\allowbreak prefix\_\allowbreak step\_\allowbreak
+weights} & compiled \\
+\texttt{fullOrbit\_\allowbreak first\_\allowbreak t\_\allowbreak ge3\_
+\allowbreak is\_\allowbreak exactly\_\allowbreak 3} & compiled \\
+\texttt{first\_\allowbreak big\_\allowbreak step\_\allowbreak unique} &
+  compiled \\
+no \texttt{native\_decide} in the finite base & verified by inspection \\
+\bottomrule
+\end{tabular}
+\end{center}

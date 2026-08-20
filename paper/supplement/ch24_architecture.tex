@@ -1,0 +1,120 @@
+\section{Proof architecture and dependency diagrams}
+
+This chapter records the architecture of the proof as diagrams.  The
+diagrams are schematic: they show dependencies and statuses, not
+proof terms.
+
+\subsection{The layer diagram}
+
+\begin{verbatim}
+Layer 1: string-flow ledger
+  word, validity, weight, molecule, PMI
+
+Layer 2: finite base
+  explicit 17 states, first big step
+
+Layer 3: unified core
+  candidate parameterisation
+  segment exclusions d=1, d=2, d=3, d>=4
+  CRT candidate and terminal residue
+  final valuation inequality (pending in Lean)
+
+Layer 4: cycle bridge
+  cycle word extraction
+  QB-8 split
+  corrected window bound
+  failure window contradiction
+
+Layer 5: final assembly
+  no cycle -> unbounded
+  IsUnboundedOrbit 7 (pending)
+\end{verbatim}
+
+\subsection{File import graph}
+
+\begin{verbatim}
+FinitePrefix.lean
+  imports S6AuditStage1
+
+UnifiedCoreBridge.lean
+  imports FinitePrefix, UnifiedCoreAudit
+
+UnifiedCoreAudit.lean
+  imports S6Audit, S6AuditStage1, LteMacro
+
+CycleBridge.lean
+  imports BlockAutomaton, FinalStatement, S6AuditStage1,
+          PhOne, SurvExAudit, Td0Real
+
+DwdbDiv.lean
+  imports CycleBridge, UnifiedCoreAudit
+
+FinalStatement.lean
+  imports S6Audit, FBeta
+\end{verbatim}
+
+\subsection{Conditional interface graph}
+
+\begin{verbatim}
+unifiedCoreClosed (open)
+  -> decisiveWindowValuationBoundCorrected_of_unified_core
+       (compiled conditional)
+  -> failureWindowExistenceOfUnifiedCore
+       (compiled conditional)
+  -> failureWindowExistence (open)
+  -> windowBoundToNoCycle_of_failureWindowExistence
+       (compiled conditional)
+  -> dwdbDivFinalAssembly (compiled conditional)
+  -> five_x_plus_one_diverges_at_7 (pending)
+\end{verbatim}
+
+\subsection{Topological theorem order}
+
+\begin{enumerate}[leftmargin=*]
+\item word-orbit identity;
+\item PMI and PMI-B;
+\item finite prefix and first-big-step facts;
+\item reset-head predecessor and candidate parameterisation;
+\item segment equations and exclusions;
+\item CRT candidate, terminal residue, size lower bound;
+\item final valuation inequality (pending);
+\item cycle-word extraction and QB-8 split;
+\item reset block and reachability;
+\item corrected window bound (conditional);
+\item failure-window contradiction;
+\item no-cycle-to-unbounded lemma;
+\item final theorem (pending).
+\end{enumerate}
+
+\subsection{Status flow}
+
+\begin{verbatim}
+compiled facts
+  -> compiled facts
+  -> unified core (one pending Lean statement)
+  -> conditional bridge interfaces
+  -> final assembly (pending)
+\end{verbatim}
+
+\subsection{What the diagrams do not show}
+
+The diagrams show the dependency structure, not the proof size or the
+time taken to check a statement.  A node marked compiled may depend on
+hundreds of Mathlib lemmas; the diagrams record only the project-level
+dependencies that the manual tracks.
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.60\textwidth}p{0.34\textwidth}@{}}
+\toprule
+Node & Status \\
+\midrule
+layer 1--3 mathematics & proven \\
+layer 3 Lean final inequality & pending \\
+layer 4 cycle bridge & compiled (conditional) \\
+layer 5 final assembly & pending \\
+\bottomrule
+\end{tabular}
+\end{center}

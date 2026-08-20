@@ -1,0 +1,196 @@
+\section{Block-head candidate exclusion and the remaining bridge}
+
+This chapter consolidates the passage from the block-head candidate
+to the final valuation inequality.  It collects the exact identities
+that connect the segment exclusions, the CRT candidate, and the
+terminal residue.
+
+\subsection{The block-head candidate}
+
+The no-$H_{\ge}$ premises provide a block-head state of the form
+\begin{equation*}
+  r=\frac{A_j+5^jq}{2^{\wordWeight_j}}.
+\end{equation*}
+The unified core parameterises its predecessor by
+\begin{equation*}
+  x=2^{e-1}g+\delta5^{j-1},
+  \qquad g=\Orbit_7(j-1),
+\end{equation*}
+with $e\ge2$ and $\delta\in\{1,3\}$.
+
+\subsection{The q0 interval}
+
+The block-head numerator satisfies the exact identity
+\begin{equation*}
+  A_j+5^jq=2^L\left(B+\delta5^j\right),
+\qquad 0<B<5^j,\quad A_j<5^j.
+\end{equation*}
+Since $A_j<5^j$, the quotient structure forces
+\begin{equation*}
+  q=m+\delta\,2^L,
+  \qquad m<2^L.
+\end{equation*}
+This is \texttt{reset\_\allowbreak q0\_\allowbreak form}.  The interval
+condition
+\begin{equation*}
+  2^{W_p}\le q<2^{W_j}
+\end{equation*}
+is equivalent to the block-head bounds
+\begin{equation*}
+  5^j\le2^t r_j,\qquad r_j<5^j,
+\end{equation*}
+by \texttt{q0\_\allowbreak interval\_\allowbreak iff\_\allowbreak
+rj\_\allowbreak bound}.
+
+\subsection{The block-head identity}
+
+Under the reset equation, the same numerator has the block-head form
+\begin{equation*}
+  A_j+5^jq
+    =2^{W_p}\left(5^{k_0+1}s-4+\delta5^j\right).
+\end{equation*}
+This is \texttt{block\_\allowbreak head\_\allowbreak identity\_\allowbreak
+of\_\allowbreak reset}.  It is the exact algebra that connects the
+block ledger to the reset equation.
+
+\subsection{Candidate emptiness}
+
+The segment-length exclusions show that no candidate can satisfy the
+full constraints:
+\begin{enumerate}[leftmargin=*]
+\item $d=1$ is excluded by the size bound $g<5^{j-1}/4$;
+\item $d=2$ is excluded by the two congruences modulo $16$;
+\item $d=3$ is excluded by the first-big-step contradiction;
+\item $d\ge4$ is excluded by the finite base and the $e=3,j=17$
+  residues.
+\end{enumerate}
+Hence the candidate family is empty.  The corresponding Lean
+exclusions are compiled.
+
+\subsection{From emptiness to the CRT candidate}
+
+The exclusion layer leaves the CRT candidate $r_{j,0}$ and the
+terminal residue $y^*$.  Let
+\begin{equation*}
+  n=s-j,\qquad \Delta=W_s-W_j,
+\end{equation*}
+and let $B$ be the block molecule of the tail of length $L$.  The tail
+equation is
+\begin{equation*}
+  2^{\Delta}\,r_s=5^n\,r_{j,0}+B.
+\end{equation*}
+The terminal odd part is
+\begin{equation*}
+  w_{\mathrm{term}}=\frac{3r_s+1}{2^{L+4}},
+\end{equation*}
+and the terminal identity is
+\begin{equation*}
+  2^{\Delta+L+4}\,w_{\mathrm{term}}
+    =3\cdot5^n\,r_{j,0}+3B+2^{\Delta}.
+\end{equation*}
+
+\subsection{The terminal valuation}
+
+The final valuation inequality is
+\begin{equation*}
+  \vtwo{5^{L+3}w_{\mathrm{term}}+1}\le H_s-2.
+\end{equation*}
+It fails exactly when
+\begin{equation*}
+  w_{\mathrm{term}}\equiv-5^{-(L+3)}
+  \pmod{2^{H_s-1}}.
+\end{equation*}
+Substituting this failure congruence into the terminal identity gives
+the CRT equation
+\begin{equation*}
+  3\cdot5^n\,r_{j,0}+3B+2^{\Delta}
+    =2^{\Delta+L+4}\left(u+m'\,2^{H_s-1}\right),
+\end{equation*}
+where $u$ is the least nonnegative residue of
+$-5^{-(L+3)}$ modulo $2^{H_s-1}$ and $m'\ge0$.  The terminal residue
+\begin{equation*}
+  y^*=
+  -\left(w_{\mathrm{term}}+5^{-(L+3)}\right)
+  \left(3\cdot5^s\right)^{-1}
+  \pmod{2^{H_s-1}}
+\end{equation*}
+is zero exactly in the failure case, so the inequality is equivalent
+to $y^*\ne0$.
+
+\subsection{The size conditions}
+
+The two size conditions are
+\begin{equation*}
+  3B+2^{\Delta}\le3\cdot5^n-2\cdot4^n,
+\end{equation*}
+and
+\begin{equation*}
+  3\cdot5^s+\left(3\cdot5^n-2\cdot4^n\right)
+    \le2^{\Delta+L+4}\,u.
+\end{equation*}
+They imply
+\begin{equation*}
+  r_{j,0}\ge\frac{3\cdot5^s}{3\cdot5^n}=5^j.
+\end{equation*}
+This is \texttt{rj0\_\allowbreak ge\_\allowbreak of\_\allowbreak
+size\_\allowbreak conditions\_\allowbreak no\_\allowbreak hge},
+compiled.
+
+\subsection{The remaining bridge}
+
+The lower bound $r_{j,0}\ge5^j$ must be compared with the interval
+constraints carried by the no-$H_{\ge}$ premises.  The comparison is
+the remaining Lean statement
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge}.  It is the single \texttt{sorry} in the
+unified-core audit; the paper does not claim it is closed.
+
+\subsection{Statement inventory}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.44\textwidth}p{0.28\textwidth}p{0.22\textwidth}@{}}
+\toprule
+Statement & File & Status \\
+\midrule
+\texttt{reset\_\allowbreak q0\_\allowbreak form} &
+  \texttt{UnifiedCoreBridge.lean} & compiled \\
+\texttt{q0\_\allowbreak interval\_\allowbreak iff\_\allowbreak
+rj\_\allowbreak bound} &
+  \texttt{UnifiedCoreBridge.lean} & compiled \\
+\texttt{block\_\allowbreak head\_\allowbreak identity\_\allowbreak
+of\_\allowbreak reset} &
+  \texttt{UnifiedCoreBridge.lean} & compiled \\
+segment exclusions &
+  \texttt{UnifiedCoreBridge.lean} & compiled \\
+\texttt{rj0\_\allowbreak spec\_\allowbreak eq} &
+  \texttt{UnifiedCoreAudit.lean} & compiled \\
+\texttt{terminal\_\allowbreak bound\_\allowbreak iff\_\allowbreak
+yStar\_\allowbreak ne\_\allowbreak zero} &
+  \texttt{UnifiedCoreAudit.lean} & compiled \\
+\texttt{rj0\_\allowbreak ge\_\allowbreak of\_\allowbreak
+size\_\allowbreak conditions\_\allowbreak no\_\allowbreak hge} &
+  \texttt{UnifiedCoreAudit.lean} & compiled \\
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge} &
+  \texttt{UnifiedCoreAudit.lean} & pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Layer & Status \\
+\midrule
+candidate parameterisation & math proven, Lean compiled \\
+segment exclusions & math proven, Lean compiled \\
+CRT candidate and terminal residue & math proven, Lean compiled \\
+size-condition lower bound & math proven, Lean compiled \\
+final valuation inequality & math proven, Lean pending \\
+\bottomrule
+\end{tabular}
+\end{center}

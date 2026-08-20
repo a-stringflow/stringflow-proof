@@ -17,5 +17,9 @@ q5k3_5adic_input.txt
 !/.gitignore
 !/.github/
 !/README.md
+!/STATEMENT.md
+!/paper/
+!/paper.pdf
 !/docs/
 !/lean/
+

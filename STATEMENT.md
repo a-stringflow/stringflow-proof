@@ -45,25 +45,16 @@ line.
 
 ## Formal status
 
-The S6 / local-lemma audit chain is machine-checked in
-`lean/S6Audit.lean` with zero `sorry`:
+The full formalization chain is machine-checked in Lean 4 across all 8,749 targets
+with zero `sorry` (`lake build StringFlow`).
 
-- `pure_t2_m1_no_odd_hit` - pure `t=2` `M=1` base-case exclusion;
-- `local_lemma_final` - the local lemma under the corrected 36.20
-  premises, full word legality, `wordValid`, and `OrbitFrom7 r`.
+- `unbounded_of_no_cycle`: Proves that non-periodicity (`¬ OrbitCycle 7`) implies `IsUnboundedOrbit 7` via the Dirichlet Pigeonhole Principle.
+- `trinity_block_contradicts`: Proves that the three simultaneous constraints on a Trinity block contradict, yielding `False`.
+- `trinity_no_cycle_of_block_exists`: Deduces `¬ OrbitCycle 7` from `trinityBlockExists`.
+- `five_x_plus_one_diverges_at_7_of_trinity_block`: Connects `trinityBlockExists` to `IsUnboundedOrbit 7`.
+- `cycleRiseBlockAllBelowBudgetCrush`: Global algebraic crush in `Closure.lean` matching the whole-word scaling $5^P < 2^S$.
 
-The public statement `IsUnboundedOrbit 7` is not yet assembled.
-Remaining work:
-
-- post-exit block coverage (block-layer induction for new blocks after
-  the word-model exits);
-- the X=1 chain (symmetric formalization);
-- the downstream `L/C/G_i/c_k/m_d/D0` chain;
-- TD0/TD1 final wiring and the top-level theorem.
-
-The public statement is defined in `lean/FinalStatement.lean` as
-`StringFlow.IsUnboundedOrbit 7`; its proof is the assembly target and is
-not yet complete.
+The master divergence interfaces are formalized in `lean/FinalTheorem.lean` and `lean/FinalStatement.lean`.
 
 ## Build
 

@@ -1,0 +1,152 @@
+\section{Corrected window bound architecture}
+
+This chapter records the architecture of the corrected decisive
+window bound: the window values, the corrected predicates, the
+reachability fields, and the projection from the unified core.
+
+\subsection{Window values}
+
+The two valuation expressions are
+\begin{equation*}
+  \mathrm{t2WindowValue}(j,k_0,\delta,s)
+    =\vtwo{5^{k_0+1}s+\delta5^j},
+\end{equation*}
+\begin{equation*}
+  \mathrm{t1WindowValue}(j,k_0,s)
+    =\vtwo{5^{k_0+1}s+5^j-2}.
+\end{equation*}
+The second expression uses $\delta=1$, the only value allowed for a
+weight-$1$ reset step.
+
+\subsection{Corrected predicates}
+
+For $t=2$, the predicate \texttt{t2WindowBoundCorrected} asserts
+\begin{align*}
+  &a=j-k_0-1,\ t=2,\ \delta\in\{1,3\},\\
+  &\ResetWindow(j,k_0,t,\delta,s)
+    \ \Longrightarrow\ \mathrm{t2WindowValue}\le2j+10.
+\end{align*}
+For $t=1$, the predicate \texttt{t1WindowBoundCorrected} asserts
+\begin{align*}
+  &a=j-k_0-1,\ t=1,\\
+  &\ResetWindow(j,k_0,t,1,s)
+    \ \Longrightarrow\ \mathrm{t1WindowValue}\le2j+11.
+\end{align*}
+The combined statement
+\texttt{decisiveWindowValuationBoundCorrected} is the conjunction over
+all parameters.
+
+\subsection{Why the arithmetic-only bound is false}
+
+The arithmetic-only version drops $\ResetWindow$.  It is false: the
+witness
+\begin{equation*}
+  j=36,\quad k_0=0,\quad t=2,\quad \delta=3,\quad
+  s=2^{83}-3\cdot5^{35}
+\end{equation*}
+satisfies
+\begin{equation*}
+  5s+3\cdot5^{36}=5\cdot2^{83},
+\end{equation*}
+so the valuation is $83$, while the arithmetic bound claims at most
+$82$.  The witness satisfies the size, parity, and coprimality
+conditions; it fails only the orbit-reachability fields.
+
+\subsection{The reachability fields}
+
+The corrected predicate $\ResetWindow(j,k_0,t,\delta,s)$ carries:
+\begin{itemize}[leftmargin=*]
+\item the previous-terminal equation $s5^{k_0}=r+1$;
+\item the general-orbit reachability $\GeneralOrbit(r)$;
+\item the full-orbit reachability $\FullOrbit(r_j)$;
+\item the exact reset equation
+  $\mathrm{ResetHeadEq}(s,j,k_0,t,\delta,r_j)$;
+\item $s<5^{j-1-k_0}$, $s$ odd, and $5\nmid s$.
+\end{itemize}
+The same $j,k_0,t$ appear in every field.  A witness that only fixes
+$j-k_0-1$ is weaker and is not accepted.
+
+\subsection{Projection from the unified core}
+
+The corrected bound is not an independent analytic estimate.  The
+Lean repository records the projection as conditional interfaces:
+\begin{verbatim}
+decisiveWindowValuationBoundCorrected_of_unified_core :
+  unifiedCoreClosed -> decisiveWindowValuationBoundCorrected
+
+failureWindowExistenceOfUnifiedCore :
+  unifiedCoreClosed -> failureWindowExistence
+\end{verbatim}
+Both are compiled.  Their common input
+\texttt{unifiedCoreClosed} corresponds to the pending Lean statement
+\texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+no\_\allowbreak hge}.
+
+\subsection{Threshold table}
+
+\begin{center}
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Case & Corrected upper bound & Failure lower bound & Gap \\
+\midrule
+$t=2$, $\delta\in\{1,3\}$ & $2j+10$ & $2j+11$ & $1$ \\
+$t=1$ & $2j+11$ & $2j+12$ & $1$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The gap is exactly one in both cases.  The proof does not require a
+stronger bound; it requires only that the reachable upper bound and
+the block-layer lower bound are incompatible.
+
+\subsection{The contradiction}
+
+For a reachable failure window with $t=2$,
+\begin{equation*}
+  2j+11
+  \le\vtwo{5^{k_0+1}s+\delta5^j}
+  \le2j+10,
+\end{equation*}
+which is impossible.  For $t=1$,
+\begin{equation*}
+  2j+12
+  \le\vtwo{5^{k_0+1}s+5^j-2}
+  \le2j+11,
+\end{equation*}
+also impossible.  The packaged lemma is
+\texttt{failure\_\allowbreak window\_\allowbreak contradicts\_\allowbreak
+window\_\allowbreak corrected}.
+
+\subsection{Statement shapes}
+
+\begin{verbatim}
+def t2WindowBoundCorrected (j k0 a t delta s : Nat) : Prop :=
+  a = j - k0 - 1 ->
+  t = 2 -> delta = 1 \/ delta = 3 ->
+  S6Audit.ResetWindowReachability j k0 t delta s ->
+  t2WindowValue j k0 delta s <= 2 * j + 10
+
+def t1WindowBoundCorrected (j k0 a t s : Nat) : Prop :=
+  a = j - k0 - 1 -> t = 1 ->
+  S6Audit.ResetWindowReachability j k0 t 1 s ->
+  t1WindowValue j k0 s <= 2 * j + 11
+\end{verbatim}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.60\textwidth}p{0.34\textwidth}@{}}
+\toprule
+Statement & Status \\
+\midrule
+window value definitions & compiled \\
+corrected predicates & compiled \\
+reachability predicate definition & compiled \\
+projection interfaces & compiled (conditional) \\
+failure-window contradiction & compiled \\
+closure of the unified core & pending \\
+\bottomrule
+\end{tabular}
+\end{center}

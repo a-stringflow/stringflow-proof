@@ -1,0 +1,132 @@
+\section{Worked examples of the exact ledger}
+
+This chapter works through concrete examples of the exact ledger.  The
+examples are not proofs of the theorem; they illustrate the algebra
+that the theorem uses.
+
+\subsection{The orbit word}
+
+The exact prefix word of the orbit of $7$ is
+\begin{equation*}
+  [2,1,2,1,1,2,1,1,1,2,2,2,2,1,1,3].
+\end{equation*}
+Its total weight is
+\begin{equation*}
+  T=25,
+\end{equation*}
+and the final prefix identity is
+\begin{equation*}
+  2^{25}\cdot34177=5^{16}\cdot7+78674588089.
+\end{equation*}
+
+\subsection{Block equations}
+
+\begin{align*}
+  [2,1]\text{ from }7:&&
+  2^3\cdot23&=184=5^2\cdot7+9,\\
+  [1,2]\text{ from }9:&&
+  2^3\cdot29&=232=5^2\cdot9+7,\\
+  [1,1,2]\text{ from }29:&&
+  2^4\cdot229&=3664=5^3\cdot29+39.
+\end{align*}
+
+\subsection{PMI sum}
+
+For $w=[2,1,2]$ from $7$,
+\begin{equation*}
+  \sum_{j=0}^{2}2^{-m_j}
+    =1+\frac45+\frac8{25}
+    =\frac{53}{25}
+    =\frac{5\wordA(w)}{5^3}.
+\end{equation*}
+All three proper prefixes have positive margin.
+
+\subsection{Why closure is restrictive}
+
+Consider the word
+\begin{equation*}
+  w=[2,2,3].
+\end{equation*}
+Its molecule is
+\begin{equation*}
+  \wordA(w)=25+5\cdot4+2^{2+2}=25+20+16=61,
+\end{equation*}
+and its total weight is $7$.  If it were closed from a state $m$, then
+\begin{equation*}
+  2^7\,m=5^3\,m+61,
+\end{equation*}
+so
+\begin{equation*}
+  128m=125m+61,
+  \qquad
+  3m=61,
+\end{equation*}
+which has no integer solution.  The word satisfies the weight
+inequality $T>3\log_2 5$ but still cannot close.
+
+\subsection{A longer example}
+
+For
+\begin{equation*}
+  w=[3,3,2,2],
+\end{equation*}
+the molecule is
+\begin{equation*}
+  \wordA(w)=125+200+320+256=901,
+\end{equation*}
+and the total weight is $10$.  Closedness would require
+\begin{equation*}
+  2^{10}\,m=5^4\,m+901,
+\end{equation*}
+so
+\begin{equation*}
+  1024m=625m+901,
+  \qquad
+  399m=901,
+\end{equation*}
+again with no integer solution.
+
+\subsection{Insufficient weight}
+
+For
+\begin{equation*}
+  w=[2,2,2,2,3],
+\end{equation*}
+the molecule is
+\begin{equation*}
+  \wordA(w)=625+500+400+320+256=2101,
+\end{equation*}
+and the total weight is $11$.  Since
+\begin{equation*}
+  11<5\log_2 5\approx11.6096,
+\end{equation*}
+closedness is impossible already by the weight inequality: the
+left-hand side $2^{11}m$ is smaller than $5^5m$ for every positive
+$m$.
+
+\subsection{The lesson}
+
+These examples show why the cycle equation is restrictive: the
+weights must satisfy a strict margin inequality, and the molecule
+must also divide the weight difference
+\begin{equation*}
+  \wordA(w)=\left(2^T-5^P\right)m.
+\end{equation*}
+The proof uses this exact equation to extract every constraint on a
+cycle word.
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Item & Status \\
+\midrule
+orbit prefix identities & compiled \\
+block equations & math proven \\
+PMI sums & compiled \\
+closure examples & exact arithmetic, not proof claims \\
+\bottomrule
+\end{tabular}
+\end{center}

@@ -1,0 +1,142 @@
+\section{The arithmetic counterexample}
+
+This chapter dissects the counterexample that forces the corrected
+decisive window bound to carry orbit reachability.
+
+\subsection{The witness}
+
+The unconstrained window bound claims
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+\delta5^j}\le2j+10
+\end{equation*}
+for every choice of $j,k_0,t,\delta,s$ satisfying the arithmetic
+conditions.  The witness
+\begin{equation*}
+  j=36,\quad k_0=0,\quad t=2,\quad \delta=3,\quad
+  s=2^{83}-3\cdot5^{35}
+\end{equation*}
+has valuation
+\begin{equation*}
+  \vtwo{5s+3\cdot5^{36}}
+    =\vtwo{5\cdot2^{83}}
+    =83,
+\end{equation*}
+which is one more than the claimed bound
+\begin{equation*}
+  2j+10=82.
+\end{equation*}
+The cancellation is exact:
+\begin{equation*}
+  5s+3\cdot5^{36}
+    =5\left(2^{83}-3\cdot5^{35}\right)+3\cdot5^{36}
+    =5\cdot2^{83}.
+\end{equation*}
+
+\subsection{Exact decimal values}
+
+The comparison underlying the size condition is
+\begin{equation*}
+  2^{81}=2417851639229258349412352
+  <
+  2910383045673370361328125=5^{35}.
+\end{equation*}
+The witness itself is
+\begin{equation*}
+  s=2^{83}-3\cdot5^{35}=940257419896922313665033.
+\end{equation*}
+All three decimal values are exact; no rounding enters the proof.
+
+\subsection{Verification of the arithmetic hypotheses}
+
+The witness satisfies every arithmetic condition that the old bound
+used.
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Size.}  From $2^{81}<5^{35}$,
+  \begin{equation*}
+    s=2^{83}-3\cdot5^{35}<4\cdot5^{35}-3\cdot5^{35}=5^{35},
+  \end{equation*}
+  which is the required bound $s<5^{j-k_0-1}=5^{35}$.
+\item \textbf{Oddness.}  $2^{83}$ is even and $3\cdot5^{35}$ is odd,
+  so $s$ is odd.
+\item \textbf{Coprimality with 5.}  Since $2^4\equiv1\pmod5$ and
+  $83\equiv3\pmod4$,
+  \begin{equation*}
+    2^{83}\equiv2^3\equiv3\pmod5,
+  \end{equation*}
+  and $3\cdot5^{35}\equiv0\pmod5$, so $s\equiv3\pmod5$ and $5\nmid s$.
+\item \textbf{The valuation.}  The cancellation identity gives
+  $\vtwo{5s+3\cdot5^{36}}=83$, as shown above.
+\end{itemize}
+
+\subsection{What the witness does not carry}
+
+The witness is arithmetic-only.  It supplies no previous terminal
+state $r$, no general-orbit reachability $\GeneralOrbit(r)$, no reset
+head $r_j$, and no full-orbit reachability $\FullOrbit(r_j)$.  In
+particular there is no exact reset equation
+\begin{equation*}
+  \mathrm{ResetHeadEq}(s,36,0,2,3,r_j)
+\end{equation*}
+with a full-orbit $r_j$ attached to the witness.  The old bound failed
+because it treated the arithmetic conditions as sufficient.
+
+\subsection{The corrected predicate}
+
+The corrected decisive window bound requires
+\begin{equation*}
+  \ResetWindow(j,k_0,t,\delta,s),
+\end{equation*}
+which fixes the same $j,k_0,t$ in every field:
+\begin{itemize}[leftmargin=*]
+\item the previous-terminal equation $s5^{k_0}=r+1$;
+\item $\GeneralOrbit(r)$;
+\item $\FullOrbit(r_j)$;
+\item the exact reset equation
+  $\mathrm{ResetHeadEq}(s,j,k_0,t,\delta,r_j)$;
+\item the size bound, oddness, and $5\nmid s$.
+\end{itemize}
+The arithmetic witness is excluded by the reachability fields, not by
+any change in the valuation threshold.  The constants $2j+10$,
+$2j+11$, and $2j+12$ are unchanged.
+
+\subsection{How the corrected bound is obtained}
+
+The corrected bound is a projection of the unified core.  In the Lean
+repository it is defined as an interface:
+\begin{verbatim}
+def t2WindowBoundCorrected (j k0 a t delta s : Nat) : Prop :=
+  a = j - k0 - 1 ->
+  t = 2 -> delta = 1 \/ delta = 3 ->
+  S6Audit.ResetWindowReachability j k0 t delta s ->
+  t2WindowValue j k0 delta s <= 2 * j + 10
+\end{verbatim}
+The implication is conditional on
+\texttt{ResetWindowReachability}; it is not a standalone arithmetic
+statement.
+
+\subsection{The failure-window role}
+
+The counterexample is also the reason why
+\texttt{failureWindowExistence} must be proved from the closed cycle
+word rather than from size estimates alone.  A positive cycle would
+produce a witness with the reachability fields automatically; the
+arithmetic-only witness shows that the fields are essential.  The
+construction of the reachable failure window is the pending input of
+the divergence bridge.
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Statement & Status \\
+\midrule
+arithmetic hypotheses of the witness & verified exactly \\
+corrected window bound definition & Lean: compiled \\
+\texttt{ResetWindowReachability} definition & Lean: compiled \\
+failure-window construction from a cycle & Lean: pending \\
+\bottomrule
+\end{tabular}
+\end{center}

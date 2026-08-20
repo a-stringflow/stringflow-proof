@@ -1,0 +1,292 @@
+\section{String-flow vocabulary}
+
+This chapter records the exact vocabulary used in the main paper and in
+the Lean repository.
+
+\subsection{Words}
+
+A word is a finite list of natural numbers $t_0,\dots,t_{L-1}$.  The
+length is $L$.  The word is valid from $x_0$ when each division
+\begin{equation*}
+  x_{i+1}=\frac{5x_i+1}{2^{t_i}}
+\end{equation*}
+is exact.
+
+The Lean names are:
+\begin{itemize}[leftmargin=*]
+\item \texttt{StringFlow.Word.wordValid};
+\item \texttt{StringFlow.Word.wordOrbit};
+\item \texttt{StringFlow.wordWeight};
+\item \texttt{StringFlow.Word.wordA}.
+\end{itemize}
+
+\subsection{Recursive definitions}
+
+The Lean definitions in \texttt{WordWindow.lean} are:
+\begin{verbatim}
+def wordA : List Nat -> Nat
+  | [] => 0
+  | t :: ts => 5 ^ ts.length + 2 ^ t * wordA ts
+
+def wordOrbit : List Nat -> Nat -> Nat
+  | [], x => x
+  | t :: ts, x => wordOrbit ts ((5 * x + 1) / 2 ^ t)
+
+def wordValid : List Nat -> Nat -> Prop
+  | [], _ => True
+  | t :: ts, x => (5 * x + 1) % 2 ^ t = 0 /\
+    wordValid ts ((5 * x + 1) / 2 ^ t)
+\end{verbatim}
+
+The paper writes these as $\wordA$, $\wordOrbit$, and the validity
+predicate defined in the main text.
+
+\subsection{The valuation lemma}
+
+Every positive integer $n$ decomposes uniquely as
+\begin{equation*}
+  n=2^{\vtwo{n}}\,\operatorname{oddpart}(n),
+\qquad \operatorname{oddpart}(n)\equiv1\pmod2.
+\end{equation*}
+The exact step weight is the maximal legal weight:
+\begin{equation*}
+  t=\vtwo{5x+1},
+\end{equation*}
+while \texttt{wordValid} only requires divisibility by $2^t$.  A legal
+word may therefore use a smaller weight, which is why
+$\GeneralOrbit$ can reach intermediate states not on the accelerated
+orbit.  The Lean names are \texttt{n\_eq\_two\_pow\_mul\_oddPart} and
+\texttt{oddPart\_odd\_of\_pos}.
+
+\subsection{Word molecule identity}
+
+For a valid word $w$ from $x_0$,
+\begin{equation*}
+  2^{\wordWeight(w)}\,\wordOrbit(w,x_0)
+    =5^{\operatorname{len}(w)}\,x_0+\wordA(w).
+\end{equation*}
+
+\subsection{Proof of the word orbit identity}
+
+Proceed by induction on $w$.  For $w=[]$, both sides equal $x_0$.  For
+$w'=t::w$, the inductive hypothesis applied to
+$(5x_0+1)/2^t$ gives
+\begin{equation*}
+  2^{\wordWeight(w)}\,\wordOrbit\!\left(w,\frac{5x_0+1}{2^t}\right)
+    =5^{\operatorname{len}(w)}\frac{5x_0+1}{2^t}+\wordA(w).
+\end{equation*}
+Multiplying by $2^t$ and using $\wordWeight(w')=t+\wordWeight(w)$ and
+$\wordA(w')=5^{\operatorname{len}(w)}+2^t\wordA(w)$ gives the identity.
+
+\subsection{Exact orbit bound}
+
+For $n\ge2$,
+\begin{equation*}
+  \Orbit_7(n)<5^n.
+\end{equation*}
+If $x<5^k$, then $5x+1<2\cdot5^{k+1}$, so $(5x+1)/2<5^{k+1}$; since
+the accelerated step is at most $(5x+1)/2$, induction gives the
+bound.  The Lean statement is
+\texttt{fiveXPlusOneOrbit\_lt\_five\_pow}.
+
+\subsection{PMI identity}
+
+With $m_j=j\log_2 5-\wordWeight_j$,
+\begin{equation*}
+  \sum_{j=0}^{L-1}2^{-m_j}
+    =\frac{5\wordA(w)}{5^L}.
+\end{equation*}
+The cleared-denominator form is
+\begin{equation*}
+  \sum_{j=0}^{L-1}2^{\wordWeight_j}\,5^{L-j}
+    =5\wordA(w).
+\end{equation*}
+For a closed cycle word of period $P$ and cycle state $m$, the Lean
+form is
+\begin{equation*}
+  \mathrm{aTotal5}(P,t)=5m(2^T-5^P),
+\qquad T=\wordWeight(w),
+\end{equation*}
+proved in \texttt{StringFlow.PMI.pmi\_algebraic}.
+
+\subsection{PMI-B}
+
+The PMI-B layer compares bad-prefix counts with the available budget.
+For a closed cycle word, the total weight satisfies
+\begin{equation*}
+  2^{\wordWeight(w)}\,m=5^P\,m+\wordA(w).
+\end{equation*}
+
+\subsection{PMI-B derivation}
+
+Write $B$ for the number of bad proper prefixes.  The $j=0$ term of
+$\mathrm{aTotal5}$ contributes $5^P$, and each bad prefix contributes
+at least another $5^P$, so
+\begin{equation*}
+  5^P+B\cdot5^P\le\mathrm{aTotal5}(P,t).
+\end{equation*}
+The cycle equation gives
+\begin{equation*}
+  \mathrm{aTotal5}(P,t)=5m(2^T-5^P),
+\end{equation*}
+hence
+\begin{equation*}
+  5^P+B\cdot5^P\le5m(2^T-5^P).
+\end{equation*}
+If the right-hand side is below $2\cdot5^P$, then $B=0$ and every
+proper prefix satisfies $2^{\wordWeight_j}<5^j$.  These are
+\texttt{pmi\_b\_count} and \texttt{pmi\_b\_no\_bad\_prefix}.
+
+\subsection{Margin balance}
+
+Let $C_1,C_2,C_3$ be the counts of steps of weight $1$, $2$, and at
+least $3$.  The nonnegative-margin condition gives
+\begin{equation*}
+  (3-\alpha)C_3\le(\alpha-1)C_1+(\alpha-2)C_2,
+\qquad \alpha=\log_2 5,
+\end{equation*}
+with the strict version used for the small-budget cycle words.
+
+\subsection{Rise steps and residues modulo 5}
+
+A rise step of weight $1$ satisfies
+\begin{equation*}
+  2y=5x+1,
+\end{equation*}
+so $y\equiv3\pmod5$.  A rise step of weight $2$ satisfies
+\begin{equation*}
+  4y=5x+1,
+\end{equation*}
+so $y\equiv4\pmod5$.  These rules are formalised as
+\texttt{rise\_step\_next\_mod\_five} and feed the block-head residue
+lemma of the cycle bridge.
+
+\subsection{Derivation of the PMI identity}
+
+Write the word molecule as
+\begin{equation*}
+  \wordA(w)=\sum_{j=0}^{L-1}2^{\wordWeight_j}\,5^{L-1-j}.
+\end{equation*}
+Divide $5\wordA(w)$ by $5^L$:
+\begin{equation*}
+  \frac{5\wordA(w)}{5^L}
+    =\sum_{j=0}^{L-1}2^{\wordWeight_j}\,5^{-j}.
+\end{equation*}
+Since
+\begin{equation*}
+  2^{-m_j}=2^{\wordWeight_j-j\log_2 5}
+    =2^{\wordWeight_j}\,5^{-j},
+\end{equation*}
+the identity follows.
+
+The same derivation for a closed cycle word with cycle state $m$ and
+period $P$ gives the algebraic form
+\begin{equation*}
+  \mathrm{aTotal5}(P,t)=5m(2^T-5^P),
+\end{equation*}
+where $T=\wordWeight(w)$ is the total cycle weight.
+
+\subsection{Worked example}
+
+The word $[2,1]$ is valid from $7$, with
+\begin{equation*}
+  7 \xrightarrow{t=2} 9 \xrightarrow{t=1} 23,
+\end{equation*}
+so $\wordOrbit([2,1],7)=23$.  Its word molecule is
+\begin{equation*}
+  \wordA([2,1])=2^0\cdot5^1+2^2\cdot5^0=9,
+\end{equation*}
+and
+\begin{equation*}
+  2^3\cdot23=184=5^2\cdot7+9.
+\end{equation*}
+The word $[1,2]$ is valid from $9$:
+\begin{equation*}
+  9 \xrightarrow{t=1} 23 \xrightarrow{t=2} 29,
+\qquad
+  \wordA([1,2])=2^0\cdot5^1+2^1\cdot5^0=7,
+\end{equation*}
+with $2^3\cdot29=232=5^2\cdot9+7$.
+
+The word $[1,1]$ is valid from $9$ in the divisibility sense but is
+not the exact accelerated word: the second weight at $23$ is
+$v_2(116)=2$, so $\wordOrbit([1,1],9)=58$ is an intermediate state not
+on the accelerated orbit of $7$.  This is the distinction between
+$\GeneralOrbit$ and $\FullOrbit$.
+
+\subsection{Worked PMI example}
+
+For $w=[2,1,2]$ from $7$, we have $L=3$, $\wordWeight=5$, and
+$\wordA(w)=53$, with
+\begin{equation*}
+  2^5\cdot29=928=5^3\cdot7+53.
+\end{equation*}
+The prefix weights are $\wordWeight_0=0$, $\wordWeight_1=2$,
+$\wordWeight_2=3$, so
+\begin{equation*}
+  \sum_{j=0}^{2}2^{-m_j}
+    =1+\frac45+\frac8{25}
+    =\frac{53}{25}
+    =\frac{5\wordA(w)}{5^3}.
+\end{equation*}
+
+\subsection{Valuation toolkit}
+
+The following elementary facts are used throughout the proof:
+\begin{itemize}[leftmargin=*]
+\item $n=2^{\vtwo{n}}\operatorname{oddpart}(n)$ with odd part odd;
+\item if $u$ is odd, then $\vtwo{2^k u}=k$;
+\item for odd $x$, $\vtwo{5x+1}\ge1$;
+\item $T(x)\le(5x+1)/2$;
+\item a C3 step from $x\ge1$ satisfies $(5x+1)/2^t<x$.
+\end{itemize}
+The corresponding Lean names are listed in the main paper.
+
+\subsection{Notation summary}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.14\textwidth}p{0.80\textwidth}@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$j$ & reset step depth \\
+$k_0$ & exponent in $s5^{k_0}=r+1$ \\
+$t$ & reset step weight, $t\in\{1,2\}$ \\
+$\delta$ & reset parameter: $1$ for $t=1$, $\{1,3\}$ for $t=2$ \\
+$s$ & odd terminal part with $5\nmid s$ \\
+$e$ & incoming step weight, $e\ge2$ \\
+$g$ & full-orbit state $\Orbit_7(j-1)$ \\
+$x$ & candidate predecessor $2^{e-1}g+\delta5^{j-1}$ \\
+$r_j$ & block head after the reset step \\
+$r_s$ & terminal state of the block tail \\
+$t_j$ & step weight at depth $j$ \\
+$\wordWeight_j$ & prefix weight at depth $j$ \\
+$L$ & block-tail length \\
+$H_s$ & unified-core threshold parameter \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Block equation}
+
+For a block with step weights $u_1,\dots,u_L$ and total weight $U$,
+\begin{equation*}
+  2^U r_L=5^L r_0+B,
+\end{equation*}
+where $B$ is the block molecule.  The reset block satisfies
+\begin{equation*}
+  t=2:\quad 4(r_j+1)=5^{k_0+1}s+\delta5^j,
+\end{equation*}
+\begin{equation*}
+  t=1:\quad 2(r_j+1)=5^{k_0+1}s+5^j-2.
+\end{equation*}
+These equations are used by the corrected window bound.  The block
+equation is exactly the word orbit identity applied to the block word;
+no averaging or approximation is involved.
+
+For example, the block starting at $29$ with weights $[1,1,2]$ has
+$L=3$, $U=4$, and $B=39$, with
+\begin{equation*}
+  2^4\cdot229=3664=5^3\cdot29+39.
+\end{equation*}

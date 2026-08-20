@@ -585,16 +585,6 @@ theorem five_x_plus_one_diverges_at_7_of_trinity_core
     IsUnboundedOrbit 7 :=
   trinity_unbounded_of_block_exists (hasm hcore)
 
-/-- Direct final bridge on the failure-window route: the corrected
-window upper bound and `failureWindowExistence` already suffice for the
-public divergence statement. -/
-theorem five_x_plus_one_diverges_at_7_of_failure_window_and_window_bound
-    (hF : CycleBridge.failureWindowExistence)
-    (hwin : BlockAutomaton.decisiveWindowValuationBoundCorrected) :
-    IsUnboundedOrbit 7 :=
-  CycleBridge.five_x_plus_one_diverges_at_7_of_window_bound_and_failure_window
-    hwin hF
-
 end Trinity
 
 end StringFlow

@@ -1,0 +1,537 @@
+\section{The string-flow framework}\label{sec:framework}
+
+\subsection{Words, weights, and molecules}
+
+\begin{definition}[Valid word]\label{def:wordValid}
+A word $w=(t_0,\dots,t_{L-1})$ is \emph{valid from} $x_0$ if the
+recursive definition of $\wordOrbit(w,x_0)$ is exact, i.e.\
+\begin{equation*}
+  (5x_i+1)\equiv 0 \pmod{2^{t_i}}
+\end{equation*}
+for every prefix state $x_i$.
+\end{definition}
+
+\begin{definition}[Prefix weight]\label{def:wordWeight}
+For a word $w=(t_0,\dots,t_{L-1})$, the prefix weight after $j$ steps
+is
+\begin{equation*}
+  \wordWeight_j(w)=\sum_{i<j} t_i,
+\end{equation*}
+and the total weight is $\wordWeight(w)=\wordWeight_L(w)$.
+\end{definition}
+
+\begin{definition}[Word molecule]\label{def:wordA}
+For a word $w$ of length $L$, the \emph{word molecule} is the unique
+integer $\wordA(w)$ satisfying
+\begin{equation*}
+  2^{\wordWeight(w)}\,\wordOrbit(w,x_0)
+    = 5^L\,x_0 + \wordA(w)
+\end{equation*}
+for every initial state $x_0$.  Equivalently,
+\begin{equation*}
+  \wordA(w)=\sum_{j=0}^{L-1}
+    2^{\wordWeight_j}\,5^{L-1-j}.
+\end{equation*}
+Equivalently, \(\wordA([])=0\) and
+\(\wordA(w{::}t)=5\,\wordA(w)+2^{\wordWeight(w)}\);
+this recursion is the definition used in Lean.
+\end{definition}
+
+The word molecule converts orbit arithmetic into exact prefix
+arithmetic.  It is the object that appears in the Lean statements
+\texttt{StringFlow.Word.wordA} and \texttt{StringFlow.PMI.aTotal5}.
+The formalisation is written in Lean~\cite{lean} using
+Mathlib~\cite{mathlib}.
+
+\begin{theorem}[Exact word orbit identity]\label{thm:word-identity}
+For every valid word $w=(t_0,\dots,t_{L-1})$ from $x_0$,
+\begin{equation*}
+  2^{\wordWeight(w)}\,\wordOrbit(w,x_0)
+    =5^L\,x_0+\wordA(w).
+\end{equation*}
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Proceed by induction on the length of $w$.  For the singleton word
+$[t]$,
+\begin{equation*}
+  2^t\,\wordOrbit([t],x_0)=5x_0+1,
+\end{equation*}
+and $\wordA([t])=1$.  For $w'=w{::}t$,
+\begin{equation*}
+  2^{\wordWeight(w')}\,\wordOrbit(w',x_0)
+    =2^{\wordWeight(w)}\,(5\,\wordOrbit(w,x_0)+1)
+    =5\,(2^{\wordWeight(w)}\,\wordOrbit(w,x_0))+2^{\wordWeight(w)},
+\end{equation*}
+which matches the recursive formula for $\wordA(w')$.  The identity is
+the exact ledger used throughout the paper.
+\end{proof}
+
+\subsection{The valuation decomposition}
+
+Every positive integer $n$ has a unique decomposition
+\begin{equation*}
+  n=2^{\vtwo{n}}\,\operatorname{oddpart}(n),
+\qquad \operatorname{oddpart}(n)\equiv1\pmod2.
+\end{equation*}
+In Lean this is recorded by \texttt{n\_eq\_two\_pow\_mul\_oddPart} and
+\texttt{oddPart\_odd\_of\_pos}.  The exact step weight
+$t=\vtwo{5x+1}$ is the largest weight for which $(5x+1)/2^t$ is an
+integer.  Word validity only asks for divisibility, so a legal word may
+use any $t\le\vtwo{5x+1}$.  This is the precise sense in which
+$\GeneralOrbit$ is weaker than $\FullOrbit$.
+
+\subsection{Valuation toolkit}
+
+The following elementary facts are used throughout without comment:
+\begin{itemize}[leftmargin=*]
+\item $n=2^{\vtwo{n}}\operatorname{oddpart}(n)$ with
+  $\operatorname{oddpart}(n)$ odd;
+\item if $u$ is odd, then $\vtwo{2^k u}=k$;
+\item for odd $x$, $\vtwo{5x+1}\ge1$;
+\item $T(x)\le(5x+1)/2$;
+\item a C3 step from $x\ge1$ satisfies $(5x+1)/2^t<x$.
+\end{itemize}
+These elementary facts are formalised in Lean: the odd-part
+decomposition, the valuation rules, the step bound, and the C3
+decrease lemma.
+
+\begin{proposition}[Exact orbit bound]\label{prop:orbit-bound}
+For every $n\ge2$,
+\begin{equation*}
+  \Orbit_7(n)<5^n.
+\end{equation*}
+This is proved in Lean
+(\texttt{CycleBridge.fiveXPlusOneOrbit\_lt\_five\_pow}).
+\end{proposition}
+
+\begin{proof}
+For $n=2$ the claim is checked directly.  If
+$x=\Orbit_7(k)<5^k$, then
+\begin{equation*}
+  5x+1<5^{k+1}+1<2\cdot5^{k+1},
+\end{equation*}
+so $(5x+1)/2<5^{k+1}$.  The accelerated step satisfies
+$T(x)\le(5x+1)/2$, hence $\Orbit_7(k+1)<5^{k+1}$.
+\end{proof}
+
+\subsection{The first steps}
+
+The first 16 states and step weights make the definitions concrete:
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}ccccccccccccccccc@{}}
+\toprule
+$n$ & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 & 13 & 14 & 15 \\
+\midrule
+$\Orbit_7(n)$ & 7 & 9 & 23 & 29 & 73 & 183 & 229 & 573 & 1433 & 3583 & 4479 & 5599 & 6999 & 8749 & 21873 & 54683 \\
+$t_n$ & 2 & 1 & 2 & 1 & 1 & 2 & 1 & 1 & 1 & 2 & 2 & 2 & 2 & 1 & 1 & 3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The step from depth 15 to depth 16 has weight $3$, and the full orbit
+then reaches $34177$.  The table is proved by explicit rewriting in
+\texttt{FinitePrefix.lean}.
+
+\begin{example}\label{ex:wordA}
+The word $w=[2,1]$ is valid from $7$:
+\begin{equation*}
+  7 \xrightarrow{t=2} 9 \xrightarrow{t=1} 23,
+\end{equation*}
+so $\wordOrbit(w,7)=23$.  Its prefix weights are
+$\wordWeight_0=0$, $\wordWeight_1=2$, $\wordWeight=3$, and
+\begin{equation*}
+  \wordA(w)=2^0\cdot5^1+2^2\cdot5^0=9.
+\end{equation*}
+The exact word-orbit identity gives
+\begin{equation*}
+  2^3\cdot23=184=5^2\cdot7+9.
+\end{equation*}
+The word $[1,2]$ is valid from $9$:
+\begin{equation*}
+  9 \xrightarrow{t=1} 23 \xrightarrow{t=2} 29,
+\qquad
+  \wordA([1,2])=2^0\cdot5^1+2^1\cdot5^0=7,
+\end{equation*}
+and $2^3\cdot29=232=5^2\cdot9+7$.
+
+Validity is weaker than tracking the accelerated orbit: the word
+$[1,1]$ is valid from $9$ in the divisibility sense, because
+$46/2=23$ and $116/2=58$ are integers, but the exact second weight at
+$23$ is $v_2(116)=2$, not $1$.  Hence
+$\wordOrbit([1,1],9)=58$ is an intermediate state not on the
+accelerated orbit of $7$.  This is precisely the distinction between
+$\GeneralOrbit$ and $\FullOrbit$ used in \Cref{def:reach}.
+\end{example}
+
+\subsection{The prefix ledger}
+
+Let $\wordWeight_n$ be the prefix weight after $n$ exact steps from
+$7$, and let $\wordA_n$ be the word molecule of that exact prefix word.
+The first values are:
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}rrrr@{}}
+\toprule
+$n$ & $t_n$ & $\wordWeight_n$ & $\wordA_n$ \\
+\midrule
+0 & -- & 0 & 0 \\
+1 & 2 & 2 & 1 \\
+2 & 1 & 3 & 9 \\
+3 & 2 & 5 & 53 \\
+4 & 1 & 6 & 297 \\
+5 & 1 & 7 & 1549 \\
+6 & 2 & 9 & 7873 \\
+7 & 1 & 10 & 39877 \\
+8 & 1 & 11 & 200409 \\
+9 & 1 & 12 & 1004093 \\
+10 & 2 & 14 & 5024561 \\
+11 & 2 & 16 & 25139189 \\
+12 & 2 & 18 & 125761481 \\
+13 & 2 & 20 & 629069549 \\
+14 & 1 & 21 & 3146396321 \\
+15 & 1 & 22 & 15734078757 \\
+16 & 3 & 25 & 78674588089 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Each row is an instance of the exact word-orbit identity:
+\begin{equation*}
+  2^{\wordWeight_n}\,\Orbit_7(n)=5^n\cdot7+\wordA_n.
+\end{equation*}
+For example, $2^{25}\cdot34177=5^{16}\cdot7+78674588089$.  The column
+$\wordA_n$ is the word molecule of the exact prefix word and is the
+value of \texttt{StringFlow.Word.wordA} on that prefix.
+
+\subsection{The PMI identity}
+
+\begin{theorem}[PMI prefix identity]\label{thm:pmi}
+Let $w$ be a valid word of length $L$ from $x_0$, let
+$\wordWeight_j$ be its prefix weights, and define the margin
+\begin{equation*}
+  m_j=j\log_2 5-\wordWeight_j.
+\end{equation*}
+Then
+\begin{equation*}
+  \sum_{j=0}^{L-1} 2^{-m_j}
+    =\frac{5\,\wordA(w)}{5^L}.
+\end{equation*}
+\end{theorem}
+
+The cleared-denominator form
+\begin{equation*}
+  \sum_{j=0}^{L-1} 2^{\wordWeight_j}\,5^{L-j}
+    =5\,\wordA(w)
+\end{equation*}
+is the identity \(\mathrm{aTotal5}=5\,\mathrm{aTotal}\) formalised in
+\texttt{Pmi.lean}.  For a closed cycle word of period $P$ and cycle
+state $m$, substituting the cycle equation gives
+\begin{equation*}
+  \mathrm{aTotal5}(P,t)=5m(2^T-5^P),
+\qquad T=\wordWeight(w).
+\end{equation*}
+
+\begin{proof}[Derivation sketch]
+Write
+\begin{equation*}
+  \wordA(w)=\sum_{j=0}^{L-1}
+    2^{\wordWeight_j}\,5^{L-1-j}.
+\end{equation*}
+Then
+\begin{equation*}
+  \frac{5\,\wordA(w)}{5^L}
+    =\sum_{j=0}^{L-1}2^{\wordWeight_j}\,5^{-j}.
+\end{equation*}
+Since $2^{-m_j}=2^{\wordWeight_j}5^{-j}$, the identity follows.  The
+calculation is a finite rational identity; no limits or estimates are
+involved.
+\end{proof}
+
+\subsection{Prefix budgets and PMI-B}
+
+The PMI-B layer counts the positions in a word that violate the prefix
+budget.  For a closed cycle word of period $P$, the total weight
+satisfies
+\begin{equation*}
+  2^{\wordWeight(w)}\,m=5^P\,m+\wordA(w)
+\end{equation*}
+for the cycle state $m$, so $\wordWeight(w)>P\log_2 5$.  The PMI-B
+inequalities then compare the number of ``bad'' prefixes with the
+available budget.  The corresponding PMI-B no-bad-prefix theorem and
+the margin-balance theorem are compiled in Lean.
+
+\begin{lemma}[PMI-B bad-prefix count]\label{lem:pmi-b-count}
+For a closed cycle word of period $P$, the number of bad prefixes and
+the total weight satisfy the PMI-B bounds
+\begin{equation*}
+  \operatorname{bad}(w)\le
+  \frac{2^{\wordWeight(w)}}{5^P}\,\wordA(w),
+\end{equation*}
+and every true prefix of a small-budget word satisfies the margin
+balance inequality.  The counting bound and the no-bad-prefix
+conclusion are compiled in Lean.
+\end{lemma}
+
+\begin{lemma}[Margin balance]\label{lem:margin-balance}
+Let $\alpha=\log_2 5$, and let $C_1,C_2,C_3$ be the number of steps of
+weight $1$, weight $2$, and weight at least $3$ in a closed cycle word.
+Then the nonnegative-margin prefix condition implies
+\begin{equation*}
+  (3-\alpha)C_3\le(\alpha-1)C_1+(\alpha-2)C_2,
+\end{equation*}
+and the strict version replaces $\le$ by $<$.  The margin-balance
+inequalities are compiled in Lean.
+\end{lemma}
+
+\subsection{PMI-B derivation}
+
+Write $B=\operatorname{bad}(w)$ for the number of bad proper prefixes
+of a closed cycle word of period $P$, and let $T$ be its total weight.
+The $j=0$ term of $\mathrm{aTotal5}$ contributes $5^P$, and every bad
+prefix $j$ contributes at least another $5^P$:
+\begin{equation*}
+  5^P+B\cdot5^P\le\mathrm{aTotal5}(P,t).
+\end{equation*}
+Together with the cycle equation
+\begin{equation*}
+  \mathrm{aTotal5}(P,t)=5m(2^T-5^P),
+\end{equation*}
+this is the exact counting bound
+\begin{equation*}
+  5^P+B\cdot5^P\le5m(2^T-5^P).
+\end{equation*}
+
+\begin{corollary}[Small budget, no bad prefix]\label{cor:pmi-b-no-bad}
+If $5m(2^T-5^P)<2\cdot5^P$, then
+\begin{equation*}
+  2^{\wordWeight_j}<5^j\qquad(1\le j<P).
+\end{equation*}
+\end{corollary}
+
+\begin{proof}
+The counting bound gives $B\cdot5^P<5^P$, hence $B=0$.
+\end{proof}
+
+The statements are \texttt{pmi\_b\_count} and
+\texttt{pmi\_b\_no\_bad\_prefix} in \texttt{Pmi.lean}.
+
+\subsection{PMI-B worked example}
+
+The word $[3,1]$ has prefix weights
+\begin{equation*}
+  \wordWeight_0=0,\quad \wordWeight_1=3,\quad \wordWeight_2=4,
+\end{equation*}
+and molecule $\wordA([3,1])=13$.  Its margins are
+\begin{equation*}
+  m_0=0,\qquad
+  m_1=\log_2 5-3<0,\qquad
+  m_2=2\log_2 5-4>0,
+\end{equation*}
+so the proper prefix of length $1$ is bad and $B=1$.  The cleared PMI
+sum is
+\begin{equation*}
+  \mathrm{aTotal5}(2,t)
+    =5^2+2^3\cdot5^1=25+40=65,
+\end{equation*}
+and the counting bound reads
+\begin{equation*}
+  5^2+B\cdot5^2=25+25=50<65.
+\end{equation*}
+The exact orbit word $[2,1,2]$ from $7$, by contrast, has all margins
+positive.  This is the exact arithmetic that the PMI-B layer counts:
+one bad prefix costs one extra $5^P$, and no estimate replaces the
+count.
+
+\subsection{Rise steps and residues modulo 5}
+
+A rise step of weight $1$ satisfies $2y=5x+1$, hence $y\equiv3
+\pmod5$.  A rise step of weight $2$ satisfies $4y=5x+1$, hence
+$y\equiv4\pmod5$.  These two residue rules are the only constraints
+that a rise step imposes on the next state modulo $5$; they are
+formalised in \texttt{rise\_step\_next\_mod\_five} and are used by the
+cycle-bridge block-head residue lemma.
+
+\subsection{Block equations}
+
+A block is a contiguous segment of the orbit.  For a block starting at
+state $r_0$ with step weights $u_1,\dots,u_L$, the block equation is
+\begin{equation*}
+  2^{U}\,r_L=5^L\,r_0+B,
+\end{equation*}
+where $U=\sum u_i$ and $B$ is the block molecule.  The reset block of
+weight $t\in\{1,2\}$ and parameter $\delta\in\{1,3\}$ satisfies
+\begin{equation*}
+  2^t(r_j+1)=5^{k_0+1}s+\delta5^j
+\end{equation*}
+in the $t=2$ case, and the corresponding $t=1$ equation
+\begin{equation*}
+  2(r_j+1)=5^{k_0+1}s+5^j-2.
+\end{equation*}
+These are the equations encoded in
+\texttt{S6Audit.ResetHeadEq} and used by the corrected window bound.
+
+\begin{example}[Block equation]\label{ex:block}
+The block starting at $29$ with weights $[1,1,2]$ has
+$L=3$, $U=4$, and block molecule $B=39$:
+\begin{equation*}
+  2^4\cdot229=3664=5^3\cdot29+39.
+\end{equation*}
+\end{example}
+
+\subsection{Lean correspondence}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Mathematical object & Lean name & Status \\
+\midrule
+Word validity & \texttt{Word.wordValid} & compiled \\
+Word orbit & \texttt{Word.wordOrbit} & compiled \\
+Word molecule & \texttt{Word.wordA} & compiled \\
+Prefix weight & \texttt{wordWeight} & compiled \\
+PMI identity & \texttt{Pmi.aTotal5} & compiled \\
+PMI-B budget & \texttt{cycleWord\_pmi\_b\_count} & compiled \\
+Exact orbit bound & \texttt{fiveXPlusOneOrbit\_lt\_five\_pow} & compiled \\
+Full orbit reachability & \texttt{FullOrbitFrom7} & compiled \\
+General orbit reachability & \texttt{GeneralOrbitFrom7} & compiled \\
+Reset window reachability & \texttt{ResetWindowReachability} & compiled \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Reachability: full orbit versus general orbit}
+
+\begin{definition}[Full and general orbit reachability]\label{def:reach}
+Let $\FullOrbit(x)$ mean that $x$ lies on the exact accelerated orbit
+of $7$:
+\begin{equation*}
+  \FullOrbit(x)\iff \exists n,\ \Orbit_7(n)=x.
+\end{equation*}
+Let $\GeneralOrbit(x)$ mean that $x$ is reachable from $7$ by some
+finite word whose divisions are exact, without any restriction on the
+weights.
+\end{definition}
+
+The difference is essential.  The general orbit permits submaximal
+weights and therefore intermediate states that are not states of the
+exact accelerated orbit; the full orbit does not.  The 25-state table
+used in earlier regression work is a finite check and is not used as a
+substitute for the full-orbit exclusion.
+
+\subsection{Regression versus proof}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.42\textwidth}p{0.52\textwidth}@{}}
+\toprule
+Regression data & Proof requirement \\
+\midrule
+25-state table & 17-state exact expansion \\
+simulated orbit values & explicit rewriting, no \texttt{native\_decide} \\
+statistical weight profile & exact word ledger with valuation identities \\
+heuristic unboundedness & contradiction from a cycle assumption \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Regression tables are used in this paper only to locate candidates;
+they never enter a proof step.  The 25-state table, for example, can
+confirm that no early state repeats, but it cannot rule out a later
+cycle.  Every proof step instead uses the exact word-orbit identity,
+the explicit finite prefix, or a compiled Lean statement.  This
+distinction is the reason the paper separates $\FullOrbit$ from
+$\GeneralOrbit$ and keeps the 17-state expansion explicit.
+
+\begin{definition}[Reset window reachability]\label{def:reset-window}
+The predicate $\ResetWindow(j,k_0,t,\delta,s)$ asserts the existence of
+$r$ and $r_j$ such that
+\begin{equation*}
+  k_0+1\le j,\qquad s5^{k_0}=r+1,\qquad
+  \GeneralOrbit(r),\qquad \FullOrbit(r_j),
+\end{equation*}
+and the exact reset equation $\mathrm{ResetHeadEq}(s,j,k_0,t,\delta,r_j)$
+holds, together with the size bound $s<5^{j-1-k_0}$, the oddness of
+$s$ and $r_j$, and $5\nmid s$.
+\end{definition}
+
+The predicate is the reachability input of the corrected window bound.
+It fixes the same $j,k_0,t$ as the window under consideration; a weaker
+predicate that only fixes the difference $j-k_0-1$ would allow the
+reset witness to use different indices.
+
+\subsection{Notation discipline}
+
+The step weight at depth $j$ is $t_j=\vtwo{5\Orbit_7(j)+1}$.  The
+prefix weight before that step is $\wordWeight_{j-1}$.  These two
+quantities are not interchangeable: $t_j$ is the cost of the next step,
+while $\wordWeight_{j-1}$ is the accumulated cost before it.  The proof
+never substitutes one for the other.
+
+\subsection{Glossary}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.26\textwidth}p{0.68\textwidth}@{}}
+\toprule
+Term & Meaning \\
+\midrule
+word & finite list of step weights \\
+valid word & word whose orbit divisions are exact \\
+prefix weight & accumulated weight before a step \\
+word molecule & exact prefix sum of a word \\
+margin & $j\log_2 5-\wordWeight_j$ \\
+block & contiguous orbit segment \\
+rise step & step of weight $1$ or $2$ \\
+C3 step & step of weight at least $3$ \\
+reset window & reachable block with exact reset equation \\
+failure window & reset block whose valuation contradicts the bound \\
+full orbit & exact accelerated orbit of $7$ \\
+general orbit & orbit with arbitrary legal weights \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Variable dictionary}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.14\textwidth}p{0.80\textwidth}@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$j$ & reset step depth \\
+$k_0$ & exponent in $s5^{k_0}=r+1$ \\
+$t$ & reset step weight, $t\in\{1,2\}$ \\
+$\delta$ & reset parameter: $1$ for $t=1$, $\{1,3\}$ for $t=2$ \\
+$s$ & odd terminal part with $5\nmid s$ \\
+$e$ & incoming step weight, $e\ge2$ \\
+$g$ & full-orbit state $\Orbit_7(j-1)$ \\
+$x$ & candidate predecessor $2^{e-1}g+\delta5^{j-1}$ \\
+$r_j$ & block head after the reset step \\
+$r_s$ & terminal state of the block tail \\
+$t_j$ & step weight at depth $j$ \\
+$\wordWeight_j$ & prefix weight at depth $j$ \\
+$L$ & block-tail length \\
+$H_s$ & unified-core threshold parameter \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Why loose estimates do not close the problem}
+
+Heuristic models predict roughly logarithmic growth, but the orbit
+contains long stretches of weight-$2$ steps that consume 2-adic value,
+interspersed with weight-$1$ and weight-$\ge3$ steps.  Bounds that only
+control the average growth are too weak: the decisive obstruction is an
+exact inequality with constants $13$ and $+12$, and any weakening of
+these constants destroys the contradiction.  Probabilistic equidistribution
+statements and transcendence estimates do not provide the exact
+2-adic cancellations used in the unified core.
+
+A heuristic word with the same average weight can fail the exact
+valuation identity by a single unit of 2-adic cancellation.  The
+arithmetic counterexample in the divergence bridge is exactly such a
+witness: it satisfies every size, parity, and coprimality condition
+but is not orbit-reachable.  The proof therefore keeps every
+divisibility condition exact.

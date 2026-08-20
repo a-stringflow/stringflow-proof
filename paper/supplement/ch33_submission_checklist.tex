@@ -1,0 +1,93 @@
+\section{Submission and release checklist}
+
+This chapter records the checks that must pass before the manuscript
+is submitted or the final theorem is promoted.
+
+\subsection{Document checks}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{main.tex} compiles with
+  \texttt{pdflatex}, \texttt{bibtex}, and two further passes.
+\item \texttt{supplement\_manual.tex} compiles with three passes.
+\item Neither log contains overfull boxes, undefined references, or
+  warnings that change the meaning of a statement.
+\item The main document is between 40 and 70 pages.
+\item The supplementary manual is between 100 and 150 pages.
+\end{itemize}
+
+\subsection{Discipline checks}
+
+\begin{itemize}[leftmargin=*]
+\item The constant $13$ and the thresholds $+10$, $+11$, $+12$ are
+  unchanged.
+\item The phrases ``independent analytic gap'' and its Chinese
+  equivalent do not appear.
+\item The phrase ``automatic'' is not used to assert a proof step.
+\item The pending statements
+  \texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+  no\_\allowbreak hge} and
+  \texttt{five\_\allowbreak x\_\allowbreak plus\_\allowbreak one\_\allowbreak
+  diverges\_\allowbreak at\_\allowbreak 7} are never marked compiled or
+  closed.
+\item The notation $t_j$ and $\wordWeight_{j-1}$ are never
+  interchanged.
+\end{itemize}
+
+\subsection{Lean checks}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{lake build CycleBridge} passes.
+\item \texttt{lake build DwdbDiv} passes.
+\item \texttt{\#print axioms} on the bridge theorems returns only
+  \texttt{propext}, \texttt{Classical.choice}, and
+  \texttt{Quot.sound}.
+\item \texttt{UnifiedCoreAudit.lean} contains exactly one
+  \texttt{sorry}.
+\item The main chain contains no \texttt{native\_decide}.
+\end{itemize}
+
+\subsection{Repository checks}
+
+\begin{itemize}[leftmargin=*]
+\item The anonymous repository is
+  \texttt{a-stringflow/stringflow-proof}.
+\item The repository README records the AI assistance disclosure.
+\item The CI status for the main build targets is recorded.
+\item The ledgers in \texttt{docs/} are current.
+\end{itemize}
+
+\subsection{Release gate}
+
+The final theorem
+\begin{verbatim}
+FinalStatement.five_x_plus_one_diverges_at_7 :
+  IsUnboundedOrbit 7
+\end{verbatim}
+may be promoted only after:
+\begin{enumerate}[leftmargin=*]
+\item \texttt{unified\_\allowbreak core\_\allowbreak final\_\allowbreak
+  no\_\allowbreak hge} is closed in Lean;
+\item the final theorem is assembled and compiles;
+\item every document check above is re-run;
+\item every status table is updated.
+\end{enumerate}
+
+\subsection{Checklist table}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Item & Status \\
+\midrule
+main document length & 43 pages \\
+supplementary manual length & 102 pages \\
+document compile & passing \\
+discipline checks & passing \\
+main bridge builds & passing \\
+axiom audit & passing \\
+unified-core final inequality & pending \\
+final theorem assembly & pending \\
+\bottomrule
+\end{tabular}
+\end{center}

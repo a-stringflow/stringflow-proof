@@ -1,0 +1,138 @@
+\section{Genericity ledger for $(a,b)$}
+
+The string-flow framework is written for the accelerated map
+\begin{equation*}
+  T_{a,b}(x)=\frac{ax+b}{2^{v_2(ax+b)}}.
+\end{equation*}
+This chapter records which parts of the framework are generic in
+$a$, which parts are specific to $(a,b)=(5,1)$, and which parts are
+not claimed.  The ledger does not prove any new statement for other
+parameters.
+
+\subsection{Status labels}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Generic}: the statement holds for the indicated family
+  of parameters with the same proof shape.
+\item \textbf{Parameter-dependent}: the statement shape is generic,
+  but its constants or hypotheses depend on $a$ and must be
+  re-derived.
+\item \textbf{$(5,1)$-specific}: the statement is proved only for
+  $(a,b)=(5,1)$.
+\item \textbf{Not claimed}: the statement is not asserted in this
+  paper for other parameters.
+\end{itemize}
+
+\subsection{The ledger}
+
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}p{0.30\textwidth}p{0.24\textwidth}p{0.40\textwidth}@{}}
+\toprule
+Layer & Status for $(a,b)$ & Remark \\
+\midrule
+words, validity, weight, molecule &
+  Generic &
+  replace $5$ by $a$ in the recursion and in the explicit sum \\
+word-orbit identity &
+  Generic &
+  $2^{\wordWeight(w)}x_L=a^Lx_0+\wordA(w)$ \\
+PMI identity &
+  Generic &
+  $\alpha=\log_2 a$ replaces $\log_2 5$ \\
+cycle equation &
+  Generic &
+  $2^Tm=a^Pm+\wordA(w)$ for a closed word \\
+PMI-B counting bound &
+  Generic &
+  the same bad-prefix count with $a^P$ \\
+margin balance &
+  Generic as an inequality &
+  the weight classes $1,2,\ge3$ and the constants
+  $\alpha-1,\alpha-2,3-\alpha$ depend on $a$ \\
+rise-step residue rules &
+  Parameter-dependent &
+  which weights count as rise steps depends on $a$ \\
+reset equation form &
+  Parameter-dependent &
+  the form generalises; $\delta$ and $t$ data are $(5,1)$-specific \\
+finite prefix of $7$ &
+  $(5,1)$-specific &
+  the exact 17-state expansion uses the orbit of $7$ \\
+segment-size constants &
+  $(5,1)$-specific &
+  constants such as $4$ in $g<5^{j-1}/4$ come from $a=5$ \\
+modular exclusions for $d=2,d=3$ &
+  $(5,1)$-specific &
+  moduli $17,256,109$ and residues are arithmetic of $5$ \\
+CRT candidate and terminal residue &
+  $(5,1)$-specific &
+  powers of $5$ and $3\cdot5^s$ enter the definitions \\
+corrected window thresholds &
+  $(5,1)$-specific &
+  $+10,+11,+12$ and the constant $13$ are not transferred \\
+counterexample arithmetic &
+  $(5,1)$-specific &
+  $j=36$, $s=2^{83}-3\cdot5^{35}$ is specific to $a=5$ \\
+$a=3$ analogue of the unified core &
+  Not claimed &
+  requires a new proof \\
+general divergence behaviour &
+  Not claimed &
+  the paper proves only the orbit of $7$ for $(5,1)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{What the generic layer gives}
+
+The generic layer is the exact word ledger:
+\begin{equation*}
+  2^{\wordWeight(w)}\,x_L=a^Lx_0+\wordA(w),
+\end{equation*}
+the PMI identity
+\begin{equation*}
+  \sum_{j=0}^{L-1}2^{-m_j}
+    =\frac{a\,\wordA(w)}{a^L},
+  \qquad m_j=j\log_2 a-\wordWeight_j,
+\end{equation*}
+and the cycle equation.  These identities are independent of the
+starting value and of the arithmetic of $a$ beyond the word being
+valid.  They are the part of the framework that can be reused without
+new proof.
+
+\subsection{What is not transferred}
+
+Everything after the word ledger is tied to the concrete arithmetic:
+the finite prefix, the segment exclusions, the modular exclusions,
+the CRT residue, and the decisive window thresholds.  In particular,
+the constant $13$ and the thresholds $+10$, $+11$, $+12$ are proved
+for $(5,1)$; this paper does not claim they survive for $a=3$.
+
+\subsection{The first obstruction question}
+
+The paper does not assert which lemma would be the first one that
+fails for $a=3$.  Within the $(5,1)$ proof, the earliest layer where
+the parameter enters arithmetically is the segment-size layer
+($g<5^{j-1}/4$ in the $d=1$ exclusion), followed by the rise-step
+residue rules and the decisive-window thresholds.  A concrete answer
+for $a=3$ would require re-developing the segment exclusions and the
+window arithmetic; that development is not part of this paper and is
+therefore marked as not claimed.
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.44\textwidth}p{0.50\textwidth}@{}}
+\toprule
+Item & Status \\
+\midrule
+generic word ledger & established for the framework \\
+PMI and cycle identities & established for the framework \\
+$(5,1)$-specific core and bridge & proved in this paper \\
+$a=3$ analogue & not claimed \\
+general divergence behaviour & not claimed \\
+\bottomrule
+\end{tabular}
+\end{center}

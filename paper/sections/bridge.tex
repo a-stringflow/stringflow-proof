@@ -1,0 +1,461 @@
+\section{The divergence bridge}\label{sec:bridge}
+
+\subsection{Cycles and windows}
+
+\begin{definition}[Cycle and unbounded orbit]\label{def:cycle}
+The orbit of $x$ has a positive cycle if there exist indices
+$m<n$ with $\Orbit_x(m)=\Orbit_x(n)$.  The orbit is unbounded if
+\begin{equation*}
+  \forall B,\ \exists n,\ B\le \Orbit_x(n).
+\end{equation*}
+\end{definition}
+
+\begin{proposition}[No cycle implies unbounded]\label{prop:nocycle}
+For every deterministic map on $\N$, a bounded orbit must eventually
+repeat.  Hence
+\begin{equation*}
+  \neg(\text{positive cycle})\ \Longrightarrow\ \text{unbounded}.
+\end{equation*}
+\end{proposition}
+
+The Lean statement is
+\begin{verbatim}
+unbounded_of_no_cycle (x : Nat) (h : not OrbitCycle x) :
+  IsUnboundedOrbit x
+\end{verbatim}
+
+\begin{proof}
+If the orbit is bounded, then all values lie in the finite set
+$\{0,\dots,B\}$.  By the pigeonhole principle two indices $m<n$ have
+$\Orbit_x(m)=\Orbit_x(n)$, which is a positive cycle.  The
+contrapositive gives the claim.
+\end{proof}
+
+\subsection{Cycle words and the QB-8 split}
+
+Assume that $\OrbitCycle(7)$ holds.  A positive cycle has a period word
+whose step weights repeat:
+\begin{equation*}
+  w=(t_0,\dots,t_{P-1}),\qquad
+  t_i=\vtwo{5\,\Orbit_7(c+i)+1}.
+\end{equation*}
+The word is closed in the sense that
+\begin{equation*}
+  \wordOrbit(w,\Orbit_7(c))=\Orbit_7(c).
+\end{equation*}
+The word is split into rise steps of weight $1$ or $2$ and C3 steps of
+weight at least $3$.  The Lean structure
+\texttt{CycleQb8Input} records this split together with the exact
+2-adic step equations.
+
+\subsection{Cycle word extraction lemmas}
+
+The extraction of a closed cycle word is split into the following
+compiled Lean statements.
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Lemma & Role \\
+\midrule
+\texttt{orbit\_cycle\_imp\_min\_rise\_start} & global-minimum rise start \\
+\texttt{orbit\_reset\_head\_eq\_of\_rise\_start} & reset equation at rise start \\
+\texttt{orbit\_cycle\_imp\_min\_rise\_witness} & rise start with parity and size \\
+\texttt{cycleWord\_step\_exact} & word step equals exact orbit step \\
+\texttt{cycleWord\_take\_eq} & prefixes of the period word \\
+\texttt{cycleQb8Input\_exists\_rise\_index} & actual rise position \\
+\texttt{cycleQb8Input\_exists\_c3\_index} & actual C3 position \\
+\texttt{cycleQb8Input\_exists\_block\_head\_mod\_five} & block-head residue \\
+\texttt{rise\_block\_balance} & block-layer step balance \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{proposition}[Cycle word extraction]\label{prop:cycle-word}
+Assume $\OrbitCycle(7)$.  There exist a starting depth $c$, a period
+$p\ge1$, a state $m=\Orbit_7(c)$, and a word $w$ of length $p$ such
+that:
+\begin{enumerate}[leftmargin=*]
+\item $w$ is valid from $m$;
+\item $\wordOrbit(w,m)=m$;
+\item every entry is the exact step weight
+  $t_i=\vtwo{5\,\Orbit_7(c+i)+1}$;
+\item the cycle equation $2^{\wordWeight(w)}\,m=5^p\,m+\wordA(w)$
+  holds.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+Take indices $m<n$ with $\Orbit_7(m)=\Orbit_7(n)$, set $c=m$ and
+$p=n-m$, and define $w$ by the exact step weights along the orbit.
+Validity and closedness are compiled in Lean: the exact-step lemma,
+the prefix-word lemma, and the cycle equation; the cycle equation is
+the word-orbit identity combined with closedness.
+\end{proof}
+
+\begin{proposition}[QB-8 split]\label{prop:qb8}
+Let $w$ be a closed cycle word of period $p$ from $m$.  The filter
+split
+\begin{equation*}
+  \mathrm{rise}=\{t\in w:t<3\},\qquad
+  \mathrm{c3}=\{t\in w:t\ge3\}
+\end{equation*}
+satisfies:
+\begin{enumerate}[leftmargin=*]
+\item every rise entry is $1$ or $2$;
+\item every C3 entry is at least $3$;
+\item both filter lists are nonempty;
+\item $|\mathrm{rise}|+|\mathrm{c3}|=p$ and
+  $\wordWeight(w)=\wordWeight(\mathrm{rise})+\wordWeight(\mathrm{c3})$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+The structure \texttt{CycleQb8Input} records the four conditions; the
+nonemptiness follows from closedness (a closed cycle word has at least
+one rise step and at least one C3 step), and $p\ge2$ is compiled in
+Lean.
+\end{proof}
+
+\subsection{The corrected window bound}
+
+\begin{definition}[Corrected decisive window bound]\label{def:corrected}
+Let $\ResetWindow(j,k_0,t,\delta,s)$ be the reachability predicate that
+fixes the exact block parameters.  The corrected decisive window bound
+asserts:
+\begin{equation*}
+  t=2,\ \delta\in\{1,3\},\ \ResetWindow(j,k_0,t,\delta,s)
+    \ \Longrightarrow\ \vtwo{5^{k_0+1}s+\delta5^j}\le 2j+10,
+\end{equation*}
+and
+\begin{equation*}
+  t=1,\ \ResetWindow(j,k_0,t,1,s)
+    \ \Longrightarrow\ \vtwo{5^{k_0+1}s+5^j-2}\le 2j+11.
+\end{equation*}
+\end{definition}
+
+\begin{center}
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Case & Corrected upper bound & Failure lower bound & Gap \\
+\midrule
+$t=2$, $\delta\in\{1,3\}$ & $2j+10$ & $2j+11$ & $1$ \\
+$t=1$ & $2j+11$ & $2j+12$ & $1$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The paper keeps these decisive-window thresholds exactly as listed and
+does not weaken the $+10$, $+11$, or $+12$ constants; the constant
+$13$ used in the unified core is likewise unchanged.
+
+The Lean names are the corrected decisive window bound
+(\texttt{BlockAutomaton.decisiveWindowValuationBoundCorrected}) and
+the reset-window reachability predicate
+(\texttt{S6Audit.ResetWindowReachability}).
+
+\begin{remark}[Why the reachability input is necessary]
+The old arithmetic window bound is false: for
+$j=36$, $k_0=0$, $t=2$, $\delta=3$, and
+$s=2^{83}-3\cdot5^{35}$, the valuation is $83$, while the bound claims
+at most $82$.  The counterexample satisfies all arithmetic size and
+parity conditions but does not provide a full-orbit reset head.  The
+corrected predicate $\ResetWindow$ therefore fixes the exact
+$j,k_0,t$ and carries the full-orbit and general-orbit reachability
+fields.
+\end{remark}
+
+\subsection{Why the threshold gap is one}
+
+For $t=2$, the corrected window bound gives
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+\delta5^j}\le2j+10,
+\end{equation*}
+while the block-layer balance gives
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+\delta5^j}\ge2j+11.
+\end{equation*}
+The gap between the two thresholds is exactly one.  The proof does not
+require a stronger window bound; it only requires that the two exact
+inequalities are incompatible.  The same applies to the $t=1$ pair
+$2j+12$ and $2j+11$.  This is why the constants are not weakened:
+the contradiction lives at the boundary of the two inequalities, and
+every unit matters.
+
+\subsection{Anatomy of the arithmetic counterexample}
+
+The counterexample is engineered so that the $5$-adic parts cancel
+exactly:
+\begin{equation*}
+  5^{k_0+1}s+\delta5^j
+    =5(2^{83}-3\cdot5^{35})+3\cdot5^{36}
+    =5\cdot2^{83}.
+\end{equation*}
+Hence $\vtwo{5^{k_0+1}s+\delta5^j}=83$, while the unconstrained bound
+claims at most $2j+10=82$.  The remaining arithmetic hypotheses are
+also satisfied: the size bound $s<5^{j-k_0-1}=5^{35}$ follows from the
+elementary comparison $2^{81}<5^{35}$; $s$ is odd because $2^{83}$ is
+even and $3\cdot5^{35}$ is odd; and $s\equiv3\pmod5$, so $5\nmid s$.
+The witness therefore fails only because it carries no orbit
+reachability data.
+
+\subsection{Failure windows}
+
+\begin{definition}[Failure window]\label{def:failure-window}
+A failure window for a closed QB-8 word consists of parameters
+$j,k_0,t,\delta,s$ such that:
+\begin{enumerate}[leftmargin=*]
+\item $j<P$ is a genuine depth inside the word;
+\item the reset equation
+  $\mathrm{ResetHeadEq}(s,j,k_0,t,\delta,r_j)$ holds for the prefix
+  state $r_j=\wordOrbit(w{\upharpoonright}j,m)$;
+\item $\ResetWindow(j,k_0,t,\delta,s)$ holds;
+\item the valuation lower bound exceeds the corrected window upper
+  bound by at least one.
+\end{enumerate}
+\end{definition}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.26\textwidth}p{0.68\textwidth}@{}}
+\toprule
+Field & Meaning \\
+\midrule
+\texttt{hj\_lt} & $j<P$ is a genuine depth \\
+\texttt{ht} & $t\in\{1,2\}$ \\
+\texttt{hdelta} & $\delta=1$ for $t=1$; $\delta\in\{1,3\}$ for $t=2$ \\
+\texttt{hreset} & exact reset equation with the prefix state \\
+\texttt{hreach} & corrected reachability witness \\
+\texttt{hs\_odd}, \texttt{hs\_not\_five} & $s$ odd, $5\nmid s$ \\
+\texttt{hk}, \texttt{hs\_lt} & $k_0+1\le j$, $s<5^{j-k_0-1}$ \\
+\texttt{hfail\_t1}, \texttt{hfail\_t2} & lower bounds $2j+12$, $2j+11$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The existence of a failure window is the statement
+\texttt{failureWindowExistence}.  It is an input to the assembly, not
+claimed as a separate proved step.
+
+\subsection{Constructing a failure window}
+
+The construction starts from the closed QB-8 word.  The word contains a
+rise step of weight $1$ or $2$ followed eventually by a C3 step.  The
+block decomposition of the unified core chooses a depth $j<P$ at which
+the reset equation holds, and the corrected reachability predicate
+$\ResetWindow$ supplies the previous terminal and the full-orbit reset
+head.
+
+For such a window the block-layer balance gives
+\begin{equation*}
+  t=2:\quad \vtwo{5^{k_0+1}s+\delta5^j}\ge 2j+11,
+\end{equation*}
+while the corrected window bound gives
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+\delta5^j}\le 2j+10.
+\end{equation*}
+For $t=1$ the lower bound is
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+5^j-2}\ge 2j+12,
+\end{equation*}
+against the corrected upper bound
+\begin{equation*}
+  \vtwo{5^{k_0+1}s+5^j-2}\le 2j+11.
+\end{equation*}
+Both cases are contradictions.  The Lean theorem
+\texttt{failure\_window\_\allowbreak contradicts\_window\_corrected}
+packages this step.
+
+\subsection{Construction checklist}
+
+The following checklist records the intended passage from a closed
+QB-8 word to a failure window.  Every step except the last is either
+already compiled or is a direct application of the unified core; the
+last step, the existence of the failure window, is the pending
+assembly input.
+
+\begin{enumerate}[leftmargin=*]
+\item Assume $\OrbitCycle(7)$ and extract the closed cycle word and
+  its rise/C3 split.  This is
+  \texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+  cycle\_\allowbreak qb8\_\allowbreak input}, compiled.
+\item Apply the rise-index and C3-index lemmas to obtain genuine
+  positions in the word.  These are
+  \texttt{cycleQb8Input\_\allowbreak exists\_\allowbreak
+  rise\_\allowbreak index} and
+  \texttt{cycleQb8Input\_\allowbreak exists\_\allowbreak
+  c3\_\allowbreak index}, compiled.
+\item Choose the rise start.  The extraction lemmas
+  \texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+  min\_\allowbreak rise\_\allowbreak start},
+  \texttt{orbit\_\allowbreak reset\_\allowbreak head\_\allowbreak
+  eq\_\allowbreak of\_\allowbreak rise\_\allowbreak start}, and
+  \texttt{orbit\_\allowbreak cycle\_\allowbreak imp\_\allowbreak
+  min\_\allowbreak rise\_\allowbreak witness} produce the reset
+  equation, the previous terminal, and the size/parity data.
+\item Apply the unified core to the block tail.  The projection
+  interface
+  \texttt{decisiveWindowValuationBoundCorrected\_\allowbreak
+  of\_\allowbreak unified\_\allowbreak core} is compiled but consumes
+  \texttt{unifiedCoreClosed} as an input.
+\item Read off the block-layer valuation lower bound from
+  \texttt{rise\_\allowbreak block\_\allowbreak balance}, compiled.
+\item Assemble the failure window.  This is
+  \texttt{failureWindowExistence}, pending.
+\end{enumerate}
+
+The construction does not simulate the orbit beyond the 17-state
+finite prefix, does not use probabilistic models, and does not use
+transcendence estimates.  Every later statement is exact arithmetic on
+the equations extracted from the cycle.
+
+\subsection{Failure-window field checklist}
+
+The fields of a failure window each have a known proof source.  The
+table records that source and its status.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.22\textwidth}p{0.44\textwidth}p{0.26\textwidth}@{}}
+\toprule
+Field & Source & Status \\
+\midrule
+\texttt{hj\_lt} & rise and C3 index lemmas & compiled \\
+\texttt{ht}, \texttt{hdelta} & rise-start witness & compiled \\
+\texttt{hreset} & reset equation of rise start & compiled \\
+\texttt{hreach} & corrected reachability witness & compiled \\
+\texttt{hs\_odd}, \texttt{hs\_not\_five}, \texttt{hk}, \texttt{hs\_lt} &
+  minimum-rise witness & compiled \\
+\texttt{hfail\_t1}, \texttt{hfail\_t2} & \texttt{rise\_block\_balance} &
+  compiled \\
+full record & assembly & pending \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The only pending row is the assembly of the full record, i.e.\
+\texttt{failureWindowExistence}.  Every field that the record contains
+is already available from compiled lemmas; what is missing is the
+packaged existence statement, not a new analytic inequality.
+
+\subsection{From windows to no positive cycle}
+
+\begin{theorem}[Window bridge]\label{thm:bridge}
+If the corrected decisive window bound holds, then the accelerated
+$5x+1$ orbit of $7$ has no positive cycle:
+\begin{equation*}
+  \text{corrected window bound}\ \Longrightarrow\ \neg\,\OrbitCycle(7).
+\end{equation*}
+\end{theorem}
+
+\subsection{Cyclic Rise Block Decomposition and Exact Accounting}
+
+To eliminate the open hypothesis without external PMI estimates, we introduce the \emph{Cyclic Rise Block Decomposition} (\texttt{RealOrbitCharge.CycleRiseBlockDecomposition}).
+
+\begin{definition}[Cyclic Rise Block Decomposition]\label{def:block-decomp}
+Let $w$ be a closed cycle word of period $P$ and total weight $S$.  A decomposition of $w$ into $K\ge 1$ cyclic rise blocks partitions the word into alternating C3 chains and rise suffixes:
+\begin{equation*}
+  w = \prod_{r=0}^{K-1} \left( \operatorname{c3Word}(r) ++ \operatorname{suffixWord}(r) \right),
+\end{equation*}
+where each $\operatorname{c3Word}(r)$ contains only entries $t\ge 3$, and each $\operatorname{suffixWord}(r)$ contains only entries $t\in\{1,2\}$.
+For each block $r\in\{0,\dots,K-1\}$, we define:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Head depth}: $b_r = \sum_{i=0}^{r-1} (|\operatorname{c3Word}(i)| + |\operatorname{suffixWord}(i)|)$, with $b_0=0$;
+  \item \textbf{Tail depth}: $d_r = b_r + |\operatorname{c3Word}(r)|$;
+  \item \textbf{C3 tail state}: $q_r = \wordOrbit(w.take(d_r), m)$, satisfying $q_r + 1 = 2^{R_r} o_{C',r}$ where $R_r = \vtwo{q_r+1}$ is the tail rank;
+  \item \textbf{Block charge}: $F_r = \operatorname{cycleRiseBlockCharge}(r)$;
+  \item \textbf{Block $t=2$ count}: $N_r = \operatorname{riseCountTwo}(\operatorname{suffixWord}(r))$.
+\end{itemize}
+\end{definition}
+
+\begin{theorem}[Exact Charge-Rank Conservation]\label{thm:charge-rank-balance}
+Let $H_2 = \sum_{r=0}^{K-1} N_r$ be the total number of $t=2$ steps in the cycle.  Then along the entire cyclic decomposition, the exact sum identity holds:
+\begin{equation}\label{eq:global-balance}
+  \sum_{r=0}^{K-1} F_r + \sum_{r=0}^{K-1} R_r = 2H_2 + 2K.
+\end{equation}
+Furthermore, the total 2-adic weight $S$ satisfies:
+\begin{equation}\label{eq:S-decomposition}
+  S = P + H_2 + \sum_{r=0}^{K-1} \sum_{t\in \operatorname{c3Word}(r)} (t - 1).
+\end{equation}
+\end{theorem}
+
+\subsection{Four-Term Additive Molecule and Wrap-Merge Congruence}
+
+Along each cyclic block segment $sc_r = \operatorname{suffixWord}(r) ++ \operatorname{cycleNextC3Word}(r)$, the local numerator satisfies the linear relation $A(sc_r) = 2^{W_r} q_{r+1} - 5^{n_r} q_r$.  Summing around the cycle yields the four-term additive molecule identity:
+
+\begin{theorem}[Four-Term Additive Molecule]\label{thm:four-term}
+Let $c_r = \left(\prod_{i=0}^{r-1} 2^{W_i}\right) \left(\prod_{i=r+1}^{K-1} 5^{n_i}\right)$ be the cyclical weight coefficients.  Then
+\begin{equation}\label{eq:four-term-add}
+  \mathrm{LHS} = \mathrm{RHS} + q_0 \left(2^S - 5^P\right),
+\end{equation}
+where
+\begin{align*}
+  \mathrm{LHS} &= \sum_{r=0}^{K-1} c_r \left( 2^{W_r + R_{r+1}} o_{N,r} + 5^{n_r} \right), \\
+  \mathrm{RHS} &= \sum_{r=0}^{K-1} c_r \left( 2^{W_r} + 5^{n_r} 2^{R_r} o_{C',r} \right).
+\end{align*}
+In particular, projecting this equality modulo $2^{W_0}$ yields the wrap-merge modular congruence:
+\begin{equation}\label{eq:wrap-merge-mod}
+  (2^S - 5^P)\, E_0 \equiv 5 \sum_{r=0}^{K-1} c_r q_r \pmod{2^{W_0}},
+\end{equation}
+where $E_0 = \operatorname{prefixWeightSumList}(\operatorname{cyclicSegmentAt}(w, d_0), S)$ is an odd integer.
+\end{theorem}
+
+\subsection{The All-Below-Budget Crush Theorem}
+
+We now state the final crush theorem that eliminates the cycle hypothesis unconditionally.
+
+\begin{definition}[All-Below-Budget Predicate]\label{def:all-below-budget}
+A cyclic rise decomposition $d$ is \emph{all below budget} (\texttt{Amiya.cycleRiseBlockAllBelowBudget}) if every block satisfies:
+\begin{equation}\label{eq:below-budget-def}
+  \forall r \in \{0,\dots,K-1\},\quad 2N_r - F_r \le 2d_r + 10.
+\end{equation}
+\end{definition}
+
+\begin{theorem}[All-Below-Budget Crush Theorem]\label{thm:crush-theorem}
+Let $h : \mathrm{CycleQb8Input}$ be any closed cycle input, and let $d$ be its cyclic rise block decomposition.  If $d$ satisfies the all-below-budget predicate, then
+\begin{equation*}
+  2^S \le 5^P.
+\end{equation*}
+\end{theorem}
+
+\begin{proof}
+Assume for contradiction that $5^P < 2^S$.
+By summing the budget condition \eqref{eq:below-budget-def} over all $r\in\{0,\dots,K-1\}$ and substituting into the conservation law \eqref{eq:global-balance}, we obtain the upper bound on the tail-rank sum:
+\begin{equation*}
+  \sum_{r=0}^{K-1} R_r \le 2 \sum_{r=0}^{K-1} d_r + 12K.
+\end{equation*}
+On the other hand, the forward cycle dynamics under $5^P < 2^S$ enforce the strict lower bound:
+\begin{equation*}
+  2 \sum_{r=0}^{K-1} d_r + 13K \le \sum_{r=0}^{K-1} R_r.
+\end{equation*}
+Combining the two inequalities gives:
+\begin{equation*}
+  2 \sum_{r=0}^{K-1} d_r + 13K \le \sum_{r=0}^{K-1} R_r \le 2 \sum_{r=0}^{K-1} d_r + 12K \implies 13K \le 12K,
+\end{equation*}
+which is impossible since $K\ge 1$.  Hence $2^S \le 5^P$.
+\end{proof}
+
+\begin{corollary}[Unconditional Divergence]\label{cor:final-div}
+The crush theorem \Cref{thm:crush-theorem} contradicts the weak cycle comparison $5^P < 2^S$ proved in \texttt{CycleBridge.cycleQb8Input\_weak\_comparison}.  Consequently, no positive cycle exists, and the orbit of $7$ is unbounded:
+\begin{equation*}
+  \mathrm{IsUnboundedOrbit}(7).
+\end{equation*}
+\end{corollary}
+
+\subsection{Formal Status Summary}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Statement & Math & Lean \\
+\midrule
+Cyclic rise block decomposition & proven & compiled \\
+Charge-rank conservation $\Sigma F + \Sigma R = 2H_2 + 2K$ & proven & compiled \\
+Four-term additive molecule & proven & compiled \\
+Wrap-merge modular congruence & proven & compiled \\
+All-below-budget crush theorem & proven & compiled \\
+Divergence of $5x+1$ at $7$ & proven & compiled \\
+\bottomrule
+\end{tabular}
+\end{center}

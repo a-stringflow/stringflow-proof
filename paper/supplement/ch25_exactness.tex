@@ -1,0 +1,99 @@
+\section{Why the proof is exact}
+
+This chapter explains why the proof uses exact identities rather than
+estimates, probability, or transcendence statements.
+
+\subsection{The exact ledger}
+
+The core identity is
+\begin{equation*}
+  2^{\wordWeight(w)}\,\wordOrbit(w,x_0)
+    =5^{\operatorname{len}(w)}\,x_0+\wordA(w).
+\end{equation*}
+Every later equation in the proof is a projection of this identity:
+block equations, segment equations, reset equations, and the CRT
+equation.  There is no place where a size estimate replaces an
+equality.
+
+\subsection{Where loose estimates would fail}
+
+An average-growth estimate would conclude that the orbit should
+increase on average, which is compatible with both unboundedness and
+with a long excursion followed by a cycle.  The proof needs the
+opposite: a contradiction that is sensitive to a single unit of
+2-adic valuation.  The decisive-window thresholds are separated by
+exactly one:
+\begin{equation*}
+  2j+10<2j+11<2j+12.
+\end{equation*}
+An estimate that is off by one cannot distinguish the reachable upper
+bound from the block-layer lower bound.
+
+\subsection{The counterexample as a failure mode}
+
+The arithmetic witness
+\begin{equation*}
+  s=2^{83}-3\cdot5^{35}
+\end{equation*}
+satisfies every size, parity, and coprimality condition used by the
+old bound, but its valuation is $83$, one more than $82$.  The witness
+shows exactly what an arithmetic-only argument can miss: the
+reachability fields.  No estimate can repair this, because the failure
+is an exact valuation mismatch.
+
+\subsection{What probability cannot provide}
+
+A probabilistic model can predict the distribution of step weights,
+but the proof requires a statement about the specific orbit of $7$.
+Equidistribution would not rule out a cycle with an exceptional
+valuation profile; the proof must rule out every cycle by exact
+arithmetic.
+
+\subsection{What transcendence cannot provide}
+
+The margin $\log_2 5$ is irrational, but the proof never needs
+irrationality or transcendence.  The PMI identity is cleared of
+denominators:
+\begin{equation*}
+  \sum_{j=0}^{L-1}2^{\wordWeight_j}\,5^{L-j}=5\,\wordA(w).
+\end{equation*}
+All inequalities are between integers or between rationals with
+explicit denominators.  Transcendence estimates would be both too weak
+and unnecessary.
+
+\subsection{The role of the finite base}
+
+The only finite data are the first 17 states of the orbit of $7$.  The
+finite base is used to identify the first big step; every later claim
+is exact arithmetic.  The base is expanded explicitly in Lean, so no
+search or code generation is trusted.
+
+\subsection{Exactness checklist}
+
+\begin{itemize}[leftmargin=*]
+\item every block equation is the word-orbit identity;
+\item every segment exclusion uses exact equations and exact
+  congruences;
+\item the CRT candidate is the least solution of an exact linear
+  equation;
+\item the size conditions are exact inequalities;
+\item the window thresholds are exact and never weakened;
+\item the pending Lean statement is the only unverified node.
+\end{itemize}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.60\textwidth}p{0.34\textwidth}@{}}
+\toprule
+Item & Status \\
+\midrule
+exact ledger identities & compiled \\
+finite base & compiled \\
+segment and modular exclusions & compiled \\
+CRT layer & compiled except the final assembly \\
+decisive-window thresholds & unchanged \\
+\bottomrule
+\end{tabular}
+\end{center}

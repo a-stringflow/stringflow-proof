@@ -1,0 +1,100 @@
+\section{Full derivation of the $d\ge4$ exclusions}
+
+This chapter gives the complete derivation of the $d\ge4$ exclusions.
+The proof splits according to the location and weight of the first
+big step.
+
+\subsection{The three branch types}
+
+For $d\ge4$, the first big step of the candidate block is one of
+three types:
+\begin{enumerate}[leftmargin=*]
+\item the incoming step $g_{\mathrm{prev}}\to g$, which happens when
+  $e\ge3$;
+\item the step $y\to x$, which happens when $e=2$ and $a\ge1$ and has
+  weight $1+4a\ge5$;
+\item the step $z\to w$, which happens when $e=2$ and $a=0$ and has
+  weight $5$ or $6$.
+\end{enumerate}
+
+\subsection{The finite base}
+
+The finite base says:
+\begin{itemize}[leftmargin=*]
+\item for every $n<15$, $t_n\le2$;
+\item $t_{15}=3$;
+\item the first big step is unique.
+\end{itemize}
+These facts are compiled in
+\texttt{fullOrbit\_\allowbreak first\_\allowbreak t\_\allowbreak ge3\_
+\allowbreak is\_\allowbreak exactly\_\allowbreak 3} and
+\texttt{first\_\allowbreak big\_\allowbreak step\_\allowbreak unique}.
+
+\subsection{Branch $e\ge3$}
+
+The incoming step $g_{\mathrm{prev}}\to g$ has weight $e\ge3$, so it
+is a big step.  The finite base forces
+\begin{equation*}
+  e=3,\qquad j=17.
+\end{equation*}
+For this branch the candidate residue is then excluded modulo $640$
+or $1280$.  The two compiled statements are
+\texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak t1\_\allowbreak
+excluded} and
+\texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak
+t2\_\allowbreak delta3\_\allowbreak excluded}.
+
+\subsection{Branch $e=2$, $a\ge1$}
+
+The step $y\to x$ has weight
+\begin{equation*}
+  1+4a\ge5.
+\end{equation*}
+This would be the first big step of the orbit prefix.  But the finite
+base says the first big step has weight exactly $3$, so this branch is
+impossible.  The compiled statement is
+\texttt{dge4\_\allowbreak e2\_\allowbreak a\_\allowbreak ge1\_\allowbreak
+excluded}.
+
+\subsection{Branch $e=2$, $a=0$}
+
+The step $z\to w$ has weight $5$ or $6$, again contradicting the
+finite base.  The same uniqueness argument applies: the true first big
+step occurs at depth $15$ with weight $3$, so a later candidate big
+step cannot be first, and an earlier one cannot have weight $5$ or
+$6$.
+
+\subsection{Why uniqueness is used}
+
+The uniqueness statement says that any depth whose earlier weights are
+all at most $2$ and whose own weight is at least $3$ must be depth
+$15$ with weight $3$.  A candidate first big step of weight at least
+$5$ fails this conclusion, regardless of where it is placed.
+
+\subsection{Compiled statements}
+
+\begin{itemize}[leftmargin=*]
+\item \texttt{dge4\_\allowbreak e2\_\allowbreak a\_\allowbreak ge1\_
+\allowbreak excluded};
+\item \texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak
+t1\_\allowbreak excluded};
+\item \texttt{dge4\_\allowbreak e3\_\allowbreak j17\_\allowbreak
+t2\_\allowbreak delta3\_\allowbreak excluded};
+\item \texttt{candidate\_\allowbreak first\_\allowbreak big\_\allowbreak
+step\_\allowbreak weight\_\allowbreak ge\_\allowbreak five}.
+\end{itemize}
+
+\subsection{Status}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.56\textwidth}p{0.36\textwidth}@{}}
+\toprule
+Item & Status \\
+\midrule
+branch classification & math proven \\
+$e=2$ branches & math proven, Lean compiled \\
+$e=3$, $j=17$ residues & math proven, Lean compiled \\
+\bottomrule
+\end{tabular}
+\end{center}
