@@ -222,7 +222,39 @@ namespace StringFlow
 #check Doctor.no_cycle_at_7_of_trinityBlock
 #print axioms Doctor.no_cycle_at_7_of_trinityBlock
 
+-- Component checks: 10 Number-Theoretic Alignment Lemmas
+#check Doctor.lemma_word_validity
+#print axioms Doctor.lemma_word_validity
+
+#check Doctor.lemma_head_orbit_eq
+#print axioms Doctor.lemma_head_orbit_eq
+
+#check Doctor.lemma_tail_orbit_eq
+#print axioms Doctor.lemma_tail_orbit_eq
+
+#check Doctor.lemma_reset_head_eq
+#print axioms Doctor.lemma_reset_head_eq
+
+#check Doctor.lemma_reachability_bounds
+#print axioms Doctor.lemma_reachability_bounds
+
+#check Doctor.lemma_tail_state_lt
+#print axioms Doctor.lemma_tail_state_lt
+
+#check Doctor.lemma_tail_state_mod8
+#print axioms Doctor.lemma_tail_state_mod8
+
+#check Doctor.lemma_length_valuation_binding
+#print axioms Doctor.lemma_length_valuation_binding
+
+#check Doctor.lemma_depth_balance_exact
+#print axioms Doctor.lemma_depth_balance_exact
+
+#check Doctor.lemma_rank_bound_transfer
+#print axioms Doctor.lemma_rank_bound_transfer
+
 end StringFlow
+
 
 
 
