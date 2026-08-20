@@ -61,15 +61,7 @@ theorem unbounded_of_no_cycle (x : Nat) (h : ¬ OrbitCycle x) :
     exists_repeat_lt B (fun n => fiveXPlusOneOrbit x n) (fun i _ => hlt i)
   exact h ⟨j, i, hij, heq⟩
 
-/-- The final assembly input: SURV-EX and TD0 together must rule out
-every positive cycle of the 5x+1 orbit of 7.  Once that is closed,
-the final divergence theorem is immediate. -/
-def SurvExTd0 : Prop := ¬ OrbitCycle 7
 
-/-- Final theorem wired to the SURV-EX/TD0 no-cycle interface. -/
-theorem five_x_plus_one_diverges_at_7_of_surv_ex_td0 (h : SurvExTd0) :
-    IsUnboundedOrbit 7 :=
-  unbounded_of_no_cycle 7 h
 
 /-- The exact accelerated step is a legal word step with the exact
 2-adic weight.  This is the bridge between the top-level orbit and the

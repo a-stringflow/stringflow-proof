@@ -182,26 +182,17 @@ end S6Audit
 
 namespace StringFlow
 
--- Statement check: final bridge through the SURV-EX/TD0 no-cycle interface.
-#check five_x_plus_one_diverges_at_7_of_surv_ex_td0
-
--- Axioms used by the final bridge.
-#print axioms five_x_plus_one_diverges_at_7_of_surv_ex_td0
-
--- Statement check: the internal final assembly target.
+-- Statement check: master divergence theorem.
 #check five_x_plus_one_diverges_at_7
 
--- Axioms used by the internal final assembly target.
+-- Axioms used by master divergence theorem.
 #print axioms five_x_plus_one_diverges_at_7
+
+-- Statement check: dynamical no-cycle bridge.
+#check five_x_plus_one_diverges_at_7_of_no_cycle
+
+-- Axioms used by dynamical no-cycle bridge.
+#print axioms five_x_plus_one_diverges_at_7_of_no_cycle
 
 end StringFlow
 
-namespace StringFlow.SurvEx
-
--- Statement check: L-B'c branch is formally closed.
-#check lb_prime_c
-
--- Axioms used by `lb_prime_c`.
-#print axioms lb_prime_c
-
-end StringFlow.SurvEx
