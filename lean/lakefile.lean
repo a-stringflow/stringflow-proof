@@ -11,7 +11,7 @@ lean_lib StringFlow where
     `FBeta, `Gc, `Gc13, `Gc15, `Gc7Window, `LteMacro, `MacroWindow,
     `ModTwoCycle, `BlockAutomaton, `PhOne, `PhTwo, `Pmi, `Qb, `QWindow, `ScratchLift,
     `ScratchOrbit, `ScratchTest2, `RisingBound, `StageOne, `StageOneScan, `SurvivorExplicit,
-    `SurvExAudit, `S6Audit, `S6AuditStage1, `FinalStatement, `FinalTheorem, `CycleBridge, `DwdbDiv, `Td0CertBridge, `Td0Final, `Td0Phase2, `Td0Real, `Td1, `Td1Final,
+    `S6Audit, `S6AuditStage1, `FinalStatement, `FinalTheorem, `CycleBridge, `DwdbDiv, `Td0CertBridge, `Td0Final, `Td0Phase2, `Td0Real, `Td1, `Td1Final,
     `Td1Interp, `Td1Interval, `Td1Phase2, `Td1S3, `Td1Window, `TwoPowPlusOne,
     `Valuation, `WordWindow, `C4C8Tail, `FinitePrefix,
     `UnifiedCoreBridge, `UnifiedCoreAudit, `PureCore, `PmiLocalLemma,

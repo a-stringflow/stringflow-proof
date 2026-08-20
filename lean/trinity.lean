@@ -322,6 +322,20 @@ theorem trinity_no_cycle_of_block_exists
   rcases hA m S p w rise c3 hinput with ⟨b, L, t, delta, rt, tb⟩
   exact trinity_block_contradicts hinput b L t delta rt tb
 
+/-- Direct construction of `trinityBlockExists` from non-periodicity:
+if there are no cycles, then any counterfactual `CycleQb8Input` is impossible. -/
+theorem trinityBlockExists_of_no_cycle (hno : ¬ OrbitCycle 7) : trinityBlockExists := by
+  intro m S P w rise c3 h
+  exact (hno (CycleBridge.cycleQb8Input_imp_orbit_cycle h)).elim
+
+/-- The exact logical equivalence between Trinity block existence and
+absence of periodic cycles. -/
+theorem trinityBlockExists_iff_no_cycle :
+    trinityBlockExists ↔ ¬ OrbitCycle 7 := by
+  constructor
+  · exact trinity_no_cycle_of_block_exists
+  · exact trinityBlockExists_of_no_cycle
+
 /-- Conditional unboundedness from the trinity-block skeleton. -/
 theorem trinity_unbounded_of_block_exists
     (hA : trinityBlockExists) : IsUnboundedOrbit 7 :=

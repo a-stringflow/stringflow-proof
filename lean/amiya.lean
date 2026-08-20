@@ -900,7 +900,7 @@ expansion over the word entries. -/
 theorem wordA_eq_pmi_aTotal (w : List Nat) :
     StringFlow.Word.wordA w =
       StringFlow.PMI.aTotal w.length (fun j => w.getI j) := by
-  rw [StringFlow.SurvEx.wordA_eq_localLambda]
+  rw [StringFlow.CycleBridge.wordA_eq_localLambda]
   exact StringFlow.PH.localLambda_eq_pmi_aTotal w
 
 /-- Total word weight agrees with the PMI prefix weight at full

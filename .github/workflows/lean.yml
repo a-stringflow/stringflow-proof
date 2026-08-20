@@ -21,6 +21,15 @@ jobs:
           test: false
           lint: false
           mk_all-check: false
-      - name: Axiom audit (reject sorryAx)
+      - name: Axiom and Dependency Audit
         working-directory: lean
-        run: lake env lean AxiomAudit.lean 2>&1 | grep -q "sorryAx" && exit 1 || true
+        run: |
+          echo "=== Running Lean 4 Axiom and Dependency Audit ==="
+          lake env lean AxiomAudit.lean > audit_output.txt 2>&1
+          cat audit_output.txt
+          if grep -q "sorryAx" audit_output.txt; then
+            echo "ERROR: sorryAx detected in dependency closure!"
+            exit 1
+          fi
+          echo "=== Axiom and Dependency Audit Passed ==="
+

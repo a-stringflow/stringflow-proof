@@ -1,9 +1,9 @@
 import BlockAutomaton
 import FinalStatement
 import S6AuditStage1
-import SurvExAudit
 import Td0Real
 import Angelina_Gilberta_Bridge
+import PhTwo
 
 /-!
 # Cycle bridge: corrected decisive window valuation -> no positive cycle of 7
@@ -1598,6 +1598,14 @@ theorem cycleWord_rising_equation (c p : Nat) :
               rw [hterm, ht_mul]
               ring_nf
 
+/-- The word numerator agrees with the PH local factor. -/
+theorem wordA_eq_localLambda (w : List Nat) :
+    StringFlow.Word.wordA w = StringFlow.PH.localLambda w := by
+  induction w with
+  | nil => rfl
+  | cons t ts ih =>
+      simp [StringFlow.Word.wordA, StringFlow.PH.localLambda_cons, ih]
+
 /-- A closed cycle word satisfies the exact Diophantine cycle
 equation `2^S * m = 5^p * m + A`. -/
 theorem cycleWord_cycle_equation (c p : Nat)
@@ -1615,7 +1623,7 @@ theorem cycleWord_cycle_equation (c p : Nat)
 theorem cycleWord_wordA_eq_pmi_aTotal (c p : Nat) :
     StringFlow.Word.wordA (cycleWord c p) =
       StringFlow.PMI.aTotal p (cycleWordStepAt c p) := by
-  rw [StringFlow.SurvEx.wordA_eq_localLambda]
+  rw [wordA_eq_localLambda]
   have h := StringFlow.PH.localLambda_eq_pmi_aTotal (cycleWord c p)
   change StringFlow.PH.localLambda (cycleWord c p) =
       StringFlow.PMI.aTotal p (fun j => (cycleWord c p).getI j)
